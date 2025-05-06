@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify
 import os
 from werkzeug.utils import secure_filename
+from PIL import Image
 
 bp = Blueprint('main', __name__)
 
@@ -21,15 +22,10 @@ def receive_image():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     if file:
-        filename = secure_filename(file.filename)
-        filepath = os.getcwd().replace("\\", "/")
+        img = Image.open(file)
         try:
-            print(filepath)
-            file.save(filepath)
-            return jsonify({'message': 'Image received and saved successfully', 'filepath': filepath}), 200
+            img.save('output.png') 
+            return jsonify({'message': 'Image received and saved successfully', 'filepath': os.getcwd()}), 200
         except Exception as e:
             return jsonify({'error': f'Error saving file: {str(e)}'}), 500
     return jsonify({'error': 'Something went wrong'}), 500
-
-
-    return render_template('index.html')
