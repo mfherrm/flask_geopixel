@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Quick Start - Leaflet</title>
+
+  <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-simple-map-screenshoter"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    .leaflet-container {
+      height: 400px;
+      width: 600px;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    #map-container {
+      display: flex; /* Use flexbox to align map and button */
+      align-items: center; /* Vertically align items in the center */
+    }
+    #map {
+      flex-grow: 1; /* Allow map to take up remaining space */
+      width: 1000px;
+      height: 750px;
+    }
+    #button-container {
+      margin-left: 10px; /* Add some space between the map and the button */
+    }
+  </style>
+
+
+</head>
+<body>
+
+<div id="map-container">
+  <div id="map"></div>
+  <div id="button-container">
+    <button id="screenMap">Take and download screen</button>
+  </div>
+</div>
+
+<script>
+
+  const map = L.map('map').setView([49, 8], 13);
+
+
+  const tiles = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
+        maxZoom: 20,
+        subdomains:['mt0','mt1','mt2','mt3']
+}).addTo(map);
+
+  const marker = L.marker([49.5, 8]).addTo(map)
+    .bindPopup('<b>Hello world!</b><br />I am a popup.').openPopup();
+
+  const circle = L.circle([49.508, 8.11], {
+    color: 'red',
+    fillColor: '#f03',
+    fillOpacity: 0.5,
+    radius: 500
+  }).addTo(map).bindPopup('I am a circle.');
+
+
+  function onMapClick(e) {
+    popup
+      .setLatLng(e.latlng)
+      .setContent(`You clicked the map at ${e.latlng.toString()}`)
+      .openOn(map);
+  }
+
+  map.on('click', onMapClick);
+
+  var simpleMapScreenshoter = L.simpleMapScreenshoter({
+    hidden : true
+  }).addTo(map)
+
+  document.getElementById('screenMap').addEventListener('click', () => {
+    document.getElementById('screenMap').addEventListener('click', function () {
+    simpleMapScreenshoter.takeScreen('image', {
+        caption: function () {
+            return 'Hello world';
+        }
+    }).then(image => { // 'image' here is the Data URL
+
+        // Function to convert Data URL to Blob
+        function dataURLtoBlob(dataurl) {
+            var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], { type: mime });
+        }
+
+        const imageBlob = dataURLtoBlob(image);
+        const formData = new FormData();
+        formData.append('file', imageBlob, 'screen.png');
+
+        fetch('http://127.0.0.1:5000/receive', {
+            method: 'POST',
+            body: formData
+        }).then(response => response.json())
+        .then(json => {
+            console.log(json);
+        });
+
+    }).catch(e => {
+        alert(e.toString());
+    });
+});
+                
+                
+                //window.location.href='geopixel';
+            })
+
+</script>
+
+</body>
+</html>

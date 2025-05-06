@@ -1,0 +1,3 @@
+[submodule "GeoPixel"]
+	path = GeoPixel
+	url = https://github.com/mbzuai-oryx/GeoPixel.git
