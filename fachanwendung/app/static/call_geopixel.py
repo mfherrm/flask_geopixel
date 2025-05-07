@@ -7,7 +7,8 @@ import random
 import argparse
 import numpy as np
 import transformers 
-
+import time
+start = time.time()
 # Get the absolute path to the directory containing 'fachanwendung's parent
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
@@ -28,7 +29,7 @@ if model_path not in sys.path:
     sys.path.append(model_path)
 
 # Now you can try to import from GeoPixel.chat
-from GeoPixel.chat import parse_args
+from GeoPixel.chat import parse_args, rgb_color_text
 from model.geopixel import GeoPixelForCausalLM
 
 def get_geopixel_result(args, objects):
@@ -73,19 +74,23 @@ def get_geopixel_result(args, objects):
     
     model = model.bfloat16().cuda().eval()
 
-
-    query = f"Please return segmentation masks of all {', '.join(objects)}"
-    print(os.path.join("./output.png"))
-    image_path = "./output.png"
+    query = f"Could you provide a segmentation mask for {', '.join(objects)} in this image?"
+    print(f"Could you provide a segmentation mask for {', '.join(objects)} in this image?")
+    image_path = "./satellite_image.jpg"
     if not os.path.exists(image_path):
         print("File not found in {}".format(image_path))
 
     image = [image_path]
 
+    print("Looking at ", image)
     with torch.autocast(device_type='cuda', dtype=torch.bfloat16):
-        response, pred_masks = model.evaluate(tokenizer, query, images = image, max_new_tokens = 300)
-    
+        response, pred_masks = model.evaluate(tokenizer, query, images = image, max_new_tokens = 150)
+    print("Passed autocast")
+    print("Response: ", response)
+    print("Pred_masks: ", pred_masks)
+
     if pred_masks and '[SEG]' in response:
+        
         pred_masks = pred_masks[0]
         pred_masks = pred_masks.detach().cpu().numpy()
         pred_masks = pred_masks > 0
@@ -129,4 +134,6 @@ def get_geopixel_result(args, objects):
     else:
         print(response.replace("\n", "").replace("  ", " "))
 
-get_geopixel_result([], ['bridges'])
+get_geopixel_result([], ['cars'])
+end = time.time()
+print("Elapsed time. ", end-start)

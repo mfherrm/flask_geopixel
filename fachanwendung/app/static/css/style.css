@@ -6,3 +6,41 @@ body {
 h1 {
     color: navy;
 }
+
+.no-white-bars {
+    /* Try adjusting these values */
+    width: calc(100% + 2px);
+    height: calc(100% + 2px);
+    opacity: 0.99;
+}
+html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .leaflet-container {
+            height: 400px;
+            width: 600px;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #map-container {
+            display: flex;
+            /* Use flexbox to align map and button */
+            align-items: center;
+            /* Vertically align items in the center */
+        }
+
+        #map {
+            flex-grow: 1;
+            /* Allow map to take up remaining space */
+            width: 1000px;
+            height: 750px;
+        }
+
+        #button-container {
+            margin-left: 10px;
+            /* Add some space between the map and the button */
+        }
