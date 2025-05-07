@@ -83,28 +83,26 @@
 
     var simpleMapScreenshoter = L.simpleMapScreenshoter({
       hidden: true
-    }).addTo(map)
+    }).addTo(map);
 
     document.getElementById('screenMap').addEventListener('click', () => {
-      document.getElementById('screenMap').addEventListener('click', function () {
-        simpleMapScreenshoter.takeScreen('blob').then(blob => {
-          const imageBlob = blob;
-          const formData = new FormData();
-          formData.append('file', imageBlob, 'screen.png');
+      simpleMapScreenshoter.takeScreen('blob').then(blob => {
+        const imageBlob = blob;
+        const formData = new FormData();
+        formData.append('file', imageBlob, 'screen.png');
 
-          fetch('http://127.0.0.1:5000/receive', {
-            method: 'POST',
-            body: formData
-          }).then(response => response.json())
-            .then(json => {
-              console.log(json);
-            });
+        fetch('http://127.0.0.1:5000/receive', {
+          method: 'POST',
+          body: formData
+        }).then(response => response.json())
+          .then(json => {
+            console.log(json);
+          });
 
-        }).catch(e => {
-          alert(e.toString());
-        });
+      }).catch(e => {
+        alert(e.toString());
       });
-    })
+    });
 
   </script>
 
