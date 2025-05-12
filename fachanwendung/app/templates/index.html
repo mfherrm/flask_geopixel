@@ -1,29 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <base target="_top">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <title>Leaflet proof of concept</title>
-
-    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+    <meta name="description" content="GeoPixel map application with screenshot capabilities">
+    <meta name="theme-color" content="#ffffff">
+    
+    <title>GeoPixel Map Application</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="../static/css/style.css" as="style">
+    <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style">
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="../static/css/style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://unpkg.com/leaflet-simple-map-screenshoter"></script>
-    <style>
-
-    </style>
-
-
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 </head>
-
 <body>
-
     <div id="map-container">
         <div id="map"></div>
         <div id="button-container">
@@ -31,8 +26,10 @@
         </div>
     </div>
 
-    <script src="../static/js/script.js"></script>
-
+    <!-- Scripts loaded at the end for better performance -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
+    <script src="https://unpkg.com/leaflet-simple-map-screenshoter" defer></script>
+    <script src="../static/js/script.js" defer></script>
 </body>
-
 </html>
