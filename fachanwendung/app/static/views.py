@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, current_app
 import os
 import sys 
 from werkzeug.utils import secure_filename
@@ -20,12 +20,17 @@ if not os.path.exists(IMAGE_FOLDER):
 
 @bp.after_request
 def add_cors_headers(response):
+    cadenza_uri = current_app.config.get('CADENZA_URI', '')
     response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Content-Security-Policy'] = "frame-ancestors 'self' http://localhost:8080/cadenza/; connect-src 'self' http://localhost:8080;"
     return response
 
 @bp.route('/')
 def index():
-    return render_template('index.html')
+    from flask import current_app
+    return render_template('index.html',
+                          cadenza_uri=current_app.config.get('CADENZA_URI'),
+                          config=current_app.config)
 
 @bp.route('/receive', methods=['post'])
 def receive_image():

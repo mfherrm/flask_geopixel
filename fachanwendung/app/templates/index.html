@@ -1,35 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <base target="_top">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="GeoPixel map application with screenshot capabilities">
     <meta name="theme-color" content="#ffffff">
-    
+    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' http://localhost:8080; connect-src 'self' http://localhost:8080">
+
     <title>GeoPixel Map Application</title>
-    
+
     <!-- Preload critical resources -->
     <link rel="preload" href="../static/css/style.css" as="style">
     <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style">
-    
+
     <!-- Stylesheets -->
     <link rel="stylesheet" href="../static/css/style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 </head>
-<body>
-    <div id="map-container">
-        <div id="map"></div>
+
+<body
+  data-cadenza-uri="{{ cadenza_uri }}"
+  data-cadenza-repository-name="{{ config.CADENZA_REPOSITORY_NAME }}"
+  data-cadenza-external-link-id="{{ config.CADENZA_EXTERNAL_LINK_ID }}">
+    <div id="cadenza-container">
+        <iframe id="cadenza-iframe" style="height: 150vh; width: 100%"></iframe>
         <div id="button-container">
             <button id="screenMap">Take and download screen</button>
         </div>
     </div>
 
     <!-- Scripts loaded at the end for better performance -->
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
-    <script src="https://unpkg.com/leaflet-simple-map-screenshoter" defer></script>
-    <script src="../static/js/script.js" defer></script>
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-simple-map-screenshoter"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}" type="module" defer></script>
+
 </body>
+
 </html>
