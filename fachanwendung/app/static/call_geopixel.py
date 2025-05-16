@@ -1,13 +1,19 @@
 import os
 import re
+import gc
 import sys
 import cv2
 import torch
 import random
 import argparse
 import numpy as np
-import transformers 
+import transformers
 import time
+
+torch.backends.cudnn.benchmark = True  # Optimize for fixed input sizes
+torch.backends.cuda.matmul.allow_tf32 = True  # Allow TF32 precision
+torch.backends.cudnn.allow_tf32 = True  # Allow TF32 precision
+
 start = time.time()
 # Get the absolute path to the directory containing 'fachanwendung's parent
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
@@ -33,243 +39,257 @@ from GeoPixel.chat import parse_args, rgb_color_text  # Make sure rgb_color_text
 from model.geopixel import GeoPixelForCausalLM
 
 def get_geopixel_result(args, objects):
-    args = parse_args(args)
-
-    os.makedirs(args.vis_save_path, exist_ok=True)
-
-    print(f'initialing tokenizer from: {args.version}')
-    tokenizer = transformers.AutoTokenizer.from_pretrained(
-        args.version,
-        cache_dir=None,
-        padding_side='right',
-        use_fast=False,
-        trust_remote_code=True,
-    )
-    tokenizer.pad_token = tokenizer.unk_token
-    seg_token_idx, bop_token_idx, eop_token_idx = [
-        tokenizer(token, add_special_tokens=False).input_ids[0] for token in ['[SEG]','<p>', '</p>']
-    ]
-   
-    kwargs = {"torch_dtype": torch.bfloat16}    
-    geo_model_args = {
-        "vision_pretrained": 'facebook/sam2-hiera-large',
-        "seg_token_idx" : seg_token_idx, # segmentation token index
-        "bop_token_idx" : bop_token_idx, # begining of phrase token index
-        "eop_token_idx" : eop_token_idx  # end of phrase token index
-    }
+    start = time.time()
     
-    # Load model 
-    print(f'Load model from: {args.version}')
-    model = GeoPixelForCausalLM.from_pretrained(
-        args.version, 
-        low_cpu_mem_usage=True, 
-        **kwargs,
-        **geo_model_args
-    )
+    try:
 
-    model.config.eos_token_id = tokenizer.eos_token_id
-    model.config.bos_token_id = tokenizer.bos_token_id
-    model.config.pad_token_id = tokenizer.pad_token_id
-    model.tokenizer = tokenizer
-    
-    model = model.bfloat16().cuda().eval()
+        # Parse arguments
+        try:
+            args = parse_args(args)
+            print(f"Arguments parsed successfully: {args}")
+        except Exception as e:
+            print(f"Error parsing arguments: {str(e)}")
+            raise
 
-    query = f"Please return segmentation masks of all {', '.join(objects)}"
-    print(f"Query: {query}")
-    #image_path = "./satellite_image.jpg"
-    image_path = "./example1-RES.jpg"
-    if not os.path.exists(image_path):
-        print("File not found in {}".format(image_path))
+        # Create output directory
+        try:
+            os.makedirs(args.vis_save_path, exist_ok=True)
+            print(f"Output directory created: {args.vis_save_path}")
+        except Exception as e:
+            print(f"Error creating output directory: {str(e)}")
+            raise
 
-    image = [image_path]
+        # Initialize tokenizer
+        print(f'Initializing tokenizer from: {args.version}')
+        try:
+            tokenizer = transformers.AutoTokenizer.from_pretrained(
+                args.version,
+                cache_dir=None,
+                padding_side='right',
+                use_fast=False,
+                trust_remote_code=True,
+            )
+            tokenizer.pad_token = tokenizer.unk_token
+            print("Tokenizer initialized successfully")
+        except Exception as e:
+            print(f"Error initializing tokenizer: {str(e)}")
+            raise
 
-    print("Looking at ", image)
-    # Try with decreasing max_new_tokens values if we encounter sentencepiece errors
-    max_tokens = 75 # Start with a higher value
-    min_tokens = 5    # Minimum tokens to try
-    decrement_step = 10  # Reduce by larger steps initially
-    success = False
-    evals = time.time()
-    
-    # Keep track of attempted values to avoid infinite loops
-    attempted_values = set()
+        # Get special token indices
+        try:
+            seg_token_idx, bop_token_idx, eop_token_idx = [
+                tokenizer(token, add_special_tokens=False).input_ids[0] for token in ['[SEG]','<p>', '</p>']
+            ]
+            print(f"Special token indices: SEG={seg_token_idx}, BOP={bop_token_idx}, EOP={eop_token_idx}")
+        except Exception as e:
+            print(f"Error getting special token indices: {str(e)}")
+            raise
+       
+        # Prepare model arguments
+        kwargs = {"torch_dtype": torch.bfloat16}
+        geo_model_args = {
+            "vision_pretrained": 'facebook/sam2-hiera-large',
+            "seg_token_idx" : seg_token_idx, # segmentation token index
+            "bop_token_idx" : bop_token_idx, # begining of phrase token index
+            "eop_token_idx" : eop_token_idx  # end of phrase token index
+        }
+        print(f"Model arguments prepared: {geo_model_args}")
 
-    while not success and max_tokens >= min_tokens:
-        print(f"Failed with {max_tokens} tokens")
-        # Skip if we've already tried this value
-        if max_tokens in attempted_values:
-            max_tokens -= 5
-            continue
+        # Clear memory
+        print("Clearing GPU memory...")
+        torch.cuda.empty_cache()
+        gc.collect()
+        
+        # Load model
+        print(f'Loading model from: {args.version}')
+        
+        # Load the model without quantization to avoid PIL.ImageFont deepcopy issues
+        try:
+            print("Loading model with the following parameters:")
+            print(f"  - Model version: {args.version}")
+            print(f"  - Low CPU memory usage: True")
+            print(f"  - Device map: None (disabled to avoid meta tensor issues)")
+            print(f"  - Using quantization: None (disabled to avoid PIL.ImageFont issues)")
+            print(f"  - Using flash attention: True")
             
-        attempted_values.add(max_tokens)
+            model = GeoPixelForCausalLM.from_pretrained(
+                args.version,
+                low_cpu_mem_usage=True,
+                **kwargs,
+                **geo_model_args,
+                attn_implementation="flash_attention_2"
+            )
+            
+            # Move model to GPU manually
+            model = model.to("cuda")
+            print("Model loaded successfully")
+        except Exception as e:
+            print(f"Error loading model: {str(e)}")
+            raise
+        
+        # Set model configuration
+        try:
+            model.config.eos_token_id = tokenizer.eos_token_id
+            model.config.bos_token_id = tokenizer.bos_token_id
+            model.config.pad_token_id = tokenizer.pad_token_id
+            model.tokenizer = tokenizer
+            print("Model configuration set")
+        except Exception as e:
+            print(f"Error setting model configuration: {str(e)}")
+            raise
+        
+        # Set model to eval mode
+        model.eval()
+        print("Model set to evaluation mode")
+        
+        # Apply additional optimizations if available
+        if hasattr(torch, 'compile'):
+            try:
+                print("Compiling model with torch.compile()...")
+                model = torch.compile(model, mode="reduce-overhead")
+                print("Model compilation successful")
+            except Exception as e:
+                print(f"Model compilation failed: {str(e)}")
         
         try:
-            print(f"Attempting with {max_tokens} tokens")
-            # Reset CUDA cache before each attempt
-            torch.cuda.empty_cache()
-            
-            with torch.autocast(device_type='cuda', dtype=torch.bfloat16):
-                response, pred_masks = model.evaluate(tokenizer, query, images = image, max_new_tokens = max_tokens)
-            success = True
-            print(f"Success with max_new_tokens = {max_tokens}")
+            model.gradient_checkpointing_enable()
+            print("Gradient checkpointing enabled")
         except Exception as e:
-            error_msg = str(e)
-            error_type = type(e).__name__
-            
-            # Log detailed error information
-            print(f"Encountered error: {error_type}: {error_msg}")
-            
-            # Check for known error patterns
-            known_error_patterns = [
-                "piece id is out of range",  # Exact SentencePiece error
-                "piece_id out of range",     # Alternative SentencePiece error format
-                "CUDA out of memory",        # GPU memory error
-                "index out of range",        # Common indexing error
-                "Expected tensor",           # Type error in model
-                "dimension out of range"     # Shape mismatch
-            ]
-            
-            is_known_error = any(pattern in error_msg for pattern in known_error_patterns)
-            
-            if is_known_error or isinstance(e, (RuntimeError, IndexError, ValueError, TypeError)):
-                print(f"Recognized error pattern, reducing max_tokens and retrying...")
-                
-                # Use adaptive reduction strategy
-                if max_tokens > 100:
-                    # Larger decrements for higher values
-                    max_tokens -= decrement_step
-                else:
-                    # Switch to smaller decrements when getting closer to working values
-                    max_tokens -= 5
-                
-                print(f"Reducing max_tokens to {max_tokens}")
-                
-                # If we're getting close to known working values, reduce step size
-                if max_tokens <= 110 and decrement_step > 1:
-                    decrement_step = 1
-                    print("Switching to fine-grained decrements")
-                
-                # Force garbage collection and clear GPU memory
-                import gc
-                gc.collect()
-                torch.cuda.empty_cache()
-                
-                # If we're still having issues at very low token counts, try a known working value
-                if max_tokens < 50 and 100 not in attempted_values:
-                    print("Trying known working value: max_tokens=100")
-                    max_tokens = 100
-            else:
-                # If it's a different error that we don't know how to handle, re-raise it
-                print(f"Encountered unexpected error type: {error_type}")
-                import traceback
-                print(f"Traceback: {traceback.format_exc()}")
-                raise
-    
-    # If we couldn't succeed even with minimum tokens, provide a more helpful error message
-    if not success:
-        error_message = (
-            f"Failed to generate response even with minimum tokens ({min_tokens}).\n"
-            f"This is likely due to a tokenizer vocabulary mismatch with the model.\n"
-            f"Possible solutions:\n"
-            f"1. Try setting max_tokens=100 directly (known working value)\n"
-            f"2. Check model and tokenizer compatibility\n"
-            f"3. Update the model or tokenizer versions to ensure they match\n"
-            f"4. Increase GPU memory if available to handle larger context windows"
-        )
-        print(error_message)
-        raise RuntimeError(error_message)
+            print(f"Gradient checkpointing not supported: {str(e)}")
 
-    evale = time.time()
-    print("Evaluation finished after", evale-evals)
+        # Prepare query and image
+        try:
+            query = f"Please return segmentation masks of all {', '.join(objects)}"
+            print(f"Query: {query}")
+            
+            image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "images", "example1-RES.jpg"))
+            print(f"Image path: {image_path}")
+            
+            if not os.path.exists(image_path):
+                print(f"Error: File not found at {image_path}")
+                # Try to list files in the directory to help debugging
+                try:
+                    image_dir = os.path.dirname(image_path)
+                    if os.path.exists(image_dir):
+                        print(f"Files in {image_dir}:")
+                        for file in os.listdir(image_dir):
+                            print(f"  - {file}")
+                    else:
+                        print(f"Directory {image_dir} does not exist")
+                except Exception as e:
+                    print(f"Error listing directory: {str(e)}")
+                raise FileNotFoundError(f"Image file not found: {image_path}")
 
+            image = [image_path]
+            print("Image prepared for processing")
+        except Exception as e:
+            print(f"Error preparing query and image: {str(e)}")
+            raise
+
+        # Run inference
+        print("Running inference...")
+        try:
+            # Use CUDA streams and mixed precision for optimal performance
+            cuda_stream = torch.cuda.Stream()
+            with torch.cuda.stream(cuda_stream):
+                with torch.autocast(device_type='cuda', dtype=torch.bfloat16):
+                    with torch.no_grad():
+                        response, pred_masks = model.evaluate(tokenizer, query, images=image, max_new_tokens=300)
+            cuda_stream.synchronize()
+            print("Inference completed successfully")
+        except Exception as e:
+            print(f"Error during inference: {str(e)}")
+            raise
+            
+    except Exception as e:
+        print(f"ERROR: An error occurred during model execution: {str(e)}")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error details: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+    # Process results if we have valid masks
     try:
-        # First check if we have a valid response
-        if not response or not isinstance(response, str):
-            print(f"Warning: Received invalid response type: {type(response)}")
-            print(f"Response content: {response}")
-            
-        # Then check if we have segmentation masks
-        if pred_masks and '[SEG]' in response:
-            print("Found segmentation masks in response")
-            
-            # Validate pred_masks structure
-            if not isinstance(pred_masks, list) or len(pred_masks) == 0:
-                print(f"Warning: pred_masks has unexpected structure: {type(pred_masks)}")
-                print(f"pred_masks content: {pred_masks}")
-            else:
+        if pred_masks is not None and '[SEG]' in response:
+            try:
                 pred_masks = pred_masks[0]
                 pred_masks = pred_masks.detach().cpu().numpy()
                 pred_masks = pred_masks > 0
+                print(f"Masks processed: shape={pred_masks.shape}")
                 
-                # Validate image loading
-                image_np = cv2.imread(image_path)
-                if image_np is None:
-                    print(f"Error: Could not read image from {image_path}")
-                    print(f"Current working directory: {os.getcwd()}")
-                    print(f"Does file exist? {os.path.exists(image_path)}")
-                else:
+                try:
+                    image_np = cv2.imread(image_path)
+                    if image_np is None:
+                        print(f"Warning: cv2.imread returned None for {image_path}")
                     image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
+                    print("Image loaded and converted to RGB")
                     
                     save_img = image_np.copy()
                     pattern = r'<p>(.*?)</p>\s*\[SEG\]'
                     matched_text = re.findall(pattern, response)
                     phrases = [text.strip() for text in matched_text]
-                    
-                    print(f"Found {len(phrases)} phrases and {pred_masks.shape[0]} masks")
+                    print(f"Found {len(phrases)} text phrases to match with masks")
 
-                for i in range(pred_masks.shape[0]):
-                    mask = pred_masks[i]
-                    
-                    color = [random.randint(0, 255) for _ in range(3)]
-                    if matched_text and i < len(phrases):
-                        phrases[i] = rgb_color_text(phrases[i], color[0], color[1], color[2])
-                    mask_rgb = np.stack([mask, mask, mask], axis=-1)
-                    color_mask = np.array(color, dtype=np.uint8) * mask_rgb
+                    for i in range(pred_masks.shape[0]):
+                        mask = pred_masks[i]
+                        
+                        color = [random.randint(0, 255) for _ in range(3)]
+                        if matched_text and i < len(phrases):
+                            phrases[i] = rgb_color_text(phrases[i], color[0], color[1], color[2])
+                        mask_rgb = np.stack([mask, mask, mask], axis=-1)
+                        color_mask = np.array(color, dtype=np.uint8) * mask_rgb
 
-                    save_img = np.where(mask_rgb,
-                            (save_img * 0.5 + color_mask * 0.5).astype(np.uint8),
-                            save_img)
-                
-                if matched_text:
-                    split_desc = response.split('[SEG]')
-                    cleaned_segments = [re.sub(r'<p>(.*?)</p>', '', part).strip() for part in split_desc]
-                    reconstructed_desc = ""
-                    for i, part in enumerate(cleaned_segments):
-                        reconstructed_desc += part + ' '
-                        if i < len(phrases):
-                            reconstructed_desc += phrases[i] + ' '
-                    print(reconstructed_desc)
-                else:
-                    print(response.replace("\n", "").replace("  ", " "))
-                
-                save_img = cv2.cvtColor(save_img, cv2.COLOR_RGB2BGR)
-                save_path = "{}/{}_masked.jpg".format(
-                    args.vis_save_path, image_path.split("/")[-1].split(".")[0]
-                    )
-                cv2.imwrite(save_path, save_img)
-                print("{} has been saved.".format(save_path))
+                        save_img = np.where(mask_rgb,
+                                (save_img * 0.5 + color_mask * 0.5).astype(np.uint8),
+                                save_img)
+                    
+                    if matched_text:
+                        split_desc = response.split('[SEG]')
+                        cleaned_segments = [re.sub(r'<p>(.*?)</p>', '', part).strip() for part in split_desc]
+                        reconstructed_desc = ""
+                        for i, part in enumerate(cleaned_segments):
+                            reconstructed_desc += part + ' '
+                            if i < len(phrases):
+                                reconstructed_desc += phrases[i] + ' '
+                        print(reconstructed_desc)
+                    else:
+                        print(response.replace("\n", "").replace("  ", " "))
+                    
+                    save_img = cv2.cvtColor(save_img, cv2.COLOR_RGB2BGR)
+                    save_path = "{}/{}_masked.jpg".format(
+                        args.vis_save_path, image_path.split("/")[-1].split(".")[0]
+                        )
+                    cv2.imwrite(save_path, save_img)
+                    print("{} has been saved.".format(save_path))
+                except Exception as e:
+                    print(f"Error processing image: {str(e)}")
+            except Exception as e:
+                print(f"Error processing masks: {str(e)}")
         else:
-            print("No segmentation masks found in response")
+            if pred_masks is None:
+                print("No masks were generated")
+            else:
+                print("No segmentation tokens found in response")
             print(response.replace("\n", "").replace("  ", " "))
     except Exception as e:
-        print(f"Error processing response: {str(e)}")
-        print(f"Error type: {type(e).__name__}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
-        print(f"Response: {response[:200]}..." if isinstance(response, str) and len(response) > 200 else f"Response: {response}")
-        
-        # Detailed diagnostics for pred_masks
-        if pred_masks is not None:
-            print(f"pred_masks type: {type(pred_masks)}")
-            if isinstance(pred_masks, list):
-                print(f"pred_masks length: {len(pred_masks)}")
-                if len(pred_masks) > 0:
-                    print(f"pred_masks[0] type: {type(pred_masks[0])}")
-                    if hasattr(pred_masks[0], 'shape'):
-                        print(f"pred_masks[0] shape: {pred_masks[0].shape}")
-            elif hasattr(pred_masks, 'shape'):
-                print(f"pred_masks shape: {pred_masks.shape}")
+        print(f"Error in post-processing: {str(e)}")
 
-get_geopixel_result([], ['red cars'])
-end = time.time()
-print("Elapsed time. ", end-start)
+    # Clean up
+    try:
+        torch.cuda.empty_cache()
+        gc.collect()
+        print("Memory cleaned up")
+    except Exception as e:
+        print(f"Error during cleanup: {str(e)}")
+
+    # Calculate runtime
+    end = time.time()
+    runtime = end-start
+    print(f"Finished in {runtime} seconds.")
+
+    return pred_masks
+
+masks = get_geopixel_result(["--version=MBZUAI/GeoPixel-7B-RES"], ['red cars'])
+
+print(masks)

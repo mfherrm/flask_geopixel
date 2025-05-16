@@ -1,136 +1,156 @@
 import os
-import re
 import sys
-import cv2
+import time
 import torch
-import random
 import argparse
-import numpy as np
-import transformers 
-import PIL
-import torchvision as tv
+import gc
+from call_geopixel import get_geopixel_result
+from font_patch import apply_patch, remove_patch
 
-# Get the absolute path to the directory containing 'fachanwendung's parent
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-
-# Add the project root to the Python path if it's not already there
-if project_root not in sys.path:
-    sys.path.append(project_root)
-
-geopixel_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'GeoPixel'))
-
-# Add the GeoPixel directory to the Python path if it's not already there
-if geopixel_path not in sys.path:
-    sys.path.append(geopixel_path)
-
-model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '...', '...', '...', 'GeoPixel', 'model'))
-
-# Add the GeoPixel directory to the Python path if it's not already there
-if model_path not in sys.path:
-    sys.path.append(model_path)
-
-# Now you can try to import from GeoPixel.chat
-from GeoPixel.chat import parse_args
-from model.geopixel import GeoPixelForCausalLM
-
-args = []
-objects = "bridges"
-args = parse_args(args)
-
-os.makedirs(args.vis_save_path, exist_ok=True)
-
-print(f'initialing tokenizer from: {args.version}')
-tokenizer = transformers.AutoTokenizer.from_pretrained(
-    args.version,
-    cache_dir=None,
-    padding_side='right',
-    use_fast=False,
-    trust_remote_code=True,
-)
-tokenizer.pad_token = tokenizer.unk_token
-seg_token_idx, bop_token_idx, eop_token_idx = [
-    tokenizer(token, add_special_tokens=False).input_ids[0] for token in ['[SEG]','<p>', '</p>']
-]
-
-kwargs = {"torch_dtype": torch.bfloat16}    
-geo_model_args = {
-    "vision_pretrained": 'facebook/sam2-hiera-large',
-    "seg_token_idx" : seg_token_idx, # segmentation token index
-    "bop_token_idx" : bop_token_idx, # begining of phrase token index
-    "eop_token_idx" : eop_token_idx  # end of phrase token index
-}
-
-# Load model 
-print(f'Load model from: {args.version}')
-model = GeoPixelForCausalLM.from_pretrained(
-    args.version, 
-    low_cpu_mem_usage=False, 
-    **kwargs,
-    **geo_model_args
-)
-
-model.config.eos_token_id = tokenizer.eos_token_id
-model.config.bos_token_id = tokenizer.bos_token_id
-model.config.pad_token_id = tokenizer.pad_token_id
-model.tokenizer = tokenizer
-
-model = model.bfloat16().cuda().eval()
-
-
-query = f"Please return segmentation masks of all {', '.join(objects)}"
-print(os.path.join("./satellite_image.jpg"))
-image_path = "./satellite_image.jpg"
-if not os.path.exists(image_path):
-    print("File not found in {}".format(image_path))
-
-image = [image_path]
-
-with torch.autocast(device_type='cuda', dtype=torch.bfloat16):
-    response, pred_masks = model.evaluate(tokenizer, query, images = image, max_new_tokens = 3)
-
-print("passed autocast")
-
-if pred_masks and '[SEG]' in response:
-    pred_masks = pred_masks[0]
-    pred_masks = pred_masks.detach().cpu().numpy()
-    pred_masks = pred_masks > 0
-    image_np = cv2.imread(image_path)
-    image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
+def check_image_exists(image_path):
+    """
+    Check if the image exists and print helpful information if it doesn't.
     
-    save_img = image_np.copy()
-    pattern = r'<p>(.*?)</p>\s*\[SEG\]'
-    matched_text = re.findall(pattern, response)
-    phrases = [text.strip() for text in matched_text]
-
-    for i in range(pred_masks.shape[0]):
-        mask = pred_masks[i]
+    Args:
+        image_path (str): Path to the image file
         
-        color = [random.randint(0, 255) for _ in range(3)]
-        if matched_text:
-            phrases[i] = rgb_color_text(phrases[i], color[0], color[1], color[2])
-        mask_rgb = np.stack([mask, mask, mask], axis=-1) 
-        color_mask = np.array(color, dtype=np.uint8) * mask_rgb
-
-        save_img = np.where(mask_rgb, 
-                (save_img * 0.5 + color_mask * 0.5).astype(np.uint8), 
-                save_img)
-        
-if matched_text:    
-    split_desc = response.split('[SEG]')
-    cleaned_segments = [re.sub(r'<p>(.*?)</p>', '', part).strip() for part in split_desc]
-    reconstructed_desc = ""
-    for i, part in enumerate(cleaned_segments):
-        reconstructed_desc += part + ' '
-        if i < len(phrases):
-            reconstructed_desc += phrases[i] + ' '    
-            print(reconstructed_desc)
+    Returns:
+        bool: True if the image exists, False otherwise
+    """
+    if os.path.exists(image_path):
+        print(f"Image found: {image_path}")
+        return True
+    
+    print(f"ERROR: Image not found at {image_path}")
+    
+    # Try to list files in the directory to help debugging
+    try:
+        image_dir = os.path.dirname(image_path)
+        if os.path.exists(image_dir):
+            print(f"Files in {image_dir}:")
+            for file in os.listdir(image_dir):
+                print(f"  - {file}")
         else:
-            print(response.replace("\n", "").replace("  ", " "))
-    save_img = cv2.cvtColor(save_img, cv2.COLOR_RGB2BGR)
-    save_path = "{}/{}_masked.jpg".format(
-        args.vis_save_path, image_path.split("/")[-1].split(".")[0]
-        )
-    cv2.imwrite(save_path, save_img)
-    print("{} has been saved.".format(save_path))
-else:
-    print(response.replace("\n", "").replace("  ", " "))
+            print(f"Directory {image_dir} does not exist")
+            
+            # Try to create the directory
+            try:
+                os.makedirs(image_dir, exist_ok=True)
+                print(f"Created directory: {image_dir}")
+            except Exception as e:
+                print(f"Failed to create directory: {str(e)}")
+    except Exception as e:
+        print(f"Error listing directory: {str(e)}")
+    
+    return False
+
+def run_test(model_version, objects):
+    """
+    Run a test of the GeoPixel model with optimizations.
+    
+    Args:
+        model_version (str): The model version to use
+        objects (list): List of objects to detect
+    """
+    print(f"\n===== Testing GeoPixel with optimizations =====\n")
+    
+    try:
+        # Record start time
+        start_time = time.time()
+        
+        # Get the image path
+        image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "images", "example1-RES.jpg"))
+        print(f"Image path: {image_path}")
+        
+        # Check if the image exists
+        if not check_image_exists(image_path):
+            print("Cannot proceed without the image file")
+            return None, 0, 0
+        
+        # Get GPU memory usage before running
+        memory_before = 0
+        if torch.cuda.is_available():
+            try:
+                torch.cuda.synchronize()
+                memory_before = torch.cuda.memory_allocated() / (1024 ** 3)  # Convert to GB
+                print(f"GPU Memory Usage Before: {memory_before:.2f} GB")
+            except Exception as e:
+                print(f"Error getting GPU memory usage: {str(e)}")
+        else:
+            print("CUDA is not available. Running on CPU.")
+        
+        # Run the model
+        print(f"\nRunning model with objects: {', '.join(objects)}")
+        args = [f"--version={model_version}"]
+        masks = get_geopixel_result(args, objects)
+        
+        if masks is None:
+            print("WARNING: Model returned None for masks")
+        
+        # Get GPU memory usage after running
+        memory_after = 0
+        if torch.cuda.is_available():
+            try:
+                torch.cuda.synchronize()
+                memory_after = torch.cuda.memory_allocated() / (1024 ** 3)  # Convert to GB
+                print(f"GPU Memory Usage After: {memory_after:.2f} GB")
+                print(f"Memory Change: {memory_after - memory_before:.2f} GB")
+            except Exception as e:
+                print(f"Error getting GPU memory usage: {str(e)}")
+        
+        # Record end time and calculate duration
+        end_time = time.time()
+        duration = end_time - start_time
+        
+        print(f"\nTotal execution time: {duration:.2f} seconds")
+        print(f"Test completed with optimizations")
+        
+        return duration, memory_before, memory_after
+    
+    except Exception as e:
+        print(f"ERROR: Test failed with exception: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None, 0, 0
+
+def main():
+    try:
+        parser = argparse.ArgumentParser(description="Test GeoPixel with optimizations")
+        parser.add_argument("--model", default="MBZUAI/GeoPixel-7B-RES", help="Model version to use")
+        parser.add_argument("--objects", default="red cars", help="Objects to detect (comma-separated)")
+        parser.add_argument("--debug", action="store_true", help="Enable debug mode with extra logging")
+        args = parser.parse_args()
+        
+        if args.debug:
+            print("Debug mode enabled")
+            print(f"Python version: {sys.version}")
+            print(f"PyTorch version: {torch.__version__}")
+            if torch.cuda.is_available():
+                print(f"CUDA version: {torch.version.cuda}")
+                print(f"GPU: {torch.cuda.get_device_name(0)}")
+        
+        objects = [obj.strip() for obj in args.objects.split(",")]
+        
+        # Clear memory before starting
+        print("Clearing memory before starting...")
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
+        # Run the test
+        result = run_test(args.model, objects)
+        
+        if result[0] is None:
+            print("\nTest failed to complete successfully")
+            sys.exit(1)
+        else:
+            print("\nTest completed successfully")
+    
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
