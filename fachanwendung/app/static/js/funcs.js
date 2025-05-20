@@ -1,38 +1,157 @@
+import { cadenza } from './cadenza2.2.4.js';
 document.getElementById('screenMap').addEventListener('click', () => {
     let mbs = document.getElementById("cadenza-iframe").src.split("mapExtent=")[1].split("%2C")
     mbs[3] = mbs[3].split("&")[0]
     console.log("Map bounds: \n \t NW: ", mbs[0], mbs[1], "\n \t SE: ", mbs[2], mbs[3])
+    var mapBounds = [[mbs[0], mbs[1]], [mbs[2], mbs[3]]]
 
-    simpleMapScreenshoter.takeScreen('blob').then(blob => {
-        const imageBlob = blob;
-        const mapExtent = map.getBounds();
+    const formData = new FormData();
+    formData.append('mapExtent', JSON.stringify(mapBounds));
 
-        const formData = new FormData();
-        formData.append('file', imageBlob, 'screen.png');
-        formData.append('mapExtent', JSON.stringify(mapExtent));
-        console.log(document.getElementById('cadenza-iframe'))//.getAttribute('NamedNodeMap'))
-        console.log(formData);
-        fetch('http://127.0.0.1:5000/receive', {
-            method: 'POST',
-            body: formData
-        }).then(response => response.json())
-            .then(data => {
-                console.log(data);
-                if (data.message === 'Image received and saved successfully' && data.image_url && data.mapExtent) {
-                    const imageUrl = data.image_url + '?' + Date.now(); // Add cache-busting parameter
-                    const southWest = L.latLng(data.mapExtent._southWest.lat, data.mapExtent._southWest.lng);
-                    const northEast = L.latLng(data.mapExtent._northEast.lat, data.mapExtent._northEast.lng);
-                    const bounds = L.latLngBounds(southWest, northEast);
+    fetch('http://127.0.0.1:5000/receive', {
+        method: 'POST',
+        body: formData
+    }).then(response => response.json())
+        .then(data => {
+            console.log(data);
 
-                    // Simply add the new image overlay
-                    L.imageOverlay(imageUrl, bounds, { className: 'no-white-bars' }).addTo(map);
+            console.log()
+            if (data.message === 'Successfully retrieved outline' && data.outline) {
+                console.log(mapBounds)
 
-                } else if (data.error) {
-                    alert(`Error: ${data.error}`);
+                console.log(data.imageDims)
+
+                console.log(data.outline)
+
+                var mapCoords = imageCoordsToMapCoords(mapBounds, data.outline, data.imageDims)
+
+                // Ensure polygon is closed
+                if (JSON.stringify(mapCoords[0]) !== JSON.stringify(mapCoords[mapCoords.length - 1])) {
+                    mapCoords.push([...mapCoords[0]]);
                 }
-            });
 
-    }).catch(e => {
-        alert(e.toString());
-    });
+                // Check if polygon follows right-hand rule (counterclockwise orientation)
+                const isClockwise = isPolygonClockwise(mapCoords);
+                
+                // If clockwise, reverse the coordinates to follow right-hand rule
+                if (isClockwise) {
+                    console.log("Polygon is clockwise, reversing to follow right-hand rule");
+                    mapCoords.reverse();
+                } else {
+                    console.log("Polygon already follows right-hand rule (counterclockwise)");
+                }
+                
+                var polygon = {
+                    "type": "Polygon",
+                    "coordinates": [mapCoords],
+                }
+                console.log(polygon)
+                
+                if (polygon) {
+                    try {
+                        cadenzaClient.editGeometry('messstellenkarte', polygon, { useMapSrs: false }
+                        );
+
+                        cadenzaClient.on('editGeometry:update', (event) => {
+                            console.log('Geometry was updated', event.detail.geometry);
+                        });
+                        cadenzaClient.on('editGeometry:ok', (event) => {
+                            console.log('Geometry editing was completed', event.detail.geometry);
+                        });
+                        cadenzaClient.on('editGeometry:cancel', (event) => {
+                            console.log('Geometry editing was cancelled');
+                        });
+                        console.log("Added Polygon")
+                    } catch (error) {
+                        console.log(error)
+                    }
+                } else {
+                    console.log("No Polygon")
+                    cadenzaClient.createGeometry('messstellenkarte', 'Polygon');
+                };
+
+
+
+            } else if (data.error) {
+                alert(`Error: ${data.error}`);
+            }
+        }).catch(e => {
+            alert(e.toString());
+        });
+
 });
+
+function imageCoordsToMapCoords(mapExtent, imageCoords, imageDims) {
+    // Parse all input values to ensure they're numbers
+    const NW = [parseFloat(mapExtent[0][0]), parseFloat(mapExtent[0][1])];
+    const SE = [parseFloat(mapExtent[1][0]), parseFloat(mapExtent[1][1])];
+    const width = parseFloat(imageDims[0]);
+    const height = parseFloat(imageDims[1]);
+
+    // Calculate scaling factors
+    const pixelCoordX = (SE[0] - NW[0]) / width;
+    const pixelCoordY = (NW[1] - SE[1]) / height;
+
+    // console.log(imageCoords)
+
+    console.log("NW:", NW, "SE:", SE);
+    console.log("Image dimensions:", width, "x", height);
+    console.log("Pixel scaling factors:", pixelCoordX, pixelCoordY);
+
+    // Create a new array to avoid modifying the input
+    const result = [];
+    const firstCoord = []
+
+    // Process each coordinate pair and add to result array
+    for (let i = 0; i < imageCoords.length; i++) {
+        const coord = imageCoords[i];
+
+        // Ensure coord is an array with two numeric values
+        if (Array.isArray(coord)) {
+            const x = parseFloat(coord[0][0]);
+            const y = parseFloat(coord[0][1]);
+
+            // Create a new coordinate pair with proper calculations
+            const mapCoord = [
+                NW[0] + x * pixelCoordX,
+                NW[1] + y * pixelCoordY
+            ];
+
+            result.push(mapCoord);
+
+            if (i == 0) {
+                firstCoord.push(mapCoord)
+            }
+        } else {
+            console.error("Invalid coordinate at index", i, ":", coord);
+        }
+    }
+    result.push(firstCoord[0])
+
+    return result;
+};
+
+/**
+ * Determines if a polygon is in clockwise order.
+ * For the right-hand rule, exterior rings should be counterclockwise.
+ *
+ * @param {Array} coords - Array of coordinate pairs [x, y]
+ * @returns {boolean} - True if clockwise, false if counterclockwise
+ */
+function isPolygonClockwise(coords) {
+    // Implementation of the Shoelace formula (also known as the surveyor's formula)
+    // to calculate the signed area of the polygon
+    let area = 0;
+    
+    // Need at least 3 points to form a polygon
+    if (coords.length < 3) {
+        return false;
+    }
+    
+    for (let i = 0; i < coords.length - 1; i++) {
+        area += (coords[i+1][0] - coords[i][0]) * (coords[i+1][1] + coords[i][1]);
+    }
+    
+    // If the signed area is positive, the polygon is clockwise
+    return area > 0;
+}

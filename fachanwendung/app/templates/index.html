@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="GeoPixel map application with screenshot capabilities">
     <meta name="theme-color" content="#ffffff">
-    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' http://localhost:8080; connect-src 'self' http://localhost:8080">
+    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000">
 
     <title>GeoPixel Map Application</title>
 
@@ -26,9 +26,9 @@
   data-cadenza-repository-name="{{ config.CADENZA_REPOSITORY_NAME }}"
   data-cadenza-external-link-id="{{ config.CADENZA_EXTERNAL_LINK_ID }}">
     <div id="cadenza-container">
-        <iframe id="cadenza-iframe" style="height: 150vh; width: 100%"></iframe>
+        <iframe id="cadenza-iframe" style="height: 95vh; width: 100%"></iframe>
         <div id="button-container">
-            <button id="screenMap">Take and download screen</button>
+            <button id="screenMap">Call GeoPixel</button>
         </div>
     </div>
 

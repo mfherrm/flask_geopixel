@@ -36,7 +36,7 @@ if model_path not in sys.path:
 
 # Now you can try to import from GeoPixel.chat
 from GeoPixel.chat import parse_args, rgb_color_text  # Make sure rgb_color_text is imported
-from model.geopixel import GeoPixelForCausalLM
+from model.geopixel import GeoPixelForCausalLM # type: ignore
 
 def get_geopixel_result(args, objects):
     start = time.time()
@@ -289,7 +289,3 @@ def get_geopixel_result(args, objects):
     print(f"Finished in {runtime} seconds.")
 
     return pred_masks
-
-masks = get_geopixel_result(["--version=MBZUAI/GeoPixel-7B-RES"], ['red cars'])
-
-print(masks)

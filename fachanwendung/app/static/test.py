@@ -5,7 +5,6 @@ import torch
 import argparse
 import gc
 from call_geopixel import get_geopixel_result
-from font_patch import apply_patch, remove_patch
 
 def check_image_exists(image_path):
     """
