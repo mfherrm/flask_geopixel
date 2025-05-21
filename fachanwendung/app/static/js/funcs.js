@@ -32,7 +32,7 @@ document.getElementById('screenMap').addEventListener('click', () => {
 
                 // Check if polygon follows right-hand rule (counterclockwise orientation)
                 const isClockwise = isPolygonClockwise(mapCoords);
-                
+
                 // If clockwise, reverse the coordinates to follow right-hand rule
                 if (isClockwise) {
                     console.log("Polygon is clockwise, reversing to follow right-hand rule");
@@ -40,44 +40,52 @@ document.getElementById('screenMap').addEventListener('click', () => {
                 } else {
                     console.log("Polygon already follows right-hand rule (counterclockwise)");
                 }
-                
+
                 var polygon = {
                     "type": "Polygon",
                     "coordinates": [mapCoords],
                 }
                 console.log(polygon)
-                
+
                 if (polygon) {
                     try {
-                        cadenzaClient.editGeometry('messstellenkarte', polygon, {useMapSrs: true}
+                        cadenzaClient.editGeometry('messstellenkarte', polygon, { useMapSrs: true }
                         );
 
-                        cadenzaClient.on('editGeometry:update', (event) => {
-                            console.log('Geometry was updated', event.detail.geometry);
-                        });
                         cadenzaClient.on('editGeometry:ok', (event) => {
                             console.log('Geometry editing was completed', event.detail.geometry);
+                            cadenzaClient.showMap('messstellenkarte', {
+                                useMapSrs: true,
+                                mapExtent: [
+                                    852513.341856, 6511017.966314, 916327.095083, 7336950.728974
+                                ],
+                                geometry: polygon
+                            });
                         });
                         cadenzaClient.on('editGeometry:cancel', (event) => {
                             console.log('Geometry editing was cancelled');
-                        });
-                        console.log("Added Polygon")
-                    } catch (error) {
-                        console.log(error)
-                    }
-                } else {
-                    console.log("No Polygon")
-                    cadenzaClient.createGeometry('messstellenkarte', 'Polygon');
-                };
+                            cadenzaClient.showMap('messstellenkarte', {
+                                useMapSrs: true,
+                                mapExtent: [
+                                    852513.341856, 6511017.966314, 916327.095083, 7336950.728974
+                                ]});
+                            });
+                        } catch (error) {
+                            console.log(error)
+                        }
+                    } else {
+                        console.log("No Polygon")
+                        cadenzaClient.createGeometry('messstellenkarte', 'Polygon');
+                    };
 
 
 
-            } else if (data.error) {
-                alert(`Error: ${data.error}`);
-            }
-        }).catch(e => {
-            alert(e.toString());
-        });
+                } else if (data.error) {
+                    alert(`Error: ${data.error}`);
+                }
+            }).catch(e => {
+                alert(e.toString());
+            });
 
 });
 
@@ -142,16 +150,23 @@ function isPolygonClockwise(coords) {
     // Implementation of the Shoelace formula (also known as the surveyor's formula)
     // to calculate the signed area of the polygon
     let area = 0;
-    
+
     // Need at least 3 points to form a polygon
     if (coords.length < 3) {
         return false;
     }
-    
+
     for (let i = 0; i < coords.length - 1; i++) {
-        area += (coords[i+1][0] - coords[i][0]) * (coords[i+1][1] + coords[i][1]);
+        area += (coords[i + 1][0] - coords[i][0]) * (coords[i + 1][1] + coords[i][1]);
     }
-    
+
     // If the signed area is positive, the polygon is clockwise
     return area > 0;
+}
+
+function closeGeometryModal() {
+    const modal = document.getElementsByClassName('d-modal-fullscreen--sidebar-content d-stack-v space-3 d-edit-geometry-dialog--sidebar-right')
+    console.log(modal)
+    const geometryModal = bootstrap.Modal.getInstance(modal);
+    geometryModal.hide();
 }
