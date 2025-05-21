@@ -1,4 +1,4 @@
-import { cadenza } from './cadenza2.2.4.js';
+import { cadenza } from './cadenza3.0.4.js';
 
 const config = document.body.dataset;
 
@@ -8,17 +8,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
     window.cadenzaClient = cadenza('http://localhost:8080/cadenza/', {
       iframe: 'cadenza-iframe',
+      debug: true,
+      webApplication: {
+        repositoryName: "Pc8YJDtHybIR3hDILuOJ",
+        externalLinkId: "aDnoKxgW86U3nWUqn4ms"
+      },
     });
 
     cadenzaClient.showMap('messstellenkarte', {
-      useMapSrs: false,
+      useMapSrs: true,
       mapExtent: [
-        4.0, 50.0, 15.0, 55.0,
-      ]
+        852513.341856, 6511017.966314, 916327.095083, 7336950.728974
+      ],
+
     });
   }
 });
-
-
-
-

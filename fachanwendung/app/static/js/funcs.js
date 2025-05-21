@@ -1,4 +1,4 @@
-import { cadenza } from './cadenza2.2.4.js';
+import { cadenza } from './cadenza3.0.4.js';
 document.getElementById('screenMap').addEventListener('click', () => {
     let mbs = document.getElementById("cadenza-iframe").src.split("mapExtent=")[1].split("%2C")
     mbs[3] = mbs[3].split("&")[0]
@@ -49,7 +49,7 @@ document.getElementById('screenMap').addEventListener('click', () => {
                 
                 if (polygon) {
                     try {
-                        cadenzaClient.editGeometry('messstellenkarte', polygon, { useMapSrs: false }
+                        cadenzaClient.editGeometry('messstellenkarte', polygon, {useMapSrs: true}
                         );
 
                         cadenzaClient.on('editGeometry:update', (event) => {

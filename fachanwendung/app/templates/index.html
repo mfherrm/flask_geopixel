@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="GeoPixel map application with screenshot capabilities">
     <meta name="theme-color" content="#ffffff">
-    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000">
+    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000">
 
     <title>GeoPixel Map Application</title>
 
@@ -37,7 +37,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet-simple-map-screenshoter"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}" type="module" defer></script>
+    <script defer src="{{ url_for('static', filename='js/main.js') }}" type="module"></script>
 
 </body>
 
