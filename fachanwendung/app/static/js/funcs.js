@@ -5,8 +5,26 @@ document.getElementById('screenMap').addEventListener('click', () => {
     console.log("Map bounds: \n \t NW: ", mbs[0], mbs[1], "\n \t SE: ", mbs[2], mbs[3])
     var mapBounds = [[mbs[0], mbs[1]], [mbs[2], mbs[3]]]
 
+    const object = document.getElementById('objbttn').textContent.trim();
+    const color = document.getElementById('colorbttn').textContent.trim();
+
+    if (object === "Object" || object === "") {
+        alert("Error: object needs to be selected");
+        return;
+    }
+
+    let colorValue = color;
+    if (color === "No color" || color === "Color") {
+        var selection = JSON.stringify(object.toLowerCase())
+    } else {
+        var selection = JSON.stringify(colorValue.toLowerCase() + " " + object.toLowerCase())
+    }
+
+    console.log("Selection", selection)
+
     const formData = new FormData();
     formData.append('mapExtent', JSON.stringify(mapBounds));
+    formData.append('selection', selection);
 
     fetch('http://127.0.0.1:5000/receive', {
         method: 'POST',
@@ -18,74 +36,52 @@ document.getElementById('screenMap').addEventListener('click', () => {
             console.log()
             if (data.message === 'Successfully retrieved outline' && data.outline) {
                 console.log(mapBounds)
-
                 console.log(data.imageDims)
-
                 console.log(data.outline)
 
-                var mapCoords = imageCoordsToMapCoords(mapBounds, data.outline, data.imageDims)
+                var geoms = []
 
-                // Ensure polygon is closed
-                if (JSON.stringify(mapCoords[0]) !== JSON.stringify(mapCoords[mapCoords.length - 1])) {
-                    mapCoords.push([...mapCoords[0]]);
+                for (const pos in [data.outline]) {
+                    var mapCoords = imageCoordsToMapCoords(mapBounds, [data.outline][pos], data.imageDims)
+
+                    // Ensure polygon is closed
+                    if (JSON.stringify(mapCoords[0]) !== JSON.stringify(mapCoords[mapCoords.length - 1])) {
+                        mapCoords.push([...mapCoords[0]]);
+                    }
+
+                    // Check if polygon follows right-hand rule (counterclockwise orientation)
+                    const isClockwise = isPolygonClockwise(mapCoords);
+
+                    // If clockwise, reverse the coordinates to follow right-hand rule
+                    if (isClockwise) {
+                        console.log("Polygon is clockwise, reversing to follow right-hand rule");
+                        mapCoords.reverse();
+                    } else {
+                        console.log("Polygon already follows right-hand rule (counterclockwise)");
+                    }
+                    geoms.push([mapCoords])
                 }
 
-                // Check if polygon follows right-hand rule (counterclockwise orientation)
-                const isClockwise = isPolygonClockwise(mapCoords);
-
-                // If clockwise, reverse the coordinates to follow right-hand rule
-                if (isClockwise) {
-                    console.log("Polygon is clockwise, reversing to follow right-hand rule");
-                    mapCoords.reverse();
-                } else {
-                    console.log("Polygon already follows right-hand rule (counterclockwise)");
-                }
+                console.log("Geoms", geoms)
 
                 var polygon = {
-                    "type": "Polygon",
-                    "coordinates": [mapCoords],
+                    "type": "MultiPolygon",
+                    "coordinates": geoms,
                 }
-                console.log(polygon)
 
-                if (polygon) {
-                    try {
-                        cadenzaClient.editGeometry('messstellenkarte', polygon, { useMapSrs: true }
-                        );
-
-                        cadenzaClient.on('editGeometry:ok', (event) => {
-                            console.log('Geometry editing was completed', event.detail.geometry);
-                            cadenzaClient.showMap('messstellenkarte', {
-                                useMapSrs: true,
-                                mapExtent: [
-                                    852513.341856, 6511017.966314, 916327.095083, 7336950.728974
-                                ],
-                                geometry: polygon
-                            });
-                        });
-                        cadenzaClient.on('editGeometry:cancel', (event) => {
-                            console.log('Geometry editing was cancelled');
-                            cadenzaClient.showMap('messstellenkarte', {
-                                useMapSrs: true,
-                                mapExtent: [
-                                    852513.341856, 6511017.966314, 916327.095083, 7336950.728974
-                                ]});
-                            });
-                        } catch (error) {
-                            console.log(error)
-                        }
-                    } else {
-                        console.log("No Polygon")
-                        cadenzaClient.createGeometry('messstellenkarte', 'Polygon');
-                    };
-
-
-
-                } else if (data.error) {
-                    alert(`Error: ${data.error}`);
-                }
-            }).catch(e => {
-                alert(e.toString());
-            });
+                cadenzaClient.showMap('messstellenkarte', {
+                    useMapSrs: true,
+                    mapExtent: [
+                        852513.341856, 6511017.966314, 916327.095083, 7336950.728974
+                    ],
+                    geometry: polygon
+                });
+            } else if (data.error) {
+                alert(`Error: ${data.error}`);
+            }
+        }).catch(e => {
+            alert(e.toString());
+        });
 
 });
 
