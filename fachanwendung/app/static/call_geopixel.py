@@ -126,109 +126,9 @@ def process_image(image_path, query, api_url):
         
     except Exception as e:
         print(f"Error sending request: {str(e)}")
-        
-    
-    return None, None
 
-def plot_outline(image_path, pred_masks, output_path=None):
-    """
-    Plot the outline of prediction masks on the original image
-    
-    Args:
-        image_path (str): Path to the original image
-        pred_masks (numpy.ndarray): Prediction masks
-        output_path (str, optional): Path to save the plot. If None, the plot is displayed
-    
-    Returns:
-        None
-    """
-    try:
-        # Load the original image
-        original_img = cv2.imread(image_path)
-        if original_img is None:
-            print(f"Error: Could not load image {image_path}")
-            return
-            
-        # Convert BGR to RGB (OpenCV loads as BGR, matplotlib expects RGB)
-        original_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2RGB)
-        
-        # Create a figure with two subplots
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-        
-        # Plot original image
-        ax1.imshow(original_img)
-        ax1.set_title('Original Image')
-        ax1.axis('off')
-        
-        # Plot image with outlines
-        ax2.imshow(original_img)
-        
-        # Convert mask to uint8
-        mask_uint8 = pred_masks.astype(np.uint8).squeeze()
-        
-        contours, _ = cv2.findContours(mask_uint8, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_KCOS)
-        
-        print(f"Found {len(contours)} contours in plot_outline")
-        
-        # Filter contours by area to remove tiny contours
-        min_contour_area = 10
-        filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
-        
-        # Plot each contour with a different color
-        for i, contour in enumerate(filtered_contours):
-            # Generate a random color for each contour
-            color = np.random.rand(3,)
-            # Convert contour to the format expected by matplotlib
-            contour_reshaped = contour.reshape(-1, 2)
-            ax2.plot(contour_reshaped[:, 0], contour_reshaped[:, 1], color=color, linewidth=2)
-        
-        ax2.set_title('Image with Outlines')
-        ax2.axis('off')
-        
-        plt.tight_layout()
-
-        plt.show()
-            
-    except Exception as e:
-        print(f"Error plotting outline: {str(e)}")
-
-def save_masked_image(base64_image, output_path):
-    """
-    Save a base64-encoded image to a file
-    
-    Args:
-        base64_image (str): Base64-encoded image data
-        output_path (str): Path to save the image
-    """
-    try:
-        # Decode the base64 image
-        image_data = base64.b64decode(base64_image)
-        
-        # Create an image from the binary data
-        image = Image.open(BytesIO(image_data))
-        
-        # Save the image
-        image.save(output_path)
-        print(f"Masked image saved to: {output_path}")
-        
-        return True
-    except Exception as e:
-        print(f"Error saving masked image: {str(e)}")
-        return False
-
-def main():
-    # Configuration
-    api_base_url = "https://bpds0xic8d0b7g-5000.proxy.runpod.net/"
+def get_object_outlines(api_base_url, image_path, query):
     api_process_url = f"{api_base_url}/process"
-    image_path = "GeoPixel/images/example1.png"
-    query = "Please give me a segmentation mask for grey car with different colors for each."
-    output_dir = "output"
-    
-    # Parse command line arguments
-    if len(sys.argv) > 1:
-        image_path = sys.argv[1]
-    if len(sys.argv) > 2:
-        query = sys.argv[2]
     
     print(f"GeoPixel API Client")
     print(f"==================")
@@ -236,10 +136,7 @@ def main():
     print(f"Image: {image_path}")
     print(f"Query: {query}")
     print(f"==================\n")
-    
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
+       
     # Check API health first
     if not check_health(api_base_url):
         print("\nWARNING: API health check failed. The server might not be ready.")
@@ -273,14 +170,6 @@ def main():
             print("\n--- Reconstructed Text ---")
             print(result["reconstructed_text"])
         
-        # Save the masked image if available
-        if "masked_image_base64" in result:
-            print("\n--- Masked Image ---")
-            output_path = os.path.join(output_dir, f"masked_{os.path.basename(image_path)}")
-            save_masked_image(result["masked_image_base64"], output_path)
-        elif "masked_image_path" in result:
-            print(f"\nMasked image saved on server at: {result['masked_image_path']}")
-        
         # If we have prediction masks, print information about them
         filtered_contours = None
         if pred_masks is not None:
@@ -302,19 +191,15 @@ def main():
             filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
             
             print(f"Found {len(filtered_contours)} significant contours after filtering")
-            
-            # Plot the outline
-            outline_path = os.path.join(output_dir, f"outline_{os.path.basename(image_path)}")
-            # plot_outline(image_path, pred_masks, outline_path)
 
         print("\nProcessing complete!")
 
         # Return the prediction masks for potential further processing
+        print(type(filtered_contours))
         return result, filtered_contours
     else:
         print("\nFailed to process the image. Please check the API server logs for more details.")
-        return None, None
+        raise
 
 if __name__ == "__main__":
-    # Call main() without unpacking the return value
-    main()
+    get_object_outlines("https://bpds0xic8d0b7g-5000.proxy.runpod.net/", "GeoPixel/images/example1.png","Please give me a segmentation mask for grey car with different colors for each.")

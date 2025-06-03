@@ -15,6 +15,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     window.cadenzaClient.showMap('messstellenkarte', {
       useMapSrs: true,
+      // extent is minx, miny, maxx, maxy
       mapExtent: [
         852513.341856, 6511017.966314, 916327.095083, 7336950.728974
       ],

@@ -1,8 +1,17 @@
 import './cadenza3.0.4.js';
 document.getElementById('screenMap').addEventListener('click', async () => {
-    var imgblob = await window.cadenzaClient.getData('png')
+    let mbs = document.getElementById("cadenza-iframe").src.split("mapExtent=")[1].split("%2C")
+    mbs[3] = mbs[3].split("&")[0]
+
+    console.log("Map bounds: \n \t SW: ", mbs[0], mbs[1], "\n \t NE: ", mbs[2], mbs[3])
+    // As NW and SE
+    var mapBounds = [[mbs[0], mbs[3]], [mbs[2], mbs[1]]]
+
+
+
+    //var imgblob = await window.cadenzaClient.getData('png')
     // var blb = await captureIframe("cadenza-iframe")
-    console.log("BLB", imgblob)
+    //console.log("BLB", imgblob)
     const object = document.getElementById('objbttn').textContent.trim();
     const color = document.getElementById('colorbttn').textContent.trim();
 
@@ -22,7 +31,7 @@ document.getElementById('screenMap').addEventListener('click', async () => {
 
     const formData = new FormData();
     formData.append('selection', selection);
-    formData.append('imageData', blb);
+    // formData.append('imageData', blb);
 
     fetch('http://127.0.0.1:5000/receive', {
         method: 'POST',
@@ -33,7 +42,7 @@ document.getElementById('screenMap').addEventListener('click', async () => {
 
             console.log()
             if (data.message === 'Successfully retrieved outline' && data.outline) {
-                console.log(mapBounds)
+                // console.log(mapBounds)
                 console.log(data.imageDims)
                 console.log(data.outline)
 
@@ -70,7 +79,7 @@ document.getElementById('screenMap').addEventListener('click', async () => {
                 cadenzaClient.showMap('messstellenkarte', {
                     useMapSrs: true,
                     mapExtent: [
-                        852513.341856, 6511017.966314, 916327.095083, 7336950.728974
+                        mbs[0], mbs[1], mbs[2], mbs[3]
                     ],
                     geometry: polygon
                 });
@@ -84,6 +93,7 @@ document.getElementById('screenMap').addEventListener('click', async () => {
 });
 
 function imageCoordsToMapCoords(mapExtent, imageCoords, imageDims) {
+    console.log("Image coords", imageCoords)
     // Parse all input values to ensure they're numbers
     const NW = [parseFloat(mapExtent[0][0]), parseFloat(mapExtent[0][1])];
     const SE = [parseFloat(mapExtent[1][0]), parseFloat(mapExtent[1][1])];
@@ -107,26 +117,30 @@ function imageCoordsToMapCoords(mapExtent, imageCoords, imageDims) {
     // Process each coordinate pair and add to result array
     for (let i = 0; i < imageCoords.length; i++) {
         const coord = imageCoords[i];
+        for (let j = 0; j < coord.length; j++) {
+            // Ensure coord is an array with two numeric values
+            if (Array.isArray(coord)) {
+                const x = parseFloat(coord[j][0][0]);
+                const y = parseFloat(coord[j][0][1]);
+                
 
-        // Ensure coord is an array with two numeric values
-        if (Array.isArray(coord)) {
-            const x = parseFloat(coord[0][0]);
-            const y = parseFloat(coord[0][1]);
+                // Create a new coordinate pair with proper calculations
+                const mapCoord = [
+                    NW[0] + x * pixelCoordX,
+                    NW[1] + y * pixelCoordY
+                ];
 
-            // Create a new coordinate pair with proper calculations
-            const mapCoord = [
-                NW[0] + x * pixelCoordX,
-                NW[1] + y * pixelCoordY
-            ];
+                result.push(mapCoord);
 
-            result.push(mapCoord);
-
-            if (i == 0) {
-                firstCoord.push(mapCoord)
+                if (j == 0) {
+                    firstCoord.push(mapCoord)
+                }
+            } else {
+                console.error("Invalid coordinate at index", i, ":", coord);
             }
-        } else {
-            console.error("Invalid coordinate at index", i, ":", coord);
+
         }
+
     }
     result.push(firstCoord[0])
 
