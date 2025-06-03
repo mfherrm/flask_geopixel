@@ -3,12 +3,9 @@ import json
 import cv2
 import base64
 import os
-import sys
-import time
 import numpy as np
 from PIL import Image
 from io import BytesIO
-from matplotlib import pyplot as plt
 
 def check_health(api_url):
     """
