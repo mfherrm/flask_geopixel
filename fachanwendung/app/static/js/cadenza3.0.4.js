@@ -464,7 +464,6 @@ export class CadenzaClient {
    *
    * Currently, only map views are supported.
    *
-   * @hidden
    * @template {DataType} T
    * @param {T} dataType - The requested data type. Currently, only `"png"` is supported.
    * @return {Promise<T extends 'png' ? Blob : never>}
@@ -1410,6 +1409,7 @@ function sanitizeExtentStrategy({ extentStrategy, geometry } = {}) {
 /**
  * @typedef {'action'
  * | 'change:selection'
+ * | 'change:extent'
  * | 'drillThrough'
  * | 'editGeometry:ok'
  * | 'editGeometry:update'
@@ -1433,6 +1433,7 @@ function sanitizeExtentStrategy({ extentStrategy, geometry } = {}) {
  *  : T extends 'selectObjects:ok' ? CadenzaSelectObjectsOkEvent
  *  : T extends 'selectObjects:cancel' ? CadenzaSelectObjectsCancelEvent
  *  : T extends 'reload' ? CadenzaReloadEvent
+ *  : T extends 'change:extent' ? CadenzaChangeExtentEvent
  *  : never
  * } CadenzaEventByType
  */
@@ -1447,7 +1448,8 @@ function sanitizeExtentStrategy({ extentStrategy, geometry } = {}) {
 /**
  * @typedef {CadenzaEvent<'action', {context: string}>} CadenzaActionEvent - When the user executed a POST message action, which is defined on an external link in the Cadenza management center.
  */
-/*
+
+/**
  * @hidden
  * @typedef {CadenzaEvent<'change:extent', {extent: Extent}>} CadenzaChangeExtentEvent - When the user moved the map.
  *   The extent is transformed according to the `useMapSrs` option.

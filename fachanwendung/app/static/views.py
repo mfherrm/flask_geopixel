@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify, current_app
 import os
-import sys 
+import sys
+import base64
+import re
 from werkzeug.utils import secure_filename
 from PIL import Image
 import cv2
@@ -9,6 +11,7 @@ from flask_cors import CORS
 import json
 from urllib.parse import urljoin
 from .call_geopixel import get_geopixel_result
+from io import BytesIO
 
 
 bp = Blueprint('main', __name__)
@@ -33,20 +36,44 @@ def index():
 
 @bp.route('/receive', methods=['post'])
 def receive_image():
-    # if 'file' not in request.files:
-        # return jsonify({'error': 'No file part'}), 400
     # if 'mapExtent' not in request.form:
-        # return jsonify({'error': 'No map bounds'}), 400
+    #     return jsonify({'error': 'No map bounds'}), 400
     
-    # file = request.files['file']
     # mapBounds = json.loads(request.form['mapExtent'])
     selection = json.loads(request.form['selection'])
-
-    # if file.filename == '':
-    #     return jsonify({'error': 'No selected file'}), 400
-    print(os.path.join(os.getcwd(),"fachanwendung/app/static/images/example1-RES.jpg"))
-    img = cv2.imread(os.path.join(os.getcwd(),"fachanwendung/app/static/images/example1-RES.jpg"))
-
+    
+    # Check if imageData is in the request
+    if 'imageData' in request.form:
+        try:
+            # Get the base64 string from the data URL
+            image_data = request.form['imageData']
+            # Remove the data URL prefix (e.g., "data:image/png;base64,")
+            image_data = re.sub(r'^data:image/\w+;base64,', '', image_data)
+            
+            # Decode the base64 string
+            image_bytes = base64.b64decode(image_data)
+            
+            print("Got image bytes")
+            # Convert to image
+            image = Image.open(BytesIO(image_bytes))
+            
+            # Convert to OpenCV format
+            img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+            
+            # Save the image for debugging (optional)
+            filename = 'captured_iframe.jpg'
+            filepath = os.path.join(IMAGE_FOLDER, filename)
+            cv2.imwrite(filepath, img)
+            print(f"Saved captured image to {filepath}")
+        except Exception as e:
+            print(f"Error processing image data: {str(e)}")
+            # Fall back to the example image if there's an error
+            print("Falling back to example image")
+            img = cv2.imread(os.path.join(os.getcwd(),"fachanwendung/app/static/images/example1-RES.jpg"))
+    else:
+        # Use the example image if no imageData is provided
+        print("No image data provided, using example image")
+        img = cv2.imread(os.path.join(os.getcwd(),"fachanwendung/app/static/images/example1-RES.jpg"))
     
     imageDims = img.shape[:2]
     

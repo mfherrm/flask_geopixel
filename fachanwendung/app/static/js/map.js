@@ -1,7 +1,4 @@
-import { cadenza } from './cadenza3.0.4.js';
-
-const config = document.body.dataset;
-
+import './cadenza3.0.4.js';
 
 window.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('cadenza-iframe')) {
@@ -16,12 +13,16 @@ window.addEventListener('DOMContentLoaded', () => {
       },
     });
 
-    cadenzaClient.showMap('messstellenkarte', {
+    window.cadenzaClient.showMap('messstellenkarte', {
       useMapSrs: true,
       mapExtent: [
         852513.341856, 6511017.966314, 916327.095083, 7336950.728974
       ],
 
+    });
+
+    window.cadenzaClient.on('change:extent', (event) => {
+        console.log(event)
     });
   }
 

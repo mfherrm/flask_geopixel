@@ -1,10 +1,8 @@
-import { cadenza } from './cadenza3.0.4.js';
-document.getElementById('screenMap').addEventListener('click', () => {
-    let mbs = document.getElementById("cadenza-iframe").src.split("mapExtent=")[1].split("%2C")
-    mbs[3] = mbs[3].split("&")[0]
-    console.log("Map bounds: \n \t NW: ", mbs[0], mbs[1], "\n \t SE: ", mbs[2], mbs[3])
-    var mapBounds = [[mbs[0], mbs[1]], [mbs[2], mbs[3]]]
-
+import './cadenza3.0.4.js';
+document.getElementById('screenMap').addEventListener('click', async () => {
+    var imgblob = await window.cadenzaClient.getData('png')
+    // var blb = await captureIframe("cadenza-iframe")
+    console.log("BLB", imgblob)
     const object = document.getElementById('objbttn').textContent.trim();
     const color = document.getElementById('colorbttn').textContent.trim();
 
@@ -23,8 +21,8 @@ document.getElementById('screenMap').addEventListener('click', () => {
     console.log("Selection", selection)
 
     const formData = new FormData();
-    formData.append('mapExtent', JSON.stringify(mapBounds));
     formData.append('selection', selection);
+    formData.append('imageData', blb);
 
     fetch('http://127.0.0.1:5000/receive', {
         method: 'POST',
@@ -158,11 +156,4 @@ function isPolygonClockwise(coords) {
 
     // If the signed area is positive, the polygon is clockwise
     return area > 0;
-}
-
-function closeGeometryModal() {
-    const modal = document.getElementsByClassName('d-modal-fullscreen--sidebar-content d-stack-v space-3 d-edit-geometry-dialog--sidebar-right')
-    console.log(modal)
-    const geometryModal = bootstrap.Modal.getInstance(modal);
-    geometryModal.hide();
 }
