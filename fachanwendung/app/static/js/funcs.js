@@ -171,3 +171,36 @@ function isPolygonClockwise(coords) {
     // If the signed area is positive, the polygon is clockwise
     return area > 0;
 }
+
+// Wait for Cadenza to initialize before setting up the toggle functionality
+$(document).ready(function() {
+    // Delay the setup of radio button functionality to ensure Cadenza is loaded
+    setTimeout(function() {
+        $('input[name="vis"]').on('change', function() {
+            console.log("toggled visibility");
+            const value = +this.value;
+            
+            // Toggle OpenLayers map
+            $('#OL-map').toggle(value === 1 && this.checked);
+            
+            // Toggle Cadenza iframe
+            $('#cadenza-iframe').toggle(value === 2 && this.checked);
+            
+            // Enable/disable the "Call GeoPixel" button based on Cadenza visibility
+            const screenMapButton = document.getElementById('screenMap');
+            if (value === 1 && this.checked) {
+                // Enable the button when Cadenza is invisible
+                screenMapButton.disabled = false;
+                screenMapButton.classList.remove('disabled-button');
+            } else {
+                // Disable the button when Cadenza is visible
+                screenMapButton.disabled = true;
+                screenMapButton.classList.add('disabled-button');
+            }
+        });
+        
+        // Manually trigger the change event on the checked radio button
+        // This ensures the correct element is shown based on the initial selection
+        $('input[name="vis"]:checked').trigger('change');
+    }, 1000); // 1 second delay to ensure Cadenza is fully initialized
+});

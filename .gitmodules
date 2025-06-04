@@ -1,3 +1,6 @@
 [submodule "GeoPixel"]
 	path = GeoPixel
 	url = https://github.com/mbzuai-oryx/GeoPixel.git
+[submodule "fachanwendung/app/geodata/deutschlandGeoJSON"]
+	path = fachanwendung/app/geodata/deutschlandGeoJSON
+	url = https://github.com/isellsoap/deutschlandGeoJSON.git
