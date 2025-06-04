@@ -24,7 +24,7 @@
     data-cadenza-external-link-id="{{ config.CADENZA_EXTERNAL_LINK_ID }}">
     <div id="cadenza-container">
         <!-- Both elements visible initially to allow proper initialization -->
-        
+
         <div id="OL-map" class="olmap" style="width: 95%; height: 95vh; display: block;"></div>
         <iframe id="cadenza-iframe" style="height: 95vh; width: 95%; display: block;"></iframe>
         <div id="button-container">
@@ -61,8 +61,9 @@
                     Cadenza
                 </label>
             </div>
-
-            <!-- Call GeoPixel Button -->
+            <a id="export-png" class="dropup" role="button"><i class="fa fa-download"></i> Download
+                PNG</a>
+            <a id="image-download" download="map.png"></a>
 
         </div>
     </div>

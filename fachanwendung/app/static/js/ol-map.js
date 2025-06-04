@@ -1,12 +1,13 @@
 // Using the bundled version of OpenLayers
-let map = new ol.Map({
+window.map = new ol.Map({
   layers: [
         new ol.layer.Tile({
-      source: new ol.source.XYZ({
-        url: 'https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-        maxZoom: 19
-      })
-    }),
+          source: new ol.source.XYZ({
+            url: 'https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+            maxZoom: 19,
+            crossOrigin: 'anonymous'
+          })
+        }),
     new ol.layer.Vector({
       source: new ol.source.Vector({
         format: new ol.format.GeoJSON(),
@@ -25,7 +26,7 @@ let map = new ol.Map({
     })
   ],
   view: new ol.View({
-    center: ol.proj.fromLonLat([8.325, 49.015]),
+    center: [927021.39753, 6277297.0567],
     zoom: 14
   }),
   target: 'OL-map',
