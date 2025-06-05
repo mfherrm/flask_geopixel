@@ -55,7 +55,7 @@ document.getElementById('screenMap').addEventListener('click', async () => {
         mapContext.setTransform(1, 0, 0, 1, 0, 0);
 
         // Convert canvas to blob and handle form submission
-        mapCanvas.toBlob(function(blob) {
+        mapCanvas.toBlob(function (blob) {
             console.log("Canvas converted to blob:", blob);
             console.log("Blob size:", blob ? blob.size : "null");
             console.log("Blob type:", blob ? blob.type : "null");
@@ -134,20 +134,47 @@ document.getElementById('screenMap').addEventListener('click', async () => {
                             geoms.push([mapCoords]);
                         }
 
-                        console.log("Geoms", geoms);
+                        let layer = ""
+                        if (object === "Car") {
+                            layer = window.carLayer
+                        } else if (object === "River") {
+                            layer = window.riverLayer
+                        } else {
+                            layer = window.buildingLayer
+                        }
 
                         var polygon = {
                             "type": "MultiPolygon",
                             "coordinates": geoms,
                         };
 
-                        cadenzaClient.showMap('messstellenkarte', {
-                            useMapSrs: true,
-                            mapExtent: [
-                                mbs[0], mbs[1], mbs[2], mbs[3]
-                            ],
-                            geometry: polygon
+                        console.log("Polygon", polygon)
+
+                        const features = new ol.format.GeoJSON().readFeatures(polygon, {
+                            featureProjection: 'EPSG:3857',  // Map projection
+                        })
+
+                        const featureArray = Array.isArray(features) ? features : [features];
+
+                        featureArray.forEach(feature => {
+                            feature.setStyle(layer.getStyle());
+                            layer.getSource().addFeature(feature);
                         });
+                        layer.changed()
+                        map.render(); 
+                        map.renderSync();
+                        // addRectangleToLayer(features, layer)
+
+                        // cadenzaClient.showMap('messstellenkarte', {
+                        // useMapSrs: true,
+                        // mapExtent: [
+                        //     mbs[0], mbs[1], mbs[2], mbs[3]
+                        // ],
+                        //  geometry: polygon
+                        //});
+
+
+
                     } else if (data.error) {
                         alert(`Error: ${data.error}`);
                     }
@@ -195,7 +222,7 @@ function imageCoordsToMapCoords(mapExtent, imageCoords, imageDims) {
                 // Create a new coordinate pair with proper calculations
                 const mapCoord = [
                     NW[0] + x * pixelCoordX,
-                    NW[1] + y * pixelCoordY
+                    NW[1] - y * pixelCoordY  // Subtract for Y because image coordinates are top-down
                 ];
 
                 result.push(mapCoord);
