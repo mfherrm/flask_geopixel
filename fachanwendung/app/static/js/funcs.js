@@ -8,6 +8,22 @@ document.getElementById('screenMap').addEventListener('click', async () => {
     var mapBounds = [[mbs[0], mbs[3]], [mbs[2], mbs[1]]]
     console.log("Transformed mapBounds: \n \t NW: ", mapBounds[0], "\n \t SE: ", mapBounds[1])
 
+    // Store current visibility of vector layers
+    const layerVisibility = [];
+    
+    // Hide vector layers for satellite-only capture
+    const layers = map.getLayers().getArray();
+    layers.forEach((layer, index) => {
+        layerVisibility[index] = layer.getVisible();
+        // Hide all layers except the first one (satellite base layer)
+        if (index > 0) {
+            layer.setVisible(false);
+        }
+    });
+    
+    // Force map re-render without vector layers
+    map.renderSync();
+    
     map.once('rendercomplete', function () {
         const mapCanvas = document.createElement('canvas');
         const size = map.getSize();
@@ -219,6 +235,14 @@ document.getElementById('screenMap').addEventListener('click', async () => {
                 }).catch(e => {
                     alert(e.toString());
                 });
+            
+            // Restore original layer visibility after screenshot
+            layers.forEach((layer, index) => {
+                layer.setVisible(layerVisibility[index]);
+            });
+            
+            // Re-render map with restored layers
+            map.renderSync();
         }, 'image/png');
     });
     map.renderSync();

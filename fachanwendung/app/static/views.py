@@ -340,32 +340,44 @@ def receive_image():
         print(f"Image dimensions: {imageDims}")
         print(f"Map bounds: {mapBounds}")
         
-        # Create overlay images and save them
-        overlay_paths = create_overlay_images(img, contours, masks, IMAGE_FOLDER, mapBounds, imageDims)
+        # Simplify contours before creating overlays and sending to frontend
+        simplified_contours = []
+        if contours:
+            print("Simplifying contours...")
+            for i, contour in enumerate(contours):
+                # Simplify contour using Douglas-Peucker algorithm (conservative simplification)
+                epsilon = 0.001 * cv2.arcLength(contour, True)  # 0.1% of perimeter for ~20% point reduction
+                simplified_contour = cv2.approxPolyDP(contour, epsilon, True)
+                simplified_contours.append(simplified_contour)
+                print(f"Contour {i}: {len(contour)} -> {len(simplified_contour)} points (simplified)")
         
-        # Transform contours to geographic coordinates for frontend display
+        # Create overlay images using simplified contours
+        overlay_paths = create_overlay_images(img, simplified_contours, masks, IMAGE_FOLDER, mapBounds, imageDims)
+        
+        # Transform simplified contours to geographic coordinates for frontend display
         # This ensures the map geometries match the overlay images
         serializable_contours = []
-        if contours and mapBounds and imageDims:
-            print("Transforming contours to geographic coordinates for frontend display...")
-            for i, contour in enumerate(contours):
-                # Extract contour points
-                contour_points = [[point[0][0], point[0][1]] for point in contour]
+        if simplified_contours and mapBounds and imageDims:
+            print("Transforming simplified contours to geographic coordinates for frontend display...")
+            for i, simplified_contour in enumerate(simplified_contours):
+                # Extract simplified contour points
+                contour_points = [[point[0][0], point[0][1]] for point in simplified_contour]
                 
                 # Transform to geographic coordinates using the same logic as the overlay creation
                 geo_coords = image_coords_to_map_coords(mapBounds, contour_points, imageDims)
                 
-                # Convert to the format expected by the frontend (similar to imageCoordsToMapCoords)
+                # Convert to the format expected by the frontend
                 serializable_contours.append(geo_coords)
                 
-                print(f"Contour {i}: {len(contour_points)} pixel points -> {len(geo_coords)} geo points")
-        elif contours:
+                print(f"Simplified contour {i}: {len(simplified_contour)} points -> {len(geo_coords)} geo points")
+        elif simplified_contours:
             # Fallback to original pixel coordinates if no geographic data
-            print("Using pixel coordinates for contours (no geographic transformation)")
-            for contour in contours:
-                serializable_contours.append(contour.tolist())
+            print("Using simplified contours with pixel coordinates (no geographic transformation)")
+            for i, simplified_contour in enumerate(simplified_contours):
+                serializable_contours.append(simplified_contour.tolist())
+                print(f"Simplified contour {i}: {len(simplified_contour)} points")
         
-        print(f"Processed {len(serializable_contours)} contours for JSON")
+        print(f"Processed {len(serializable_contours)} simplified contours for JSON")
         
         # Convert file paths to URLs
         overlay_urls = {}
