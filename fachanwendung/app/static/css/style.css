@@ -97,15 +97,6 @@ html,
             background-color: #ddd;
         }
         
-        /* Show the dropup menu when it has the 'show' class - Maximum specificity */
-        div.dropup .dropup-content.show,
-        .dropup .dropup-content.show,
-        .dropup-content.show {
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
-        
         /* Change the background color of the dropup button when active */
         .dropbtn.active {
             background-color: #2980B9;
