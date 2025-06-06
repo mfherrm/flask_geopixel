@@ -184,7 +184,7 @@ def get_object_outlines(api_base_url, image_path, query):
             contours, hierarchy = cv2.findContours(mask_uint8, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)
             
             # Filter contours by area to remove tiny noise contours
-            min_contour_area = 10  
+            min_contour_area = 5  
             filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
             
             print(f"Found {len(filtered_contours)} significant contours after filtering")
@@ -193,7 +193,7 @@ def get_object_outlines(api_base_url, image_path, query):
 
         # Return the prediction masks for potential further processing
         print(type(filtered_contours))
-        return result, filtered_contours
+        return result, filtered_contours, mask_uint8
     else:
         print("\nFailed to process the image. Please check the API server logs for more details.")
         raise

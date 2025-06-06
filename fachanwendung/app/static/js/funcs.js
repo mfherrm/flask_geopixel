@@ -90,6 +90,7 @@ document.getElementById('screenMap').addEventListener('click', async () => {
             // Create FormData with image blob
             const formData = new FormData();
             formData.append('selection', selection);
+            formData.append('mapExtent', JSON.stringify(mapBounds));
             formData.append('imageData', blob, 'map-image.png');
 
             // Debug: Log FormData contents
@@ -110,12 +111,44 @@ document.getElementById('screenMap').addEventListener('click', async () => {
                     console.log(data);
 
                     if (data.message === 'Successfully retrieved outline' && data.outline) {
-                        console.log(data.imageDims);
-                        console.log(data.outline);
+                        console.log("Image dims:", data.imageDims);
+                        console.log("Coordinates transformed:", data.coordinates_transformed);
+                        console.log("Outline data:", data.outline);
+                        console.log("Number of contours:", data.outline.length);
 
                         var geoms = [];
 
-                        var mapCoords = imageCoordsToMapCoords(mapBounds, data.outline, data.imageDims);
+                        if (data.coordinates_transformed) {
+                            // Backend has already transformed coordinates to geographic format
+                            console.log("Using pre-transformed geographic coordinates from backend");
+                            
+                            // Process all contours, not just the first one
+                            data.outline.forEach((contour, index) => {
+                                console.log(`Processing contour ${index} with ${contour.length} points`);
+                                var mapCoords = contour; // Already in geographic coordinates
+                                
+                                // Ensure polygon is closed
+                                if (mapCoords.length > 0 && JSON.stringify(mapCoords[0]) !== JSON.stringify(mapCoords[mapCoords.length - 1])) {
+                                    mapCoords.push([...mapCoords[0]]);
+                                }
+
+                                // Check if polygon follows right-hand rule (counterclockwise orientation)
+                                const isClockwise = isPolygonClockwise(mapCoords);
+
+                                // If clockwise, reverse the coordinates to follow right-hand rule
+                                if (isClockwise) {
+                                    console.log(`Contour ${index} is clockwise, reversing to follow right-hand rule`);
+                                    mapCoords.reverse();
+                                } else {
+                                    console.log(`Contour ${index} already follows right-hand rule (counterclockwise)`);
+                                }
+                                
+                                geoms.push([mapCoords]);
+                            });
+                        } else {
+                            // Need to transform pixel coordinates to geographic coordinates
+                            console.log("Transforming pixel coordinates to geographic coordinates");
+                            var mapCoords = imageCoordsToMapCoords(mapBounds, data.outline, data.imageDims);
 
                             // Ensure polygon is closed
                             if (JSON.stringify(mapCoords[0]) !== JSON.stringify(mapCoords[mapCoords.length - 1])) {
@@ -132,7 +165,8 @@ document.getElementById('screenMap').addEventListener('click', async () => {
                             } else {
                                 console.log("Polygon already follows right-hand rule (counterclockwise)");
                             }
-                        geoms.push([mapCoords]);
+                            geoms.push([mapCoords]);
+                        }
 
                         let layer = ""
                         if (object === "Car") {
