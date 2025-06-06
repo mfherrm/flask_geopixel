@@ -26,14 +26,13 @@ window.map = new ol.Map({
     })
   ],
   view: new ol.View({
-    center: [121153378.28167, 6277346.31058],
+    center: [927319.695213, 6277180.746092],
     zoom: 15,
     projection: 'EPSG:3857'
   }),
   target: 'OL-map',
 });
 
-map.addInteraction(new ol.interaction.Link());
 
 
 // Create a vector source and add the rectangle feature

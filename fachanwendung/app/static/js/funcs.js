@@ -2,9 +2,11 @@ import './cadenza3.0.4.js';
 document.getElementById('screenMap').addEventListener('click', async () => {
     let mbs = map.getView().calculateExtent()
 
+    console.log("Map bounds (extent): [minX, minY, maxX, maxY] = ", mbs)
     console.log("Map bounds: \n \t SW: ", mbs[0], mbs[1], "\n \t NE: ", mbs[2], mbs[3])
     // As NW and SE
     var mapBounds = [[mbs[0], mbs[3]], [mbs[2], mbs[1]]]
+    console.log("Transformed mapBounds: \n \t NW: ", mapBounds[0], "\n \t SE: ", mapBounds[1])
 
     map.once('rendercomplete', function () {
         const mapCanvas = document.createElement('canvas');
@@ -113,8 +115,7 @@ document.getElementById('screenMap').addEventListener('click', async () => {
 
                         var geoms = [];
 
-                        for (const pos in [data.outline]) {
-                            var mapCoords = imageCoordsToMapCoords(mapBounds, [data.outline][pos], data.imageDims);
+                        var mapCoords = imageCoordsToMapCoords(mapBounds, data.outline, data.imageDims);
 
                             // Ensure polygon is closed
                             if (JSON.stringify(mapCoords[0]) !== JSON.stringify(mapCoords[mapCoords.length - 1])) {
@@ -131,8 +132,7 @@ document.getElementById('screenMap').addEventListener('click', async () => {
                             } else {
                                 console.log("Polygon already follows right-hand rule (counterclockwise)");
                             }
-                            geoms.push([mapCoords]);
-                        }
+                        geoms.push([mapCoords]);
 
                         let layer = ""
                         if (object === "Car") {
@@ -143,6 +143,8 @@ document.getElementById('screenMap').addEventListener('click', async () => {
                             layer = window.buildingLayer
                         }
 
+                        console.log("Object", object, "Layer", layer)
+
                         var polygon = {
                             "type": "MultiPolygon",
                             "coordinates": geoms,
@@ -151,8 +153,10 @@ document.getElementById('screenMap').addEventListener('click', async () => {
                         console.log("Polygon", polygon)
 
                         const features = new ol.format.GeoJSON().readFeatures(polygon, {
+                            dataProjection: 'EPSG:3857',     // Input coordinates are already in EPSG:3857
                             featureProjection: 'EPSG:3857',  // Map projection
                         })
+                        console.log("Features", features)
 
                         const featureArray = Array.isArray(features) ? features : [features];
 
@@ -188,22 +192,43 @@ document.getElementById('screenMap').addEventListener('click', async () => {
 });
 
 function imageCoordsToMapCoords(mapExtent, imageCoords, imageDims) {
-    console.log("Image coords", imageCoords)
+    console.log("=== Coordinate Transformation Debug ===");
+    console.log("Input imageCoords length:", imageCoords.length);
+    console.log("First few image coords:", imageCoords.slice(0, 3));
+    
     // Parse all input values to ensure they're numbers
     const NW = [parseFloat(mapExtent[0][0]), parseFloat(mapExtent[0][1])];
     const SE = [parseFloat(mapExtent[1][0]), parseFloat(mapExtent[1][1])];
-    const width = parseFloat(imageDims[0]);
-    const height = parseFloat(imageDims[1]);
+    const width = parseFloat(imageDims[1]);
+    const height = parseFloat(imageDims[0]);
+
+    console.log("Map extent - NW:", NW, "SE:", SE);
+    console.log("Image dimensions:", width, "x", height);
+    
+    // Calculate map bounds in a more explicit way
+    const mapMinX = NW[0];
+    const mapMaxX = SE[0];
+    const mapMinY = SE[1];
+    const mapMaxY = NW[1];
+    
+    console.log("Map bounds: minX:", mapMinX, "maxX:", mapMaxX, "minY:", mapMinY, "maxY:", mapMaxY);
+    console.log("Map width:", mapMaxX - mapMinX, "Map height:", mapMaxY - mapMinY);
+
+    // Validate map extent and dimensions
+    if (isNaN(NW[0]) || isNaN(NW[1]) || isNaN(SE[0]) || isNaN(SE[1])) {
+        console.error("Invalid map extent:", mapExtent);
+        return [];
+    }
+    if (isNaN(width) || isNaN(height) || width <= 0 || height <= 0) {
+        console.error("Invalid image dimensions:", imageDims);
+        return [];
+    }
 
     // Calculate scaling factors
-    const pixelCoordX = (SE[0] - NW[0]) / width;
-    const pixelCoordY = (NW[1] - SE[1]) / height;
+    const pixelCoordX = (mapMaxX - mapMinX) / width;
+    const pixelCoordY = (mapMaxY - mapMinY) / height;
 
-    // console.log(imageCoords)
-
-    console.log("NW:", NW, "SE:", SE);
-    console.log("Image dimensions:", width, "x", height);
-    console.log("Pixel scaling factors:", pixelCoordX, pixelCoordY);
+    console.log("Pixel scaling factors: X =", pixelCoordX, "Y =", pixelCoordY);
 
     // Create a new array to avoid modifying the input
     const result = [];
@@ -212,32 +237,55 @@ function imageCoordsToMapCoords(mapExtent, imageCoords, imageDims) {
     // Process each coordinate pair and add to result array
     for (let i = 0; i < imageCoords.length; i++) {
         const coord = imageCoords[i];
-        for (let j = 0; j < coord.length; j++) {
-            // Ensure coord is an array with two numeric values
-            if (Array.isArray(coord)) {
-                const x = parseFloat(coord[j][0][0]);
-                const y = parseFloat(coord[j][0][1]);
+        
+        // Ensure coord is an array with two numeric values
+        if (Array.isArray(coord) && coord.length >= 2) {
+            const x = parseFloat(coord[0]);
+            const y = parseFloat(coord[1]);
 
-
-                // Create a new coordinate pair with proper calculations
-                const mapCoord = [
-                    NW[0] + x * pixelCoordX,
-                    NW[1] - y * pixelCoordY  // Subtract for Y because image coordinates are top-down
-                ];
-
-                result.push(mapCoord);
-
-                if (j == 0) {
-                    firstCoord.push(mapCoord)
-                }
-            } else {
-                console.error("Invalid coordinate at index", i, ":", coord);
+            // Validate parsed coordinates
+            if (isNaN(x) || isNaN(y)) {
+                console.error(`Invalid coordinate values at index ${i}: x=${x}, y=${y}, original:`, coord);
+                continue; // Skip this coordinate
             }
 
-        }
+            // Create a new coordinate pair with proper calculations
+            // Image coordinates: (0,0) = top-left, (width,height) = bottom-right
+            // Map coordinates: standard geographic coordinates
+            const mapCoord = [
+                mapMinX + x * pixelCoordX,        // X: left to right
+                mapMaxY - y * pixelCoordY         // Y: top to bottom (flip Y axis)
+            ];
 
+            // Log first few transformations for debugging
+            if (i < 3) {
+                console.log(`Transform [${i}]: img(${x}, ${y}) -> map(${mapCoord[0]}, ${mapCoord[1]})`);
+            }
+
+            // Validate calculated coordinates
+            if (isNaN(mapCoord[0]) || isNaN(mapCoord[1])) {
+                console.error(`Calculated coordinate is NaN at index ${i}:`, mapCoord);
+                continue; // Skip this coordinate
+            }
+
+            result.push(mapCoord);
+
+            if (i == 0) {
+                firstCoord.push(mapCoord)
+            }
+        } else {
+            console.error("Invalid coordinate at index", i, ":", coord);
+        }
     }
-    result.push(firstCoord[0])
+    
+    // Add first coordinate to close polygon if we have any coordinates
+    if (firstCoord.length > 0) {
+        result.push(firstCoord[0]);
+    }
+
+    console.log("Transformation complete. Input coords:", imageCoords.length, "Output coords:", result.length);
+    console.log("First 3 output coords:", result.slice(0, 3));
+    console.log("=== End Coordinate Transformation Debug ===");
 
     return result;
 };
