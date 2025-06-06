@@ -183,10 +183,12 @@ async function processTiledImage(imageBlob, selection, mapBounds, object) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // Store all tile processing promises
-        const tilePromises = [];
+        // Determine batch size based on total tile count to prevent GPU memory overload
+        const batchSize = tileConfig.count > 20 ? 4 : tileConfig.count > 10 ? 6 : tileConfig.count;
+        console.log(`Processing tiles in batches of ${batchSize} to prevent GPU memory issues`);
         
-        // Process each tile
+        // Prepare all tile data first
+        const tileData = [];
         for (let y = 0; y < tilesY; y++) {
             for (let x = 0; x < tilesX; x++) {
                 const tileIndex = y * tilesX + x;
@@ -202,32 +204,55 @@ async function processTiledImage(imageBlob, selection, mapBounds, object) {
                 // Calculate tile bounds in geographic space
                 const tileBounds = calculateTileBounds(mapBounds, startX, startY, endX, endY, imageWidth, imageHeight);
                 
-                console.log(`Processing tile ${tileIndex}: pixel(${startX},${startY},${endX},${endY})`);
-                
-                // Extract tile from image
-                canvas.width = actualTileWidth;
-                canvas.height = actualTileHeight;
-                ctx.drawImage(img, startX, startY, actualTileWidth, actualTileHeight, 0, 0, actualTileWidth, actualTileHeight);
-                
-                // Convert tile to blob and process
-                const tilePromise = new Promise((resolve) => {
+                tileData.push({
+                    tileIndex,
+                    startX, startY, endX, endY,
+                    actualTileWidth, actualTileHeight,
+                    tileBounds
+                });
+            }
+        }
+        
+        // Process tiles in batches
+        const allTileResults = [];
+        for (let batchStart = 0; batchStart < tileData.length; batchStart += batchSize) {
+            const batchEnd = Math.min(batchStart + batchSize, tileData.length);
+            const batch = tileData.slice(batchStart, batchEnd);
+            
+            console.log(`Processing batch ${Math.floor(batchStart / batchSize) + 1}/${Math.ceil(tileData.length / batchSize)}: tiles ${batchStart} to ${batchEnd - 1}`);
+            
+            // Process current batch
+            const batchPromises = batch.map(tile => {
+                return new Promise((resolve) => {
+                    // Extract tile from image
+                    canvas.width = tile.actualTileWidth;
+                    canvas.height = tile.actualTileHeight;
+                    ctx.drawImage(img, tile.startX, tile.startY, tile.actualTileWidth, tile.actualTileHeight, 0, 0, tile.actualTileWidth, tile.actualTileHeight);
+                    
+                    // Convert tile to blob and process
                     canvas.toBlob(function(tileBlob) {
-                        processSingleTile(tileBlob, selection, tileBounds, [actualTileHeight, actualTileWidth], tileIndex)
+                        processSingleTile(tileBlob, selection, tile.tileBounds, [tile.actualTileHeight, tile.actualTileWidth], tile.tileIndex)
                             .then(resolve)
                             .catch(error => {
-                                console.error(`Error processing tile ${tileIndex}:`, error);
+                                console.error(`Error processing tile ${tile.tileIndex}:`, error);
                                 resolve(null);
                             });
                     }, 'image/png');
                 });
-                
-                tilePromises.push(tilePromise);
+            });
+            
+            // Wait for current batch to complete
+            const batchResults = await Promise.all(batchPromises);
+            allTileResults.push(...batchResults);
+            
+            // Small delay between batches to allow GPU memory to clear
+            if (batchEnd < tileData.length) {
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
         }
         
-        // Wait for all tiles to complete and combine results
-        const tileResults = await Promise.all(tilePromises);
-        combineAndDisplayTileResults(tileResults, object);
+        console.log(`All ${tileData.length} tiles processed. Combining results...`);
+        combineAndDisplayTileResults(allTileResults, object);
     };
     
     img.src = URL.createObjectURL(imageBlob);

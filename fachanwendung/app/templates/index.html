@@ -126,7 +126,9 @@
             
             // Close dropups when clicking outside
             document.addEventListener('click', function(e) {
-                if (!e.target.matches('.dropbtn')) {
+                // Check if the click is outside any dropup container
+                const clickedInsideDropup = e.target.closest('.dropup');
+                if (!clickedInsideDropup) {
                     document.querySelectorAll('.dropup-content').forEach(content => {
                         content.classList.remove('show');
                         content.style.display = 'none';
