@@ -301,6 +301,13 @@ def receive_image():
     
     mapBounds = json.loads(request.form['mapExtent'])
     selection = json.loads(request.form['selection'])
+    
+    # Check if this is a tile processing request
+    tile_info = None
+    if 'tileInfo' in request.form:
+        tile_info = json.loads(request.form['tileInfo'])
+        print(f"Processing tile {tile_info['index']} with dimensions {tile_info['tileDims']}")
+    
     # Check if imageData is in the request
     img = None
     try:
@@ -312,7 +319,10 @@ def receive_image():
         img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
         
         # Save the image for debugging (optional)
-        filename = 'satellite_image.jpg'
+        if tile_info:
+            filename = f'tile_{tile_info["index"]}.jpg'
+        else:
+            filename = 'satellite_image.jpg'
         filepath = os.path.join(IMAGE_FOLDER, filename)
         cv2.imwrite(filepath, img)
         print(f"Saved captured image to {filepath}")
@@ -327,7 +337,13 @@ def receive_image():
         # masks = get_geopixel_result(["--version=MBZUAI/GeoPixel-7B-RES"], [selection])
         # outline = np.array([[[[[446, 219]], [[445, 220]], [[443, 220]], [[439, 224]], [[439, 227]], [[438, 228]], [[438, 231]], [[437, 232]], [[437, 247]], [[436, 248]], [[437, 249]], [[437, 262]], [[436, 263]], [[436, 273]], [[435, 274]], [[435, 293]], [[434, 294]], [[434, 312]], [[435, 313]], [[435, 315]], [[438, 318]], [[448, 318]], [[449, 319]], [[465, 319]], [[466, 318]], [[467, 318]], [[469, 316]], [[469, 313]], [[468, 312]], [[468, 304]], [[469, 303]], [[469, 299]], [[468, 298]], [[468, 297]], [[469, 296]], [[469, 286]], [[470, 285]], [[470, 268]], [[471, 267]], [[471, 265]], [[470, 264]], [[471, 263]], [[471, 254]], [[472, 253]], [[472, 250]], [[473, 249]], [[473, 233]], [[472, 232]], [[472, 230]], [[471, 229]], [[471, 226]], [[470, 226]], [[469, 225]], [[468, 225]], [[467, 224]], [[465, 224]], [[461, 220]], [[460, 220]], [[459, 219]]]]])
         # outline = cv2.findContours(masks.astype(np.uint8).squeeze(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-        response = get_object_outlines("https://kgu5t2vmwim44q-5000.proxy.runpod.net/", "fachanwendung/app/static/images/satellite_image.jpg", query)
+        # Use the correct filename for tile processing
+        if tile_info:
+            image_filepath = f"fachanwendung/app/static/images/tile_{tile_info['index']}.jpg"
+        else:
+            image_filepath = "fachanwendung/app/static/images/satellite_image.jpg"
+            
+        response = get_object_outlines("https://kgu5t2vmwim44q-5000.proxy.runpod.net/", image_filepath, query)
         
         # Handle the case when get_object_outlines returns None
         if response is None:
@@ -343,22 +359,28 @@ def receive_image():
         # Simplify contours before creating overlays and sending to frontend
         simplified_contours = []
         if contours:
-            print("Simplifying contours...")
+            tile_prefix = f"Tile {tile_info['index']}: " if tile_info else ""
+            print(f"{tile_prefix}Simplifying contours...")
             for i, contour in enumerate(contours):
                 # Simplify contour using Douglas-Peucker algorithm (conservative simplification)
                 epsilon = 0.001 * cv2.arcLength(contour, True)  # 0.1% of perimeter for ~20% point reduction
                 simplified_contour = cv2.approxPolyDP(contour, epsilon, True)
                 simplified_contours.append(simplified_contour)
-                print(f"Contour {i}: {len(contour)} -> {len(simplified_contour)} points (simplified)")
+                print(f"{tile_prefix}Contour {i}: {len(contour)} -> {len(simplified_contour)} points (simplified)")
         
-        # Create overlay images using simplified contours
-        overlay_paths = create_overlay_images(img, simplified_contours, masks, IMAGE_FOLDER, mapBounds, imageDims)
+        # Create overlay images using simplified contours (only for non-tile processing)
+        overlay_paths = {}
+        if not tile_info:
+            overlay_paths = create_overlay_images(img, simplified_contours, masks, IMAGE_FOLDER, mapBounds, imageDims)
+        else:
+            print(f"Skipping overlay creation for tile {tile_info['index']}")
         
         # Transform simplified contours to geographic coordinates for frontend display
         # This ensures the map geometries match the overlay images
         serializable_contours = []
         if simplified_contours and mapBounds and imageDims:
-            print("Transforming simplified contours to geographic coordinates for frontend display...")
+            tile_prefix = f"Tile {tile_info['index']}: " if tile_info else ""
+            print(f"{tile_prefix}Transforming simplified contours to geographic coordinates for frontend display...")
             for i, simplified_contour in enumerate(simplified_contours):
                 # Extract simplified contour points
                 contour_points = [[point[0][0], point[0][1]] for point in simplified_contour]
@@ -369,15 +391,17 @@ def receive_image():
                 # Convert to the format expected by the frontend
                 serializable_contours.append(geo_coords)
                 
-                print(f"Simplified contour {i}: {len(simplified_contour)} points -> {len(geo_coords)} geo points")
+                print(f"{tile_prefix}Simplified contour {i}: {len(simplified_contour)} points -> {len(geo_coords)} geo points")
         elif simplified_contours:
             # Fallback to original pixel coordinates if no geographic data
-            print("Using simplified contours with pixel coordinates (no geographic transformation)")
+            tile_prefix = f"Tile {tile_info['index']}: " if tile_info else ""
+            print(f"{tile_prefix}Using simplified contours with pixel coordinates (no geographic transformation)")
             for i, simplified_contour in enumerate(simplified_contours):
                 serializable_contours.append(simplified_contour.tolist())
-                print(f"Simplified contour {i}: {len(simplified_contour)} points")
+                print(f"{tile_prefix}Simplified contour {i}: {len(simplified_contour)} points")
         
-        print(f"Processed {len(serializable_contours)} simplified contours for JSON")
+        tile_prefix = f"Tile {tile_info['index']}: " if tile_info else ""
+        print(f"{tile_prefix}Processed {len(serializable_contours)} simplified contours for JSON")
         
         # Convert file paths to URLs
         overlay_urls = {}

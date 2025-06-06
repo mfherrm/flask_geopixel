@@ -35,25 +35,6 @@ window.map = new ol.Map({
 
 
 
-// Create a vector source and add the rectangle feature
-const rectangleSource = new ol.source.Vector({});
-
-// Create a vector layer for the rectangle with styling
-window.rectangleLayer = new ol.layer.Vector({
-  source: rectangleSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({
-      color: 'rgba(0, 0, 255, 0.3)'  // Semi-transparent blue fill
-    }),
-    stroke: new ol.style.Stroke({
-      color: '#0000ff',  // Blue outline
-      width: 2
-    })
-  })
-});
-// Add the rectangle layer to the map
-map.addLayer(rectangleLayer);
-
 const carSource = new ol.source.Vector({});
 window.carLayer = new ol.layer.Vector({
   source: carSource,  // Fixed: added missing source property
@@ -91,10 +72,10 @@ window.buildingLayer = new ol.layer.Vector({
   source: buildingSource,  // Fixed: added missing source property
   style: new ol.style.Style({
     fill: new ol.style.Fill({
-      color: 'rgba(128, 128, 128, 0.3)'
+      color: 'rgba(64, 64, 64, 0.3)'
     }),
     stroke: new ol.style.Stroke({
-      color: '#808080',
+      color: '#404040',
       width: 2
     })
   })

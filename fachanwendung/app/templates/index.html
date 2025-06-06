@@ -49,6 +49,21 @@
                     <a href="#" class="object-option">River</a>
                 </div>
             </div>
+
+            <!-- Tile Count Selection -->
+            <div class="dropup">
+                <button id="tilesbttn" class="dropbtn">Tiles: 1</button>
+                <div class="dropup-content">
+                    <a href="#" class="tiles-option" data-tiles="1">1 tile (1x1)</a>
+                    <a href="#" class="tiles-option" data-tiles="6">6 tiles (2x3)</a>
+                    <a href="#" class="tiles-option" data-tiles="12">12 tiles (3x4)</a>
+                    <a href="#" class="tiles-option" data-tiles="20">20 tiles (4x5)</a>
+                    <a href="#" class="tiles-option" data-tiles="24">24 tiles (4x6)</a>
+                    <a href="#" class="tiles-option" data-tiles="30">30 tiles (5x6)</a>
+                    <a href="#" class="tiles-option" data-tiles="42">42 tiles (6x7)</a>
+                </div>
+            </div>
+
             <div class="form-check">
                 <input class="form-check-input" type="radio" name="vis" id="olbtn" value="1" checked>
                 <label class="form-check-label" for="olbtn">
@@ -76,6 +91,91 @@
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <!-- OpenLayers bundled version -->
     <script src="{{ url_for('static', filename='js/ol/dist/ol.js') }}"></script>
+    
+    <!-- Dropup functionality script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle dropdown button clicks to show/hide content
+            document.querySelectorAll('.dropbtn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Close all other dropups first
+                    document.querySelectorAll('.dropup-content').forEach(content => {
+                        if (content !== this.nextElementSibling) {
+                            content.classList.remove('show');
+                            content.style.display = 'none';
+                        }
+                    });
+                    
+                    // Toggle the clicked dropup
+                    const dropupContent = this.nextElementSibling;
+                    if (dropupContent) {
+                        const isCurrentlyVisible = dropupContent.style.display === 'block';
+                        if (isCurrentlyVisible) {
+                            dropupContent.style.display = 'none';
+                            dropupContent.classList.remove('show');
+                        } else {
+                            dropupContent.style.display = 'block';
+                            dropupContent.classList.add('show');
+                        }
+                    }
+                });
+            });
+            
+            // Close dropups when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.matches('.dropbtn')) {
+                    document.querySelectorAll('.dropup-content').forEach(content => {
+                        content.classList.remove('show');
+                        content.style.display = 'none';
+                    });
+                }
+            });
+            
+            // Handle option selections
+            document.querySelectorAll('.tiles-option').forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const tileCount = parseInt(this.dataset.tiles);
+                    document.getElementById('tilesbttn').textContent = `Tiles: ${tileCount}`;
+                    const dropupContent = this.closest('.dropup-content');
+                    dropupContent.classList.remove('show');
+                    dropupContent.style.display = 'none';
+                    
+                    // Update tile configuration if function is available
+                    if (window.updateTileConfig) {
+                        window.updateTileConfig(tileCount);
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    document.getElementById('colorbttn').textContent = this.textContent;
+                    const dropupContent = this.closest('.dropup-content');
+                    dropupContent.classList.remove('show');
+                    dropupContent.style.display = 'none';
+                });
+            });
+            
+            document.querySelectorAll('.object-option').forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    document.getElementById('objbttn').textContent = this.textContent;
+                    const dropupContent = this.closest('.dropup-content');
+                    dropupContent.classList.remove('show');
+                    dropupContent.style.display = 'none';
+                });
+            });
+        });
+    </script>
+    
     <script defer src="{{ url_for('static', filename='js/main.js') }}" type="module"></script>
 
 </body>

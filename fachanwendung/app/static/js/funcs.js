@@ -1,4 +1,43 @@
 import './cadenza3.0.4.js';
+
+// Global tile configuration
+let tileConfig = {
+    count: 1,
+    rows: 1,
+    cols: 1,
+    label: "1 tile (1x1)"
+};
+
+// Dropup functionality is now handled in the HTML file
+// This ensures proper loading and execution order
+
+// Add tile configuration update to window so it can be called from HTML
+window.updateTileConfig = updateTileConfig;
+
+function updateTileConfig(tileCount) {
+    // Define optimal grid configurations for different tile counts
+    const tileConfigs = {
+        1: { rows: 1, cols: 1, label: "1 tile (1x1)" },
+        6: { rows: 2, cols: 3, label: "6 tiles (2x3)" },
+        12: { rows: 3, cols: 4, label: "12 tiles (3x4)" },
+        20: { rows: 4, cols: 5, label: "20 tiles (4x5)" },
+        24: { rows: 4, cols: 6, label: "24 tiles (4x6)" },
+        30: { rows: 5, cols: 6, label: "30 tiles (5x6)" },
+        42: { rows: 6, cols: 7, label: "42 tiles (6x7)" }
+    };
+    
+    if (tileConfigs[tileCount]) {
+        tileConfig = {
+            count: tileCount,
+            rows: tileConfigs[tileCount].rows,
+            cols: tileConfigs[tileCount].cols,
+            label: tileConfigs[tileCount].label
+        };
+    } else {
+        console.error(`Unknown tile count: ${tileCount}`);
+    }
+}
+
 document.getElementById('screenMap').addEventListener('click', async () => {
     let mbs = map.getView().calculateExtent()
 
@@ -72,7 +111,7 @@ document.getElementById('screenMap').addEventListener('click', async () => {
         mapContext.globalAlpha = 1;
         mapContext.setTransform(1, 0, 0, 1, 0, 0);
 
-        // Convert canvas to blob and handle form submission
+        // Convert canvas to blob and handle tiled processing
         mapCanvas.toBlob(function (blob) {
             console.log("Canvas converted to blob:", blob);
             console.log("Blob size:", blob ? blob.size : "null");
@@ -103,151 +142,235 @@ document.getElementById('screenMap').addEventListener('click', async () => {
 
             console.log("Selection", selection);
 
-            // Create FormData with image blob
-            const formData = new FormData();
-            formData.append('selection', selection);
-            formData.append('mapExtent', JSON.stringify(mapBounds));
-            formData.append('imageData', blob, 'map-image.png');
-
-            // Debug: Log FormData contents
-            console.log("FormData entries:");
-            for (let [key, value] of formData.entries()) {
-                console.log(key, value);
-                if (value instanceof File || value instanceof Blob) {
-                    console.log(`  ${key}: ${value.constructor.name}, size: ${value.size}, type: ${value.type}`);
-                }
-            }
-
-            // Send the request
-            fetch('http://127.0.0.1:5000/receive', {
-                method: 'POST',
-                body: formData
-            }).then(response => response.json())
-                .then(data => {
-                    console.log(data);
-
-                    if (data.message === 'Successfully retrieved outline' && data.outline) {
-                        console.log("Image dims:", data.imageDims);
-                        console.log("Coordinates transformed:", data.coordinates_transformed);
-                        console.log("Outline data:", data.outline);
-                        console.log("Number of contours:", data.outline.length);
-
-                        var geoms = [];
-
-                        if (data.coordinates_transformed) {
-                            // Backend has already transformed coordinates to geographic format
-                            console.log("Using pre-transformed geographic coordinates from backend");
-                            
-                            // Process all contours, not just the first one
-                            data.outline.forEach((contour, index) => {
-                                console.log(`Processing contour ${index} with ${contour.length} points`);
-                                var mapCoords = contour; // Already in geographic coordinates
-                                
-                                // Ensure polygon is closed
-                                if (mapCoords.length > 0 && JSON.stringify(mapCoords[0]) !== JSON.stringify(mapCoords[mapCoords.length - 1])) {
-                                    mapCoords.push([...mapCoords[0]]);
-                                }
-
-                                // Check if polygon follows right-hand rule (counterclockwise orientation)
-                                const isClockwise = isPolygonClockwise(mapCoords);
-
-                                // If clockwise, reverse the coordinates to follow right-hand rule
-                                if (isClockwise) {
-                                    console.log(`Contour ${index} is clockwise, reversing to follow right-hand rule`);
-                                    mapCoords.reverse();
-                                } else {
-                                    console.log(`Contour ${index} already follows right-hand rule (counterclockwise)`);
-                                }
-                                
-                                geoms.push([mapCoords]);
-                            });
-                        } else {
-                            // Need to transform pixel coordinates to geographic coordinates
-                            console.log("Transforming pixel coordinates to geographic coordinates");
-                            var mapCoords = imageCoordsToMapCoords(mapBounds, data.outline, data.imageDims);
-
-                            // Ensure polygon is closed
-                            if (JSON.stringify(mapCoords[0]) !== JSON.stringify(mapCoords[mapCoords.length - 1])) {
-                                mapCoords.push([...mapCoords[0]]);
-                            }
-
-                            // Check if polygon follows right-hand rule (counterclockwise orientation)
-                            const isClockwise = isPolygonClockwise(mapCoords);
-
-                            // If clockwise, reverse the coordinates to follow right-hand rule
-                            if (isClockwise) {
-                                console.log("Polygon is clockwise, reversing to follow right-hand rule");
-                                mapCoords.reverse();
-                            } else {
-                                console.log("Polygon already follows right-hand rule (counterclockwise)");
-                            }
-                            geoms.push([mapCoords]);
-                        }
-
-                        let layer = ""
-                        if (object === "Car") {
-                            layer = window.carLayer
-                        } else if (object === "River") {
-                            layer = window.riverLayer
-                        } else {
-                            layer = window.buildingLayer
-                        }
-
-                        console.log("Object", object, "Layer", layer)
-
-                        var polygon = {
-                            "type": "MultiPolygon",
-                            "coordinates": geoms,
-                        };
-
-                        console.log("Polygon", polygon)
-
-                        const features = new ol.format.GeoJSON().readFeatures(polygon, {
-                            dataProjection: 'EPSG:3857',     // Input coordinates are already in EPSG:3857
-                            featureProjection: 'EPSG:3857',  // Map projection
-                        })
-                        console.log("Features", features)
-
-                        const featureArray = Array.isArray(features) ? features : [features];
-
-                        featureArray.forEach(feature => {
-                            feature.setStyle(layer.getStyle());
-                            layer.getSource().addFeature(feature);
-                        });
-                        layer.changed()
-                        map.render(); 
-                        map.renderSync();
-                        // addRectangleToLayer(features, layer)
-
-                        // cadenzaClient.showMap('messstellenkarte', {
-                        // useMapSrs: true,
-                        // mapExtent: [
-                        //     mbs[0], mbs[1], mbs[2], mbs[3]
-                        // ],
-                        //  geometry: polygon
-                        //});
-
-
-
-                    } else if (data.error) {
-                        alert(`Error: ${data.error}`);
-                    }
-                }).catch(e => {
-                    alert(e.toString());
-                });
+            // Process image in tiles using selected configuration
+            console.log(`Processing image with ${tileConfig.label}`);
+            processTiledImage(blob, selection, mapBounds, object);
             
-            // Restore original layer visibility after screenshot
-            layers.forEach((layer, index) => {
-                layer.setVisible(layerVisibility[index]);
-            });
-            
-            // Re-render map with restored layers
-            map.renderSync();
         }, 'image/png');
+        
+        // Restore original layer visibility after screenshot
+        layers.forEach((layer, index) => {
+            layer.setVisible(layerVisibility[index]);
+        });
+        
+        // Re-render map with restored layers
+        map.renderSync();
     });
     map.renderSync();
 
 });
+
+async function processTiledImage(imageBlob, selection, mapBounds, object) {
+    console.log(`Starting tiled image processing with ${tileConfig.label}...`);
+    
+    // Create image element to get dimensions
+    const img = new Image();
+    img.onload = async function() {
+        const imageWidth = img.width;
+        const imageHeight = img.height;
+        console.log(`Image dimensions: ${imageWidth}x${imageHeight}`);
+        
+        // Use dynamic tile configuration
+        const tilesX = tileConfig.cols;
+        const tilesY = tileConfig.rows;
+        const tileWidth = Math.floor(imageWidth / tilesX);
+        const tileHeight = Math.floor(imageHeight / tilesY);
+        
+        console.log(`Tile grid: ${tilesX}x${tilesY} = ${tileConfig.count} tiles`);
+        console.log(`Tile dimensions: ${tileWidth}x${tileHeight}`);
+        
+        // Create canvas for tile extraction
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Store all tile processing promises
+        const tilePromises = [];
+        
+        // Process each tile
+        for (let y = 0; y < tilesY; y++) {
+            for (let x = 0; x < tilesX; x++) {
+                const tileIndex = y * tilesX + x;
+                
+                // Calculate tile bounds in pixel space
+                const startX = x * tileWidth;
+                const startY = y * tileHeight;
+                const endX = Math.min(startX + tileWidth, imageWidth);
+                const endY = Math.min(startY + tileHeight, imageHeight);
+                const actualTileWidth = endX - startX;
+                const actualTileHeight = endY - startY;
+                
+                // Calculate tile bounds in geographic space
+                const tileBounds = calculateTileBounds(mapBounds, startX, startY, endX, endY, imageWidth, imageHeight);
+                
+                console.log(`Processing tile ${tileIndex}: pixel(${startX},${startY},${endX},${endY})`);
+                
+                // Extract tile from image
+                canvas.width = actualTileWidth;
+                canvas.height = actualTileHeight;
+                ctx.drawImage(img, startX, startY, actualTileWidth, actualTileHeight, 0, 0, actualTileWidth, actualTileHeight);
+                
+                // Convert tile to blob and process
+                const tilePromise = new Promise((resolve) => {
+                    canvas.toBlob(function(tileBlob) {
+                        processSingleTile(tileBlob, selection, tileBounds, [actualTileHeight, actualTileWidth], tileIndex)
+                            .then(resolve)
+                            .catch(error => {
+                                console.error(`Error processing tile ${tileIndex}:`, error);
+                                resolve(null);
+                            });
+                    }, 'image/png');
+                });
+                
+                tilePromises.push(tilePromise);
+            }
+        }
+        
+        // Wait for all tiles to complete and combine results
+        const tileResults = await Promise.all(tilePromises);
+        combineAndDisplayTileResults(tileResults, object);
+    };
+    
+    img.src = URL.createObjectURL(imageBlob);
+}
+
+function calculateTileBounds(globalMapBounds, startX, startY, endX, endY, imageWidth, imageHeight) {
+    const NW = globalMapBounds[0];
+    const SE = globalMapBounds[1];
+    
+    const mapWidth = SE[0] - NW[0];
+    const mapHeight = NW[1] - SE[1];
+    
+    const tileNW_X = NW[0] + (startX / imageWidth) * mapWidth;
+    const tileNW_Y = NW[1] - (startY / imageHeight) * mapHeight;
+    const tileSE_X = NW[0] + (endX / imageWidth) * mapWidth;
+    const tileSE_Y = NW[1] - (endY / imageHeight) * mapHeight;
+    
+    return [[tileNW_X, tileNW_Y], [tileSE_X, tileSE_Y]];
+}
+
+async function processSingleTile(tileBlob, selection, tileBounds, tileDims, tileIndex) {
+    console.log(`Sending tile ${tileIndex} to backend...`);
+    
+    const formData = new FormData();
+    formData.append('selection', selection);
+    formData.append('mapExtent', JSON.stringify(tileBounds));
+    formData.append('imageData', tileBlob, `tile-${tileIndex}.png`);
+    formData.append('tileInfo', JSON.stringify({
+        index: tileIndex,
+        tileDims: tileDims
+    }));
+    
+    try {
+        const response = await fetch('http://127.0.0.1:5000/receive', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        console.log(`Tile ${tileIndex} response:`, data);
+        
+        if (data.message === 'Successfully retrieved outline' && data.outline) {
+            return {
+                tileIndex: tileIndex,
+                data: data
+            };
+        } else if (data.error) {
+            console.error(`Tile ${tileIndex} error:`, data.error);
+            return null;
+        }
+    } catch (error) {
+        console.error(`Network error for tile ${tileIndex}:`, error);
+        return null;
+    }
+}
+
+function combineAndDisplayTileResults(tileResults, object) {
+    console.log(`Combining results from ${tileConfig.label}...`);
+    
+    const validResults = tileResults.filter(result => result !== null);
+    console.log(`Successfully processed ${validResults.length} tiles out of ${tileConfig.count} total tiles`);
+    
+    if (validResults.length === 0) {
+        alert("No valid results from tile processing");
+        return;
+    }
+    
+    // Determine target layer
+    let layer = "";
+    if (object === "Car") {
+        layer = window.carLayer;
+    } else if (object === "River") {
+        layer = window.riverLayer;
+    } else {
+        layer = window.buildingLayer;
+    }
+    
+    console.log("Target layer:", layer);
+    
+    // Process each tile's results
+    validResults.forEach(result => {
+        const { tileIndex, data } = result;
+        
+        if (data.outline && data.outline.length > 0) {
+            console.log(`Processing geometries from tile ${tileIndex}`);
+            
+            const geoms = [];
+            
+            if (data.coordinates_transformed) {
+                // Process all contours from this tile
+                data.outline.forEach((contour, contourIndex) => {
+                    console.log(`Tile ${tileIndex}, contour ${contourIndex}: ${contour.length} points`);
+                    
+                    let mapCoords = contour; // Already in geographic coordinates
+                    
+                    // Ensure polygon is closed
+                    if (mapCoords.length > 0 && JSON.stringify(mapCoords[0]) !== JSON.stringify(mapCoords[mapCoords.length - 1])) {
+                        mapCoords.push([...mapCoords[0]]);
+                    }
+                    
+                    // Check and fix polygon orientation
+                    const isClockwise = isPolygonClockwise(mapCoords);
+                    if (isClockwise) {
+                        console.log(`Tile ${tileIndex}, contour ${contourIndex}: reversing clockwise polygon`);
+                        mapCoords.reverse();
+                    }
+                    
+                    geoms.push([mapCoords]);
+                });
+            }
+            
+            if (geoms.length > 0) {
+                const polygon = {
+                    "type": "MultiPolygon",
+                    "coordinates": geoms,
+                };
+                
+                try {
+                    const features = new ol.format.GeoJSON().readFeatures(polygon, {
+                        dataProjection: 'EPSG:3857',
+                        featureProjection: 'EPSG:3857',
+                    });
+                    
+                    features.forEach(feature => {
+                        feature.setStyle(layer.getStyle());
+                        layer.getSource().addFeature(feature);
+                    });
+                    
+                    console.log(`Added ${features.length} features from tile ${tileIndex}`);
+                } catch (error) {
+                    console.error(`Error creating features for tile ${tileIndex}:`, error);
+                }
+            }
+        }
+    });
+    
+    // Refresh the layer and map
+    layer.changed();
+    map.render();
+    map.renderSync();
+    
+    console.log("Tiled processing complete!");
+}
 
 function imageCoordsToMapCoords(mapExtent, imageCoords, imageDims) {
     console.log("=== Coordinate Transformation Debug ===");
