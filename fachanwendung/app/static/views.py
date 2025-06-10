@@ -279,7 +279,7 @@ def create_simple_overlay_images(original_img, contours, masks, save_folder):
 def add_cors_headers(response):
     cadenza_uri = current_app.config.get('CADENZA_URI', '')
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Content-Security-Policy'] = "frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000;"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://mt0.google.com https://mt1.google.com https://mt2.google.com https://mt3.google.com; frame-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000 https://api.runpod.ai https://api.runpod.io; frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/;"
     return response
 
 @bp.route('/')
@@ -451,3 +451,80 @@ def receive_image():
         #     return jsonify({'error': f'Error processing file: {str(e)}'}), 500
 
     return jsonify({'error': 'Something went wrong'}), 500
+
+@bp.route('/runpod-proxy', methods=['POST'])
+def runpod_proxy():
+    """Proxy endpoint for RunPod API calls to avoid CORS issues"""
+    import requests
+    
+    try:
+        # Get the request data from the frontend
+        data = request.get_json()
+        api_key = data.get('api_key')
+        query = data.get('query')
+        variables = data.get('variables', {})
+        
+        if not api_key or not query:
+            return jsonify({'error': 'API key and query are required'}), 400
+        
+        print(f"RunPod Proxy: Received API key length: {len(api_key)}")
+        print(f"RunPod Proxy: Query: {query[:100]}...")
+        
+        # Make the request to RunPod API server-side
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key.strip()}'
+        }
+        
+        payload = {
+            'query': query,
+            'variables': variables
+        }
+        
+        # Try both endpoints
+        endpoints = [
+            'https://api.runpod.io/graphql',
+            'https://api.runpod.ai/graphql'
+        ]
+        
+        last_error = None
+        for endpoint in endpoints:
+            try:
+                print(f"RunPod Proxy: Trying endpoint {endpoint}")
+                response = requests.post(endpoint, json=payload, headers=headers, timeout=30)
+                print(f"RunPod Proxy: Response status {response.status_code} from {endpoint}")
+                
+                if response.status_code == 200:
+                    return jsonify(response.json()), 200
+                elif response.status_code == 401:
+                    print(f"RunPod Proxy: 401 Unauthorized from {endpoint}")
+                    print(f"RunPod Proxy: Response text: {response.text}")
+                    return jsonify({
+                        'error': f'Authentication failed: Invalid API key',
+                        'details': f'401 Unauthorized from {endpoint}',
+                        'response': response.text
+                    }), 401
+                elif response.status_code == 404:
+                    last_error = f"404 Not Found at {endpoint}"
+                    continue
+                else:
+                    print(f"RunPod Proxy: Error {response.status_code} from {endpoint}: {response.text}")
+                    return jsonify({
+                        'error': f'RunPod API error: {response.status_code}',
+                        'details': response.text,
+                        'endpoint': endpoint
+                    }), response.status_code
+                    
+            except requests.exceptions.RequestException as e:
+                last_error = f"Request failed for {endpoint}: {str(e)}"
+                print(f"RunPod Proxy: Request exception: {last_error}")
+                continue
+        
+        # If we get here, all endpoints failed
+        return jsonify({
+            'error': 'All RunPod API endpoints failed',
+            'details': last_error
+        }), 500
+        
+    except Exception as e:
+        return jsonify({'error': f'Proxy error: {str(e)}'}), 500

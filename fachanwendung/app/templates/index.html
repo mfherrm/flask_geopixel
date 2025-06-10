@@ -7,8 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Geopixel implemented into disy Cadenza">
     <meta name="theme-color" content="#ffffff">
-    <meta http-equiv="Content-Security-Policy"
-        content="frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000">
+    <!-- CSP temporarily disabled for RunPod testing -->
+    <!-- <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://mt0.google.com https://mt1.google.com https://mt2.google.com https://mt3.google.com; frame-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000 https://api.runpod.ai;"> -->
 
     <title>GeoPixel for disy Cadenza</title>
 
@@ -18,6 +19,85 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="../static/css/style.css">
     <link rel="stylesheet" href="../static/js/ol/ol.css">
+    
+    <!-- RunPod Panel Styles -->
+    <style>
+        #runpod-panel {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        #runpod-panel input {
+            transition: border-color 0.2s ease;
+        }
+        
+        #runpod-panel input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+        
+        #runpod-panel button {
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        #runpod-panel button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        #runpod-panel button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        #runpod-start:hover:not(:disabled) {
+            background: #218838;
+        }
+        
+        #runpod-stop:hover:not(:disabled) {
+            background: #c82333;
+        }
+        
+        #runpod-test:hover:not(:disabled) {
+            background: #138496;
+        }
+        
+        #runpod-toggle:hover {
+            background: #0056b3;
+        }
+        
+        #runpod-status {
+            transition: background-color 0.3s ease;
+        }
+        
+        .status-running {
+            background: #d4edda !important;
+            border-color: #c3e6cb !important;
+        }
+        
+        .status-error {
+            background: #f8d7da !important;
+            border-color: #f5c6cb !important;
+        }
+        
+        .status-starting {
+            background: #fff3cd !important;
+            border-color: #ffeaa7 !important;
+        }
+        
+        @media (max-width: 768px) {
+            #runpod-panel {
+                position: fixed !important;
+                top: 10px !important;
+                right: 10px !important;
+                left: 10px !important;
+                min-width: auto !important;
+                max-width: none !important;
+            }
+        }
+    </style>
 </head>
 
 <body data-cadenza-uri="{{ cadenza_uri }}" data-cadenza-repository-name="{{ config.CADENZA_REPOSITORY_NAME }}"
@@ -189,6 +269,52 @@
                 </label>
             </div>
         </div>
+
+        <!-- RunPod Control Panel -->
+        <div id="runpod-panel" style="position: fixed; top: 20px; right: 20px; background: rgba(255,255,255,0.95); border: 2px solid #007bff; border-radius: 8px; padding: 15px; min-width: 300px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 1000;">
+            <h4 style="margin: 0 0 15px 0; color: #007bff; font-size: 16px;">RunPod Control</h4>
+            
+            <!-- API Key Input -->
+            <div style="margin-bottom: 10px;">
+                <label for="runpod-api-key" style="display: block; font-size: 12px; margin-bottom: 5px;">API Key:</label>
+                <input type="password" id="runpod-api-key" placeholder="Enter RunPod API Key" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+                <div style="font-size: 10px; color: #666; margin-top: 2px;">
+                    Get your API key from RunPod Console → Settings → API Keys
+                </div>
+            </div>
+            
+            <!-- Template ID Input -->
+            <div style="margin-bottom: 10px;">
+                <label for="runpod-template-id" style="display: block; font-size: 12px; margin-bottom: 5px;">Template ID:</label>
+                <input type="text" id="runpod-template-id" value="twv5k60kj1" placeholder="e.g., runpod/pytorch:2.0.1-py3.10-cuda11.8.0-devel-ubuntu22.04" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+                <div style="font-size: 10px; color: #666; margin-top: 2px;">
+                    Format: Can be a Docker image (user/image:tag) or RunPod template ID
+                </div>
+            </div>
+            
+            <!-- Pod Name Input -->
+            <div style="margin-bottom: 15px;">
+                <label for="runpod-name" style="display: block; font-size: 12px; margin-bottom: 5px;">Pod Name:</label>
+                <input type="text" id="runpod-name" placeholder="Enter Pod Name (optional)" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+            </div>
+            
+            <!-- Control Buttons -->
+            <div style="margin-bottom: 15px;">
+                <button id="runpod-test" style="background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin-right: 5px; cursor: pointer; font-size: 11px;">Test API</button>
+                <button id="runpod-start" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-right: 10px; cursor: pointer; font-size: 12px;">Start Pod</button>
+                <button id="runpod-stop" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;" disabled>Stop Pod</button>
+            </div>
+            
+            <!-- Status Display -->
+            <div id="runpod-status" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; font-size: 12px; min-height: 60px;">
+                <div style="font-weight: bold; margin-bottom: 5px;">Status: <span id="runpod-status-text">Not Connected</span></div>
+                <div id="runpod-details" style="color: #666; font-size: 11px;"></div>
+                <div id="runpod-error" style="color: #dc3545; font-size: 11px; margin-top: 5px;"></div>
+            </div>
+            
+            <!-- Toggle Panel Button -->
+            <button id="runpod-toggle" style="position: absolute; top: -10px; left: -10px; background: #007bff; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 12px;">−</button>
+        </div>
     </div>
 
     <!-- Scripts loaded at the end for better performance -->
@@ -283,6 +409,388 @@
                     dropupContent.style.display = 'none';
                 });
             });
+        });
+    </script>
+
+    <!-- RunPod API Integration Script - Updated 2025-06-10-11:44 -->
+    <script>
+        class RunPodManager {
+            constructor() {
+                this.currentPodId = null;
+                this.statusCheckInterval = null;
+                this.apiBaseUrl = '/runpod-proxy';
+                this.initializeEventListeners();
+                this.loadSavedCredentials();
+            }
+
+            initializeEventListeners() {
+                document.getElementById('runpod-test').addEventListener('click', () => this.testConnection());
+                document.getElementById('runpod-start').addEventListener('click', () => this.startPod());
+                document.getElementById('runpod-stop').addEventListener('click', () => this.stopPod());
+                document.getElementById('runpod-toggle').addEventListener('click', () => this.togglePanel());
+                
+                // Save credentials when they change
+                document.getElementById('runpod-api-key').addEventListener('change', () => this.saveCredentials());
+                document.getElementById('runpod-template-id').addEventListener('change', () => this.saveCredentials());
+            }
+
+            loadSavedCredentials() {
+                const apiKey = localStorage.getItem('runpod-api-key');
+                const templateId = localStorage.getItem('runpod-template-id');
+                
+                if (apiKey) document.getElementById('runpod-api-key').value = apiKey;
+                if (templateId) document.getElementById('runpod-template-id').value = templateId;
+            }
+
+            saveCredentials() {
+                const apiKey = document.getElementById('runpod-api-key').value;
+                const templateId = document.getElementById('runpod-template-id').value;
+                
+                if (apiKey) localStorage.setItem('runpod-api-key', apiKey);
+                if (templateId) localStorage.setItem('runpod-template-id', templateId);
+            }
+
+            togglePanel() {
+                const panel = document.getElementById('runpod-panel');
+                const toggle = document.getElementById('runpod-toggle');
+                const isMinimized = panel.style.height === '40px';
+                
+                if (isMinimized) {
+                    panel.style.height = 'auto';
+                    panel.style.overflow = 'visible';
+                    toggle.textContent = '−';
+                } else {
+                    panel.style.height = '40px';
+                    panel.style.overflow = 'hidden';
+                    toggle.textContent = '+';
+                }
+            }
+
+            updateStatus(status, details = '', error = '') {
+                document.getElementById('runpod-status-text').textContent = status;
+                document.getElementById('runpod-details').textContent = details;
+                document.getElementById('runpod-error').textContent = error;
+                
+                // Update status styling
+                const statusDiv = document.getElementById('runpod-status');
+                statusDiv.className = ''; // Clear existing classes
+                
+                if (status.toLowerCase().includes('running') || status === 'RUNNING') {
+                    statusDiv.classList.add('status-running');
+                } else if (status.toLowerCase().includes('error') || error) {
+                    statusDiv.classList.add('status-error');
+                } else if (status.toLowerCase().includes('starting') || status === 'STARTING') {
+                    statusDiv.classList.add('status-starting');
+                }
+                
+                // Update button states
+                const startBtn = document.getElementById('runpod-start');
+                const stopBtn = document.getElementById('runpod-stop');
+                
+                if (status === 'RUNNING' || status === 'Starting...' || status === 'STARTING' || status.toLowerCase().includes('running')) {
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                } else {
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+            }
+
+            async makeGraphQLRequest(query, variables = {}) {
+                const apiKey = document.getElementById('runpod-api-key').value;
+                
+                if (!apiKey) {
+                    throw new Error('API Key is required');
+                }
+
+                try {
+                    console.log('Making request to RunPod Proxy:', this.apiBaseUrl);
+                    
+                    const response = await fetch(this.apiBaseUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            api_key: apiKey,
+                            query: query,
+                            variables: variables
+                        })
+                    });
+
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('Response data:', data);
+                    
+                    if (data.errors) {
+                        throw new Error(data.errors[0].message);
+                    }
+                    
+                    return data.data;
+                } catch (error) {
+                    console.error('GraphQL request failed:', error);
+                    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                        throw new Error('Network error: Unable to connect to RunPod API. Check your internet connection and API endpoint.');
+                    }
+                    throw error;
+                }
+            }
+
+            async testConnection() {
+                try {
+                    const apiKey = document.getElementById('runpod-api-key').value.trim();
+                    
+                    // Validate API key before testing
+                    if (!apiKey) {
+                        throw new Error('API Key is required for testing');
+                    }
+                    
+                    this.updateStatus('Testing...', 'Checking API connection');
+                    
+                    // Simple query to test the connection - use RunPod's actual schema
+                    const query = `
+                        query {
+                            myself {
+                                id
+                                email
+                            }
+                        }
+                    `;
+                    
+                    const result = await this.makeGraphQLRequest(query);
+                    
+                    if (result && result.myself) {
+                        this.updateStatus('Connected', `API working! User: ${result.myself.email || result.myself.id}`);
+                    } else if (result) {
+                        this.updateStatus('Connected', 'API connection successful');
+                    } else {
+                        throw new Error('No valid response from API');
+                    }
+                    
+                } catch (error) {
+                    this.updateStatus('Connection Failed', '', `Error: ${error.message}`);
+                    console.error('Connection test failed:', error);
+                }
+            }
+
+            async startPod() {
+                try {
+                    const apiKey = document.getElementById('runpod-api-key').value.trim();
+                    const templateId = document.getElementById('runpod-template-id').value.trim();
+                    const podName = document.getElementById('runpod-name').value.trim() || 'GeoPixel-Pod';
+                    
+                    // Validate required fields
+                    if (!apiKey) {
+                        throw new Error('API Key is required');
+                    }
+                    if (!templateId) {
+                        throw new Error('Template ID is required');
+                    }
+                    if (podName.length === 0) {
+                        throw new Error('Pod Name cannot be empty');
+                    }
+
+                    this.updateStatus('Starting...', 'Creating new pod instance');
+
+                    const mutation = `
+                        mutation podFindAndDeployOnDemand($input: PodFindAndDeployOnDemandInput) {
+                            podFindAndDeployOnDemand(input: $input) {
+                                id
+                                imageName
+                                env
+                                machineId
+                                machine {
+                                    podHostId
+                                }
+                            }
+                        }
+                    `;
+
+                    // Ensure all variables are properly formatted and not empty
+                    const variables = {
+                        input: {
+                            cloudType: "ALL",
+                            gpuCount: 1,
+                            volumeInGb: 0,
+                            containerDiskInGb: 60,
+                            minVcpuCount: 1,
+                            minMemoryInGb: 30,
+                            gpuTypeId: "NVIDIA RTX 6000 Ada Generation",
+                            name: podName.trim(),
+                            templateId: templateId.trim(),
+                            dockerArgs: "",
+                            ports: "8888/http",
+                            volumeMountPath: "/workspace",
+                            env: [
+                                {
+                                    key: "JUPYTER_PASSWORD",
+                                    value: "geopixel123"
+                                }
+                            ]
+                        }
+                    };
+                    
+                    // Validate that critical fields are not empty after trimming
+                    if (!variables.input.name || !variables.input.templateId) {
+                        throw new Error('Pod name and template ID cannot be empty');
+                    }
+
+                    const result = await this.makeGraphQLRequest(mutation, variables);
+                    
+                    if (result.podFindAndDeployOnDemand) {
+                        this.currentPodId = result.podFindAndDeployOnDemand.id;
+                        this.updateStatus('Starting', `Pod ID: ${this.currentPodId}`);
+                        this.startStatusChecking();
+                    } else {
+                        throw new Error('Failed to create pod');
+                    }
+
+                } catch (error) {
+                    this.updateStatus('Error', '', error.message);
+                    console.error('RunPod start error:', error);
+                }
+            }
+
+            async stopPod() {
+                try {
+                    if (!this.currentPodId) {
+                        throw new Error('No active pod to stop');
+                    }
+
+                    this.updateStatus('Stopping...', 'Terminating pod instance');
+
+                    const mutation = `
+                        mutation podTerminate($input: PodTerminateInput!) {
+                            podTerminate(input: $input)
+                        }
+                    `;
+
+                    const variables = {
+                        input: {
+                            podId: this.currentPodId
+                        }
+                    };
+
+                    await this.makeGraphQLRequest(mutation, variables);
+                    
+                    this.currentPodId = null;
+                    this.stopStatusChecking();
+                    this.updateStatus('Stopped', 'Pod terminated successfully');
+
+                } catch (error) {
+                    this.updateStatus('Error', '', error.message);
+                    console.error('RunPod stop error:', error);
+                }
+            }
+
+            async checkPodStatus() {
+                try {
+                    if (!this.currentPodId) return;
+
+                    const query = `
+                        query {
+                            myself {
+                                pods {
+                                    id
+                                    name
+                                    runtime {
+                                        uptimeInSeconds
+                                        ports {
+                                            ip
+                                            isIpPublic
+                                            privatePort
+                                            publicPort
+                                            type
+                                        }
+                                        gpus {
+                                            id
+                                            gpuUtilPercent
+                                            memoryUtilPercent
+                                        }
+                                    }
+                                    machine {
+                                        podHostId
+                                    }
+                                    desiredStatus
+                                    lastStatusChange
+                                }
+                            }
+                        }
+                    `;
+
+                    const variables = {};
+
+                    const result = await this.makeGraphQLRequest(query, variables);
+                    
+                    if (result.myself && result.myself.pods) {
+                        // Find our specific pod by ID
+                        const pod = result.myself.pods.find(p => p.id === this.currentPodId);
+                        
+                        if (pod) {
+                            const status = pod.desiredStatus;
+                            
+                            let details = `Pod: ${pod.name || this.currentPodId}`;
+                            
+                            if (pod.runtime) {
+                                const uptime = Math.floor(pod.runtime.uptimeInSeconds / 60);
+                                details += `\nUptime: ${uptime} minutes`;
+                                
+                                if (pod.runtime.ports && pod.runtime.ports.length > 0) {
+                                    const port = pod.runtime.ports[0];
+                                    if (port.publicPort) {
+                                        details += `\nAccess: ${port.ip}:${port.publicPort}`;
+                                    }
+                                }
+                                
+                                if (pod.runtime.gpus && pod.runtime.gpus.length > 0) {
+                                    const gpu = pod.runtime.gpus[0];
+                                    details += `\nGPU: ${gpu.gpuUtilPercent}% util, ${gpu.memoryUtilPercent}% mem`;
+                                }
+                            }
+                            
+                            this.updateStatus(status, details);
+                            
+                            if (status === 'EXITED' || status === 'FAILED') {
+                                this.currentPodId = null;
+                                this.stopStatusChecking();
+                            }
+                        } else {
+                            // Pod not found, might have been terminated
+                            this.updateStatus('Not Found', 'Pod may have been terminated');
+                            this.currentPodId = null;
+                            this.stopStatusChecking();
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('Status check error:', error);
+                    // Don't update status on check errors to avoid spam
+                }
+            }
+
+            startStatusChecking() {
+                this.stopStatusChecking(); // Clear any existing interval
+                this.statusCheckInterval = setInterval(() => {
+                    this.checkPodStatus();
+                }, 10000); // Check every 10 seconds
+            }
+
+            stopStatusChecking() {
+                if (this.statusCheckInterval) {
+                    clearInterval(this.statusCheckInterval);
+                    this.statusCheckInterval = null;
+                }
+            }
+        }
+
+        // Initialize RunPod manager when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            window.runPodManager = new RunPodManager();
         });
     </script>
     
