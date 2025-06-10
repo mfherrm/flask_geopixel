@@ -439,26 +439,39 @@
                 });
                 
                 if (startBtn && stopBtn && callGeoPixelBtn) {
-                    // Initial state: no pod running
+                    // FORCE correct initial state: Start enabled, Stop disabled, Call GeoPixel disabled
+                    console.log('Forcing correct initial button states...');
+                    
+                    // Start button should be ENABLED initially (no pod running)
                     startBtn.disabled = false;
+                    startBtn.style.opacity = '';
+                    startBtn.style.cursor = '';
+                    
+                    // Stop button should be DISABLED initially (no pod running)
                     stopBtn.disabled = true;
+                    stopBtn.style.opacity = '';
+                    stopBtn.style.cursor = '';
                     
                     // Call GeoPixel button MUST be disabled initially and stay disabled until RunPod status is confirmed
-                    console.log('Before setting disabled state:', {
+                    console.log('Before setting Call GeoPixel disabled state:', {
                         disabled: callGeoPixelBtn.disabled,
                         className: callGeoPixelBtn.className
                     });
                     
+                    // Force disabled state with stronger enforcement
                     callGeoPixelBtn.disabled = true;
                     callGeoPixelBtn.classList.remove('enabled');
                     callGeoPixelBtn.classList.add('disabled-button');
                     
-                    console.log('After setting disabled state:', {
+                    // Add a flag to prevent premature enabling
+                    callGeoPixelBtn.setAttribute('data-initialization-complete', 'false');
+                    
+                    console.log('After setting Call GeoPixel disabled state:', {
                         disabled: callGeoPixelBtn.disabled,
                         className: callGeoPixelBtn.className
                     });
                     
-                    console.log('Initial button states set - Call GeoPixel DISABLED until RunPod status check completes:', {
+                    console.log('CORRECTED initial button states set:', {
                         startBtn_disabled: startBtn.disabled,
                         stopBtn_disabled: stopBtn.disabled,
                         callGeoPixelBtn_disabled: callGeoPixelBtn.disabled,
@@ -496,32 +509,44 @@
                 
                 // Only enable stop button when pod is actually running, not during intermediate states
                 if (status === 'RUNNING' || status.toLowerCase().includes('running')) {
-                    startBtn.disabled = true;
-                    stopBtn.disabled = false;
+                    if (startBtn) {
+                        startBtn.disabled = true;
+                        startBtn.style.opacity = '';
+                        startBtn.style.cursor = '';
+                    }
+                    if (stopBtn) {
+                        stopBtn.disabled = false;
+                        stopBtn.style.opacity = '';
+                        stopBtn.style.cursor = '';
+                    }
                 } else if (status === 'Starting' || status === 'Starting...' || status === 'STARTING' ||
                           status === 'Checking...' || status === 'Already Running') {
                     // During pod creation process: keep start button disabled, keep stop button disabled
-                    startBtn.disabled = true;
-                    stopBtn.disabled = true;
+                    if (startBtn) {
+                        startBtn.disabled = true;
+                    }
+                    if (stopBtn) {
+                        stopBtn.disabled = true;
+                    }
                 } else {
                     // For other states (Error, Stopped, Not Connected, etc.): enable start, disable stop
-                    startBtn.disabled = false;
-                    stopBtn.disabled = true;
-                    // Clear any manual styling that was applied during operations
-                    startBtn.style.opacity = '';
-                    startBtn.style.cursor = '';
-                    stopBtn.style.opacity = '';
-                    stopBtn.style.cursor = '';
+                    if (startBtn) {
+                        startBtn.disabled = false;
+                        // Clear any manual styling that was applied during operations
+                        startBtn.style.opacity = '';
+                        startBtn.style.cursor = '';
+                    }
+                    if (stopBtn) {
+                        stopBtn.disabled = true;
+                        // Clear any manual styling that was applied during operations
+                        stopBtn.style.opacity = '';
+                        stopBtn.style.cursor = '';
+                    }
                 }
                 
-                // Only update Call GeoPixel button state if this is NOT the initial "Not Connected" status
-                // This prevents the button from being enabled before RunPod status check completes
-                if (status !== 'Not Connected') {
-                    console.log('Updating Call GeoPixel button state after RunPod status check...');
-                    this.updateCallGeoPixelButtonState();
-                } else {
-                    console.log('Skipping Call GeoPixel button update for initial "Not Connected" status');
-                }
+                // Always update Call GeoPixel button state, but respect initialization flag
+                console.log('Updating Call GeoPixel button state after status update...');
+                this.updateCallGeoPixelButtonState();
             }
 
             async checkInitialPodStatus() {
@@ -529,22 +554,44 @@
                 const templateId = document.getElementById('runpod-template-id').value.trim();
                 const apiKey = document.getElementById('runpod-api-key').value.trim();
                 
-                // ALWAYS ensure button is disabled initially, regardless of credentials
-                console.log('Ensuring Call GeoPixel button is disabled during initial check...');
+                // ALWAYS ensure ALL buttons are in correct initial state
+                console.log('Setting all buttons to correct initial state...');
                 const callGeoPixelBtn = document.getElementById('screenMap');
+                const startBtn = document.getElementById('runpod-start');
+                const stopBtn = document.getElementById('runpod-stop');
+                
+                // Force correct initial button states regardless of any previous state
                 if (callGeoPixelBtn) {
                     callGeoPixelBtn.disabled = true;
                     callGeoPixelBtn.classList.remove('enabled');
                     callGeoPixelBtn.classList.add('disabled-button');
                 }
                 
+                if (startBtn) {
+                    startBtn.disabled = false; // Start button should be enabled initially
+                    startBtn.style.opacity = '';
+                    startBtn.style.cursor = '';
+                }
+                
+                if (stopBtn) {
+                    stopBtn.disabled = true; // Stop button should be disabled initially
+                    stopBtn.style.opacity = '';
+                    stopBtn.style.cursor = '';
+                }
+                
                 if (templateId && apiKey) {
                     console.log('Checking initial pod status...');
                     await this.checkPodStatusWithTemplate(templateId, apiKey);
                 } else {
-                    // If no API key or template ID, ensure buttons are in disabled state
-                    console.log('No API key or template ID found, keeping buttons disabled');
+                    // If no API key or template ID, ensure buttons are in disabled state and mark initialization complete
+                    console.log('No API key or template ID found, setting correct initial button states');
                     this.updateStatus('Not Connected', 'Enter API key and template ID to check pod status');
+                    
+                    // Mark initialization as complete even when no credentials are provided
+                    if (callGeoPixelBtn) {
+                        callGeoPixelBtn.setAttribute('data-initialization-complete', 'true');
+                        console.log('No credentials provided but initialization flag set to true');
+                    }
                 }
             }
 
@@ -563,6 +610,13 @@
 
                     const data = await response.json();
                     
+                    // Mark initialization as complete after first status check
+                    const callGeoPixelBtn = document.getElementById('screenMap');
+                    if (callGeoPixelBtn) {
+                        callGeoPixelBtn.setAttribute('data-initialization-complete', 'true');
+                        console.log('RunPod status check complete - initialization flag set to true');
+                    }
+                    
                     if (data.success && data.pod_running) {
                         // Pod is already running with this template
                         this.currentPodId = data.pod_id;
@@ -573,16 +627,39 @@
                         // No pod running with this template - explicitly update button state
                         this.updateStatus('Not Running', 'No pod found with this template');
                         console.log(`No running pod found with template ${templateId} - ensuring Call GeoPixel button is disabled`);
-                        // Explicitly ensure the button is disabled since no pod is running
-                        this.updateCallGeoPixelButtonState();
+                        
+                        // FORCE Call GeoPixel button to be disabled since no pod is running
+                        const callGeoPixelBtn = document.getElementById('screenMap');
+                        if (callGeoPixelBtn) {
+                            callGeoPixelBtn.disabled = true;
+                            callGeoPixelBtn.classList.remove('enabled');
+                            callGeoPixelBtn.classList.add('disabled-button');
+                            console.log('FORCED Call GeoPixel button disabled - no pod running');
+                        }
                     } else {
                         console.error('Error checking pod status:', data.error);
                         // On error, ensure button is disabled
                         this.updateStatus('Error', 'Failed to check pod status');
-                        this.updateCallGeoPixelButtonState();
+                        
+                        // FORCE Call GeoPixel button to be disabled on error
+                        const callGeoPixelBtn = document.getElementById('screenMap');
+                        if (callGeoPixelBtn) {
+                            callGeoPixelBtn.disabled = true;
+                            callGeoPixelBtn.classList.remove('enabled');
+                            callGeoPixelBtn.classList.add('disabled-button');
+                            console.log('FORCED Call GeoPixel button disabled - error occurred');
+                        }
                     }
                 } catch (error) {
                     console.error('Failed to check pod status:', error);
+                    // Mark initialization as complete even on error to prevent permanent disabled state
+                    const callGeoPixelBtn = document.getElementById('screenMap');
+                    if (callGeoPixelBtn) {
+                        callGeoPixelBtn.setAttribute('data-initialization-complete', 'true');
+                        console.log('RunPod status check failed but initialization flag set to true to prevent permanent disabled state');
+                    }
+                    this.updateStatus('Error', 'Failed to check pod status');
+                    this.updateCallGeoPixelButtonState();
                 }
             }
 
@@ -592,6 +669,9 @@
                 const callGeoPixelButton = document.getElementById('screenMap');
                 const statusText = document.getElementById('runpod-status-text').textContent;
                 
+                // Check if initialization is complete
+                const initializationComplete = callGeoPixelButton?.getAttribute('data-initialization-complete') === 'true';
+                
                 // Check if OpenLayers is currently visible (not Cadenza)
                 const openLayersRadio = document.getElementById('olbtn');
                 const isOpenLayersMode = openLayersRadio && openLayersRadio.checked;
@@ -599,11 +679,21 @@
                 console.log('Button state check:', {
                     statusText: statusText,
                     isOpenLayersMode: isOpenLayersMode,
-                    callGeoPixelButton: !!callGeoPixelButton
+                    callGeoPixelButton: !!callGeoPixelButton,
+                    initializationComplete: initializationComplete
                 });
                 
                 if (!callGeoPixelButton) {
                     console.error('Call GeoPixel button not found!');
+                    return;
+                }
+                
+                // If initialization is not complete, keep button disabled regardless of other conditions
+                if (!initializationComplete) {
+                    console.log('Initialization not complete - keeping Call GeoPixel button disabled');
+                    callGeoPixelButton.disabled = true;
+                    callGeoPixelButton.classList.remove('enabled');
+                    callGeoPixelButton.classList.add('disabled-button');
                     return;
                 }
                 
@@ -631,10 +721,17 @@
                     callGeoPixelButton.classList.remove('disabled-button');
                 } else {
                     // No pod running - disable Call GeoPixel button
-                    console.log('No pod running - disabling Call GeoPixel button');
+                    console.log(`No pod running (status: "${statusText}") - disabling Call GeoPixel button`);
                     callGeoPixelButton.disabled = true;
                     callGeoPixelButton.classList.remove('enabled');
                     callGeoPixelButton.classList.add('disabled-button');
+                    
+                    // Extra logging for debugging
+                    console.log('Call GeoPixel button FORCED to disabled state:', {
+                        disabled: callGeoPixelButton.disabled,
+                        className: callGeoPixelButton.className,
+                        statusText: statusText
+                    });
                 }
                 
                 console.log('After update:', {
@@ -658,11 +755,17 @@
                     this.currentPodId = null;
                     this.stopStatusChecking();
                     
-                    // Explicitly disable Call GeoPixel button when credentials are missing
+                    // Mark initialization as complete even when credentials are missing
                     const callGeoPixelBtn = document.getElementById('screenMap');
-                    callGeoPixelBtn.disabled = true;
-                    callGeoPixelBtn.classList.remove('enabled');
-                    callGeoPixelBtn.classList.add('disabled-button');
+                    if (callGeoPixelBtn) {
+                        callGeoPixelBtn.setAttribute('data-initialization-complete', 'true');
+                        console.log('Credentials missing but initialization flag set to true');
+                        
+                        // Explicitly disable Call GeoPixel button when credentials are missing
+                        callGeoPixelBtn.disabled = true;
+                        callGeoPixelBtn.classList.remove('enabled');
+                        callGeoPixelBtn.classList.add('disabled-button');
+                    }
                 }
             }
 
@@ -1030,15 +1133,17 @@
                         setTimeout(() => {
                             if (window.runPodManager) {
                                 console.log('Radio button changed, updating Call GeoPixel button state...');
-                                // Only update if RunPod status has been checked (not in initial "Not Connected" state)
-                                const statusText = document.getElementById('runpod-status-text')?.textContent;
-                                if (statusText && statusText !== 'Not Connected') {
-                                    console.log('RunPod status already checked, updating button state');
+                                
+                                // Check if initialization is complete
+                                const callGeoPixelBtn = document.getElementById('screenMap');
+                                const initializationComplete = callGeoPixelBtn?.getAttribute('data-initialization-complete') === 'true';
+                                
+                                if (initializationComplete) {
+                                    console.log('Initialization complete, updating button state based on radio selection');
                                     window.runPodManager.updateCallGeoPixelButtonState();
                                 } else {
-                                    console.log('RunPod status not yet checked, keeping button disabled');
+                                    console.log('Initialization not complete, keeping button disabled');
                                     // Ensure button stays disabled
-                                    const callGeoPixelBtn = document.getElementById('screenMap');
                                     if (callGeoPixelBtn) {
                                         callGeoPixelBtn.disabled = true;
                                         callGeoPixelBtn.classList.remove('enabled');
