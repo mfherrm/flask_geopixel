@@ -229,8 +229,8 @@
             <!-- Control Buttons -->
             <div style="margin-bottom: 15px;">
                 <button id="runpod-test" style="background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin-right: 5px; cursor: pointer; font-size: 11px;">Test API</button>
-                <button id="runpod-start" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-right: 10px; cursor: pointer; font-size: 12px;">Start Pod</button>
-                <button id="runpod-stop" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;" disabled>Stop Pod</button>
+                <button id="runpod-start" style="border: none; padding: 8px 16px; border-radius: 4px; margin-right: 10px; font-size: 12px;" enabled>Start Pod</button>
+                <button id="runpod-stop" style="border: none; padding: 8px 16px; border-radius: 4px; font-size: 12px;" disabled>Stop Pod</button>
             </div>
             
             <!-- Status Display -->
@@ -442,15 +442,24 @@
                     // FORCE correct initial state: Start enabled, Stop disabled, Call GeoPixel disabled
                     console.log('Forcing correct initial button states...');
                     
-                    // Start button should be ENABLED initially (no pod running)
+                    // Start button should be ENABLED initially (no pod running) - GREEN/ENABLED
                     startBtn.disabled = false;
-                    startBtn.style.opacity = '';
-                    startBtn.style.cursor = '';
+                    startBtn.classList.remove('enabled'); // Remove any conflicting classes
+                    startBtn.style.background = '#28a745';
+                    startBtn.style.color = 'white';
+                    startBtn.style.opacity = '1';
+                    startBtn.style.cursor = 'pointer';
+                    console.log('Initial state - START button: ENABLED (green)');
                     
-                    // Stop button should be DISABLED initially (no pod running)
+                    // Stop button should be DISABLED initially (no pod running) - GREY/DISABLED
                     stopBtn.disabled = true;
-                    stopBtn.style.opacity = '';
-                    stopBtn.style.cursor = '';
+                    stopBtn.classList.remove('enabled');
+                    // Force CSS override to ensure grey appearance from the start
+                    stopBtn.style.background = '#6c757d';
+                    stopBtn.style.color = '#ffffff';
+                    stopBtn.style.opacity = '0.7';
+                    stopBtn.style.cursor = 'not-allowed';
+                    console.log('Initial state - STOP button: DISABLED (grey)');
                     
                     // Call GeoPixel button MUST be disabled initially and stay disabled until RunPod status is confirmed
                     console.log('Before setting Call GeoPixel disabled state:', {
@@ -507,40 +516,71 @@
                 const startBtn = document.getElementById('runpod-start');
                 const stopBtn = document.getElementById('runpod-stop');
                 
-                // Only enable stop button when pod is actually running, not during intermediate states
+                // CORRECT LOGIC: Start enabled when no pod, Stop enabled when pod running
                 if (status === 'RUNNING' || status.toLowerCase().includes('running')) {
+                    // Pod is running: DISABLE start, ENABLE stop
                     if (startBtn) {
                         startBtn.disabled = true;
-                        startBtn.style.opacity = '';
-                        startBtn.style.cursor = '';
+                        startBtn.style.background = '#6c757d';
+                        startBtn.style.color = '#ffffff';
+                        startBtn.style.opacity = '0.7';
+                        startBtn.style.cursor = 'not-allowed';
+                        console.log('Pod running - START button DISABLED');
                     }
                     if (stopBtn) {
+                        // ENABLE Stop button: remove disabled attribute AND add enabled class
                         stopBtn.disabled = false;
+                        stopBtn.classList.add('enabled');
                         stopBtn.style.opacity = '';
                         stopBtn.style.cursor = '';
+                        // Force override any CSS that might be interfering
+                        stopBtn.style.background = '#dc3545';
+                        stopBtn.style.color = 'white';
+                        console.log('Pod running - STOP button ENABLED (red)');
                     }
                 } else if (status === 'Starting' || status === 'Starting...' || status === 'STARTING' ||
                           status === 'Checking...' || status === 'Already Running') {
-                    // During pod creation process: keep start button disabled, keep stop button disabled
+                    // During pod creation process: disable both buttons
                     if (startBtn) {
                         startBtn.disabled = true;
+                        startBtn.style.background = '#6c757d';
+                        startBtn.style.color = '#ffffff';
+                        startBtn.style.opacity = '0.7';
+                        startBtn.style.cursor = 'not-allowed';
+                        console.log('Pod starting - START button DISABLED');
                     }
                     if (stopBtn) {
+                        // DISABLE Stop button: add disabled attribute AND remove enabled class
                         stopBtn.disabled = true;
+                        stopBtn.classList.remove('enabled');
+                        // Force CSS override to ensure grey appearance
+                        stopBtn.style.background = '#6c757d';
+                        stopBtn.style.color = '#ffffff';
+                        stopBtn.style.opacity = '0.7';
+                        stopBtn.style.cursor = 'not-allowed';
+                        console.log('Pod starting - STOP button DISABLED (grey)');
                     }
                 } else {
-                    // For other states (Error, Stopped, Not Connected, etc.): enable start, disable stop
+                    // For other states (Error, Stopped, Not Connected, Not Running, etc.): ENABLE start, DISABLE stop
                     if (startBtn) {
                         startBtn.disabled = false;
-                        // Clear any manual styling that was applied during operations
-                        startBtn.style.opacity = '';
-                        startBtn.style.cursor = '';
+                        startBtn.classList.remove('enabled'); // Remove any conflicting classes
+                        startBtn.style.background = '#28a745';
+                        startBtn.style.color = 'white';
+                        startBtn.style.opacity = '1';
+                        startBtn.style.cursor = 'pointer';
+                        console.log(`Status "${status}" - START button ENABLED`);
                     }
                     if (stopBtn) {
+                        // DISABLE Stop button: add disabled attribute AND remove enabled class
                         stopBtn.disabled = true;
-                        // Clear any manual styling that was applied during operations
-                        stopBtn.style.opacity = '';
-                        stopBtn.style.cursor = '';
+                        stopBtn.classList.remove('enabled');
+                        // Force CSS override to ensure grey appearance
+                        stopBtn.style.background = '#6c757d';
+                        stopBtn.style.color = '#ffffff';
+                        stopBtn.style.opacity = '0.7';
+                        stopBtn.style.cursor = 'not-allowed';
+                        console.log(`Status "${status}" - STOP button DISABLED (grey)`);
                     }
                 }
                 
@@ -568,15 +608,24 @@
                 }
                 
                 if (startBtn) {
-                    startBtn.disabled = false; // Start button should be enabled initially
-                    startBtn.style.opacity = '';
-                    startBtn.style.cursor = '';
+                    startBtn.disabled = false; // Start button should be ENABLED initially (no pod running)
+                    startBtn.classList.remove('enabled'); // Remove any conflicting classes
+                    startBtn.style.background = '#28a745';
+                    startBtn.style.color = 'white';
+                    startBtn.style.opacity = '1';
+                    startBtn.style.cursor = 'pointer';
+                    console.log('checkInitialPodStatus - START button: ENABLED (green)');
                 }
                 
                 if (stopBtn) {
-                    stopBtn.disabled = true; // Stop button should be disabled initially
-                    stopBtn.style.opacity = '';
-                    stopBtn.style.cursor = '';
+                    stopBtn.disabled = true; // Stop button should be DISABLED initially (no pod running)
+                    stopBtn.classList.remove('enabled');
+                    // Force CSS override to ensure grey appearance
+                    stopBtn.style.background = '#6c757d';
+                    stopBtn.style.color = '#ffffff';
+                    stopBtn.style.opacity = '0.7';
+                    stopBtn.style.cursor = 'not-allowed';
+                    console.log('checkInitialPodStatus - STOP button: DISABLED (grey)');
                 }
                 
                 if (templateId && apiKey) {
@@ -712,13 +761,23 @@
                     return;
                 }
                 
-                // OpenLayers is visible - check pod status
+                // OpenLayers is visible - check pod status AND endpoint availability
                 if (statusText === 'RUNNING' || statusText.toLowerCase().includes('running')) {
-                    // Pod is running and OpenLayers is visible - enable Call GeoPixel button
-                    console.log('Pod running and OpenLayers mode - enabling Call GeoPixel button');
-                    callGeoPixelButton.disabled = false;
-                    callGeoPixelButton.classList.add('enabled');
-                    callGeoPixelButton.classList.remove('disabled-button');
+                    // Pod is running - now check if endpoint is available
+                    console.log('Pod running and OpenLayers mode - checking endpoint availability...');
+                    this.checkEndpointAvailability().then(isAvailable => {
+                        if (isAvailable) {
+                            console.log('Endpoint available - enabling Call GeoPixel button');
+                            callGeoPixelButton.disabled = false;
+                            callGeoPixelButton.classList.add('enabled');
+                            callGeoPixelButton.classList.remove('disabled-button');
+                        } else {
+                            console.log('Endpoint not yet available - keeping Call GeoPixel button disabled');
+                            callGeoPixelButton.disabled = true;
+                            callGeoPixelButton.classList.remove('enabled');
+                            callGeoPixelButton.classList.add('disabled-button');
+                        }
+                    });
                 } else {
                     // No pod running - disable Call GeoPixel button
                     console.log(`No pod running (status: "${statusText}") - disabling Call GeoPixel button`);
@@ -739,6 +798,57 @@
                     className: callGeoPixelButton.className,
                     style: callGeoPixelButton.style.cssText
                 });
+            }
+
+            async checkEndpointAvailability() {
+                // Check if the RunPod endpoint is actually available and responding
+                try {
+                    // Get the current pod ID
+                    if (!this.currentPodId) {
+                        console.log('No current pod ID - endpoint not available');
+                        return false;
+                    }
+
+                    // Construct the RunPod proxy URL using the pod ID
+                    const endpointUrl = `https://${this.currentPodId}-5000.proxy.runpod.net`;
+                    console.log(`Checking endpoint availability: ${endpointUrl}`);
+                    
+                    // Try to make a simple health check request to the RunPod endpoint
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                        
+                        const healthResponse = await fetch(`${endpointUrl}/health`, {
+                            method: 'GET',
+                            signal: controller.signal,
+                            mode: 'cors'
+                        });
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (healthResponse.ok) {
+                            console.log('RunPod endpoint health check passed - GeoPixel service is available');
+                            return true;
+                        } else {
+                            console.log(`RunPod endpoint health check failed with status: ${healthResponse.status}`);
+                            return false;
+                        }
+                    } catch (fetchError) {
+                        console.log('RunPod endpoint not yet responding:', fetchError.message);
+                        
+                        // If it's a CORS error, the endpoint might be up but not configured for CORS
+                        // In this case, we'll consider it available since the pod is running
+                        if (fetchError.message.includes('CORS') || fetchError.message.includes('cors')) {
+                            console.log('CORS error detected - assuming endpoint is available');
+                            return true;
+                        }
+                        
+                        return false;
+                    }
+                } catch (error) {
+                    console.log('Error checking endpoint availability:', error.message);
+                    return false;
+                }
             }
 
             async checkPodStatusOnChange() {
@@ -765,6 +875,19 @@
                         callGeoPixelBtn.disabled = true;
                         callGeoPixelBtn.classList.remove('enabled');
                         callGeoPixelBtn.classList.add('disabled-button');
+                        
+                        // Also ensure Stop Pod button is disabled when no credentials
+                        const stopBtn = document.getElementById('runpod-stop');
+                        if (stopBtn) {
+                            stopBtn.disabled = true;
+                            stopBtn.classList.remove('enabled');
+                            // Force CSS override to ensure grey appearance
+                            stopBtn.style.background = '#6c757d';
+                            stopBtn.style.color = '#ffffff';
+                            stopBtn.style.opacity = '0.7';
+                            stopBtn.style.cursor = 'not-allowed';
+                            console.log('Credentials missing - STOP button DISABLED (grey)');
+                        }
                     }
                 }
             }
@@ -1084,7 +1207,19 @@
                                 }
                             }
                             
-                            this.updateStatus(status, details);
+                            // Update status but also check endpoint availability for running pods
+                            if (status === 'RUNNING') {
+                                // For running pods, check if endpoint is available before updating status
+                                this.checkEndpointAvailability().then(isAvailable => {
+                                    if (isAvailable) {
+                                        this.updateStatus(status, details + '\nEndpoint: Available');
+                                    } else {
+                                        this.updateStatus(status, details + '\nEndpoint: Starting...');
+                                    }
+                                });
+                            } else {
+                                this.updateStatus(status, details);
+                            }
                             
                             if (status === 'EXITED' || status === 'FAILED') {
                                 this.currentPodId = null;

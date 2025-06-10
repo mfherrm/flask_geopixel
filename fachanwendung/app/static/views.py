@@ -882,3 +882,12 @@ def check_pod_status_endpoint():
         
     except Exception as e:
         return jsonify({'error': f'Pod status check error: {str(e)}'}), 500
+
+@bp.route('/health', methods=['GET'])
+def health_check():
+    """Simple health check endpoint for RunPod availability testing"""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'GeoPixel Flask Backend',
+        'timestamp': str(os.path.getmtime(__file__) if os.path.exists(__file__) else 'unknown')
+    }), 200
