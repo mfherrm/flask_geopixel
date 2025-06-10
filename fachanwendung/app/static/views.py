@@ -12,6 +12,7 @@ import json
 from urllib.parse import urljoin
 from .call_geopixel import get_object_outlines
 from io import BytesIO
+import requests
 
 
 bp = Blueprint('main', __name__)
@@ -20,6 +21,143 @@ CORS(bp, resources={r"/receive": {"origins": "*"}})
 IMAGE_FOLDER = 'fachanwendung/app/static/images'  # Define a subfolder within static
 if not os.path.exists(IMAGE_FOLDER):
     os.makedirs(IMAGE_FOLDER)
+
+# Global variable to store the RunPod API key temporarily
+_runpod_api_key = None
+
+def set_runpod_api_key(api_key):
+    """Set the RunPod API key for dynamic URL detection"""
+    global _runpod_api_key
+    _runpod_api_key = api_key
+
+def get_runpod_api_key():
+    """Get the RunPod API key from global storage, config, or environment"""
+    global _runpod_api_key
+    return _runpod_api_key or current_app.config.get('RUNPOD_API_KEY') or os.environ.get('RUNPOD_API_KEY')
+
+def get_active_runpod_url():
+    """
+    Get the URL of the currently running RunPod instance by querying the RunPod API.
+    This function specifically looks for pods with port 5000 (GeoPixel API service).
+    
+    Returns:
+        str: The RunPod API URL if found, None otherwise
+    """
+    try:
+        # Get API key from global storage or environment
+        api_key = get_runpod_api_key()
+        if not api_key:
+            print("No RunPod API key found")
+            return None
+        
+        print(f"Using API key (length: {len(api_key)})")
+        
+        # Query RunPod API for running pods
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key.strip()}'
+        }
+        
+        query = """
+        query {
+            myself {
+                pods {
+                    id
+                    name
+                    desiredStatus
+                    runtime {
+                        ports {
+                            ip
+                            isIpPublic
+                            privatePort
+                            publicPort
+                            type
+                        }
+                    }
+                }
+            }
+        }
+        """
+        
+        payload = {'query': query}
+        
+        # Try RunPod endpoints
+        endpoints = ['https://api.runpod.io/graphql', 'https://api.runpod.ai/graphql']
+        
+        for endpoint in endpoints:
+            try:
+                print(f"Querying {endpoint}...")
+                response = requests.post(endpoint, json=payload, headers=headers, timeout=15)
+                print(f"Response status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if 'data' in data and 'myself' in data['data'] and 'pods' in data['data']['myself']:
+                        pods = data['data']['myself']['pods']
+                        print(f"Found {len(pods)} pods")
+                        
+                        # Look for running pods with port 5000 specifically
+                        for i, pod in enumerate(pods):
+                            pod_id = pod.get('id', 'unknown')
+                            pod_name = pod.get('name', 'unknown')
+                            pod_status = pod.get('desiredStatus', 'unknown')
+                            
+                            print(f"Pod {i+1}: {pod_name} ({pod_id}) - Status: {pod_status}")
+                            
+                            if pod_status == 'RUNNING' and pod.get('runtime'):
+                                runtime = pod['runtime']
+                                
+                                if 'ports' in runtime and runtime['ports']:
+                                    ports = runtime['ports']
+                                    print(f"  Found {len(ports)} ports")
+                                    
+                                    # Check if any port is 5000 (GeoPixel API)
+                                    has_port_5000 = False
+                                    for j, port in enumerate(ports):
+                                        private_port = port.get('privatePort')
+                                        public_port = port.get('publicPort')
+                                        ip = port.get('ip')
+                                        is_public = port.get('isIpPublic')
+                                        port_type = port.get('type')
+                                        
+                                        print(f"    Port {j+1}: private={private_port}, public={public_port}, ip={ip}, public={is_public}, type={port_type}")
+                                        
+                                        # Look specifically for port 5000 (GeoPixel API)
+                                        if private_port == 5000 or public_port == 5000:
+                                            print(f"    🎯 Found port 5000!")
+                                            has_port_5000 = True
+                                            break
+                                    
+                                    # If this pod has port 5000, construct URL using pod ID
+                                    if has_port_5000 and pod_id != 'unknown':
+                                        # Construct the standard RunPod proxy URL format
+                                        endpoint_url = f"https://{pod_id}-5000.proxy.runpod.net/"
+                                        print(f"    ✅ Constructed RunPod endpoint using pod ID: {endpoint_url}")
+                                        return endpoint_url
+                                    elif has_port_5000:
+                                        print(f"    ⚠️  Port 5000 found but pod ID is unknown")
+                                else:
+                                    print("  No ports found in runtime")
+                            else:
+                                print(f"  Pod not running or no runtime")
+                        
+                        print("No running pods with port 5000 found")
+                        return None
+                    else:
+                        print(f"Unexpected API response structure")
+                        return None
+                    
+            except Exception as e:
+                print(f"Error querying RunPod endpoint {endpoint}: {e}")
+                continue
+        
+        print("Failed to query RunPod API from all endpoints")
+        return None
+        
+    except Exception as e:
+        print(f"Error getting active RunPod URL: {e}")
+        return None
 
 def image_coords_to_map_coords(map_bounds, image_coords, image_dims):
     """
@@ -279,7 +417,7 @@ def create_simple_overlay_images(original_img, contours, masks, save_folder):
 def add_cors_headers(response):
     cadenza_uri = current_app.config.get('CADENZA_URI', '')
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://mt0.google.com https://mt1.google.com https://mt2.google.com https://mt3.google.com; frame-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000 https://api.runpod.ai https://api.runpod.io; frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/;"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://mt0.google.com https://mt1.google.com https://mt2.google.com https://mt3.google.com; frame-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000 https://api.runpod.ai https://api.runpod.io; frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/;"
     return response
 
 @bp.route('/')
@@ -343,11 +481,26 @@ def receive_image():
         else:
             image_filepath = "fachanwendung/app/static/images/satellite_image.jpg"
             
-        response = get_object_outlines("https://kgu5t2vmwim44q-5000.proxy.runpod.net/", image_filepath, query)
+        # Try to get the API URL dynamically from running RunPod instance
+        api_url = get_active_runpod_url()
+        print(api_url)
+        
+        # Fallback to configuration, environment variable, or hardcoded default
+        if not api_url:
+            api_url = (current_app.config.get('GEOPIXEL_API_URL') or
+                      os.environ.get('GEOPIXEL_API_URL', "https://0tjxinf025d4jr-5000.proxy.runpod.net/"))
+            print(f"No active RunPod found, using fallback URL: {api_url}")
+        else:
+            print(f"Using dynamic RunPod API URL: {api_url}")
+        
+        response = get_object_outlines(api_url, image_filepath, query)
         
         # Handle the case when get_object_outlines returns None
         if response is None:
-            return jsonify({'error': 'Failed to process image - API processing failed or CUDA out of memory'}), 500
+            error_msg = 'Failed to process image - API processing failed. Please check if the RunPod instance is running and the GeoPixel API is accessible.'
+            if tile_info:
+                error_msg = f"Tile {tile_info['index']}: {error_msg}"
+            return jsonify({'error': error_msg}), 500
             
         # Unpack the response tuple
         result, contours, masks = response
@@ -467,13 +620,33 @@ def runpod_proxy():
         if not api_key or not query:
             return jsonify({'error': 'API key and query are required'}), 400
         
-        print(f"RunPod Proxy: Received API key length: {len(api_key)}")
+        # Validate and clean the API key
+        api_key_cleaned = api_key.strip()
+        
+        # RunPod API keys should be around 50-60 characters and alphanumeric with some special chars
+        if len(api_key_cleaned) > 100:
+            print(f"RunPod Proxy: WARNING - API key is unusually long ({len(api_key_cleaned)} chars)")
+            print(f"RunPod Proxy: First 50 chars: {api_key_cleaned[:50]}")
+            print(f"RunPod Proxy: Last 50 chars: {api_key_cleaned[-50:]}")
+            # Try to extract just the API key part if it's concatenated
+            # RunPod keys typically start with specific patterns
+            import re
+            # Look for patterns that might be RunPod API keys
+            potential_keys = re.findall(r'[A-Za-z0-9]{40,80}', api_key_cleaned)
+            if potential_keys:
+                api_key_cleaned = potential_keys[0]
+                print(f"RunPod Proxy: Extracted potential API key: {api_key_cleaned[:20]}...")
+        
+        # Store the cleaned API key for dynamic URL detection
+        set_runpod_api_key(api_key_cleaned)
+        
+        print(f"RunPod Proxy: Using API key length: {len(api_key_cleaned)}")
         print(f"RunPod Proxy: Query: {query[:100]}...")
         
         # Make the request to RunPod API server-side
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {api_key.strip()}'
+            'Authorization': f'Bearer {api_key_cleaned}'
         }
         
         payload = {

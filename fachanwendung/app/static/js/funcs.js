@@ -320,14 +320,181 @@ function combineAndDisplayTileResults(tileResults, object) {
         return;
     }
     
-    // Determine target layer
+    // Determine target layer based on object type
     let layer = "";
+    
+    // Transportation layers
     if (object === "Car") {
         layer = window.carLayer;
+    } else if (object === "Truck") {
+        layer = window.truckLayer;
+    } else if (object === "Bus") {
+        layer = window.busLayer;
+    } else if (object === "Motorcycle") {
+        layer = window.motorcycleLayer;
+    } else if (object === "Bicycle") {
+        layer = window.bicycleLayer;
+    } else if (object === "Train") {
+        layer = window.trainLayer;
+    } else if (object === "Aircraft") {
+        layer = window.aircraftLayer;
+    } else if (object === "Ship") {
+        layer = window.shipLayer;
+    } else if (object === "Boat") {
+        layer = window.boatLayer;
+    
+    // Infrastructure layers
+    } else if (object === "Building") {
+        layer = window.buildingLayer;
+    } else if (object === "House") {
+        layer = window.houseLayer;
+    } else if (object === "Skyscraper") {
+        layer = window.skyscraperLayer;
+    } else if (object === "Factory") {
+        layer = window.factoryLayer;
+    } else if (object === "Warehouse") {
+        layer = window.warehouseLayer;
+    } else if (object === "School") {
+        layer = window.schoolLayer;
+    } else if (object === "Hospital") {
+        layer = window.hospitalLayer;
+    } else if (object === "Bridge") {
+        layer = window.bridgeLayer;
+    } else if (object === "Road") {
+        layer = window.roadLayer;
+    } else if (object === "Highway") {
+        layer = window.highwayLayer;
+    } else if (object === "Runway") {
+        layer = window.runwayLayer;
+    } else if (object === "Parking Lot") {
+        layer = window.parkingLotLayer;
+    } else if (object === "Solar Panel") {
+        layer = window.solarPanelLayer;
+    } else if (object === "Wind Turbine") {
+        layer = window.windTurbineLayer;
+    
+    // Natural features layers
     } else if (object === "River") {
         layer = window.riverLayer;
+    } else if (object === "Lake") {
+        layer = window.lakeLayer;
+    } else if (object === "Ocean") {
+        layer = window.oceanLayer;
+    } else if (object === "Stream") {
+        layer = window.streamLayer;
+    } else if (object === "Pond") {
+        layer = window.pondLayer;
+    } else if (object === "Wetland") {
+        layer = window.wetlandLayer;
+    } else if (object === "Mountain") {
+        layer = window.mountainLayer;
+    } else if (object === "Hill") {
+        layer = window.hillLayer;
+    } else if (object === "Valley") {
+        layer = window.valleyLayer;
+    } else if (object === "Canyon") {
+        layer = window.canyonLayer;
+    } else if (object === "Beach") {
+        layer = window.beachLayer;
+    } else if (object === "Coastline") {
+        layer = window.coastlineLayer;
+    } else if (object === "Island") {
+        layer = window.islandLayer;
+    
+    // Vegetation layers
+    } else if (object === "Forest") {
+        layer = window.forestLayer;
+    } else if (object === "Tree") {
+        layer = window.treeLayer;
+    } else if (object === "Grass") {
+        layer = window.grassLayer;
+    } else if (object === "Crop Field") {
+        layer = window.cropFieldLayer;
+    } else if (object === "Farmland") {
+        layer = window.farmlandLayer;
+    } else if (object === "Orchard") {
+        layer = window.orchardLayer;
+    } else if (object === "Vineyard") {
+        layer = window.vineyardLayer;
+    } else if (object === "Park") {
+        layer = window.parkLayer;
+    } else if (object === "Garden") {
+        layer = window.gardenLayer;
+    } else if (object === "Shrub") {
+        layer = window.shrubLayer;
+    } else if (object === "Pasture") {
+        layer = window.pastureLayer;
+    
+    // Urban features layers
+    } else if (object === "Urban Area") {
+        layer = window.urbanAreaLayer;
+    } else if (object === "Residential") {
+        layer = window.residentialLayer;
+    } else if (object === "Commercial") {
+        layer = window.commercialLayer;
+    } else if (object === "Industrial") {
+        layer = window.industrialLayer;
+    } else if (object === "Construction Site") {
+        layer = window.constructionSiteLayer;
+    } else if (object === "Stadium") {
+        layer = window.stadiumLayer;
+    } else if (object === "Sports Field") {
+        layer = window.sportsFieldLayer;
+    } else if (object === "Golf Course") {
+        layer = window.golfCourseLayer;
+    } else if (object === "Cemetery") {
+        layer = window.cemeteryLayer;
+    
+    // Geological layers
+    } else if (object === "Rock Formation") {
+        layer = window.rockFormationLayer;
+    } else if (object === "Sand") {
+        layer = window.sandLayer;
+    } else if (object === "Desert") {
+        layer = window.desertLayer;
+    } else if (object === "Quarry") {
+        layer = window.quarryLayer;
+    } else if (object === "Mine") {
+        layer = window.mineLayer;
+    } else if (object === "Landslide") {
+        layer = window.landslideLayer;
+    } else if (object === "Erosion") {
+        layer = window.erosionLayer;
+    
+    // Environmental layers
+    } else if (object === "Fire") {
+        layer = window.fireLayer;
+    } else if (object === "Flood") {
+        layer = window.floodLayer;
+    } else if (object === "Snow") {
+        layer = window.snowLayer;
+    } else if (object === "Ice") {
+        layer = window.iceLayer;
+    } else if (object === "Cloud") {
+        layer = window.cloudLayer;
+    } else if (object === "Shadow") {
+        layer = window.shadowLayer;
+    } else if (object === "Smoke") {
+        layer = window.smokeLayer;
+    } else if (object === "Pollution") {
+        layer = window.pollutionLayer;
+    
+    // Agriculture layers
+    } else if (object === "Greenhouse") {
+        layer = window.greenhouseLayer;
+    } else if (object === "Barn") {
+        layer = window.barnLayer;
+    } else if (object === "Silo") {
+        layer = window.siloLayer;
+    } else if (object === "Irrigation") {
+        layer = window.irrigationLayer;
+    } else if (object === "Livestock") {
+        layer = window.livestockLayer;
+    
+    // Default fallback to building layer
     } else {
         layer = window.buildingLayer;
+        console.warn(`Unknown object type: ${object}, using building layer as fallback`);
     }
     
     console.log("Target layer:", layer);
