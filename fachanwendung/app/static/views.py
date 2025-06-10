@@ -347,10 +347,14 @@ def receive_image():
         
         # Handle the case when get_object_outlines returns None
         if response is None:
-            return jsonify({'error': 'Failed to process image'}), 500
+            return jsonify({'error': 'Failed to process image - API processing failed or CUDA out of memory'}), 500
             
         # Unpack the response tuple
         result, contours, masks = response
+        
+        # Additional validation
+        if result is None:
+            return jsonify({'error': 'No valid result received from API'}), 500
         print(f"Masks shape: {masks.shape if masks is not None else 'None'}")
         print(f"Number of contours: {len(contours) if contours else 0}")
         print(f"Image dimensions: {imageDims}")
@@ -409,6 +413,16 @@ def receive_image():
             if key != 'error' and path:
                 filename = os.path.basename(path)
                 overlay_urls[key] = urljoin(request.url_root, f'overlay_images/{filename}')
+        
+        # Delete tile file from hard storage after processing (cleanup)
+        if tile_info:
+            tile_filepath = os.path.join(IMAGE_FOLDER, f'tile_{tile_info["index"]}.jpg')
+            try:
+                if os.path.exists(tile_filepath):
+                    os.remove(tile_filepath)
+                    print(f"Deleted tile file: {tile_filepath}")
+            except Exception as delete_error:
+                print(f"Warning: Failed to delete tile file {tile_filepath}: {str(delete_error)}")
         
         return jsonify({'message': 'Successfully retrieved outline',
                         'outline': serializable_contours,
