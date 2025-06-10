@@ -38,7 +38,14 @@ function updateTileConfig(tileCount) {
     }
 }
 
-document.getElementById('screenMap').addEventListener('click', async () => {
+document.getElementById('screenMap').addEventListener('click', async (event) => {
+    // Check if the button is disabled
+    if (event.target.disabled) {
+        event.preventDefault();
+        alert('Please start a RunPod instance first to use GeoPixel functionality.');
+        return;
+    }
+    
     let mbs = map.getView().calculateExtent()
 
     console.log("Map bounds (extent): [minX, minY, maxX, maxY] = ", mbs)
@@ -898,17 +905,9 @@ $(document).ready(function () {
             // Toggle Cadenza iframe
             $('#cadenza-iframe').toggle(value === 2 && this.checked);
 
-            // Enable/disable the "Call GeoPixel" button based on Cadenza visibility
-            const screenMapButton = document.getElementById('screenMap');
-            if (value === 1 && this.checked) {
-                // Enable the button when Cadenza is invisible
-                screenMapButton.disabled = false;
-                screenMapButton.classList.remove('disabled-button');
-            } else {
-                // Disable the button when Cadenza is visible
-                screenMapButton.disabled = true;
-                screenMapButton.classList.add('disabled-button');
-            }
+            // Button state management is now handled exclusively by RunPodManager
+            // The RunPodManager will be notified of radio button changes via event listeners
+            // set up in the HTML file and will update the button state accordingly
         });
 
         // Manually trigger the change event on the checked radio button

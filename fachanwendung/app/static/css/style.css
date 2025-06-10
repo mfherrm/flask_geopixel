@@ -124,30 +124,54 @@ html,
             background-color: #2980B9;
         }
         
-        /* Style for the Call GeoPixel button */
+        /* Style for the Call GeoPixel button - FORCE DISABLED STATE BY DEFAULT */
         #screenMap {
-            background-color: #4CAF50;
-            color: white;
+            background-color: #cccccc !important;
+            color: #666666 !important;
             padding: 10px;
             font-size: 16px;
             border: none;
-            cursor: pointer;
+            cursor: not-allowed !important;
             border-radius: 4px;
+            opacity: 0.7 !important;
         }
         
         #screenMap:hover {
-            background-color: #45a049;
+            background-color: #cccccc !important;
+        }
+        
+        /* Only enable green styling when explicitly enabled by JavaScript */
+        #screenMap.enabled {
+            background-color: #4CAF50 !important;
+            color: white !important;
+            cursor: pointer !important;
+            opacity: 1 !important;
+        }
+        
+        #screenMap.enabled:hover {
+            background-color: #45a049 !important;
         }
         
         /* Style for disabled Call GeoPixel button */
-        .disabled-button {
+        #screenMap.disabled-button {
             background-color: #cccccc !important;
             color: #666666 !important;
             cursor: not-allowed !important;
-            opacity: 0.7;
+            opacity: 0.7 !important;
         }
         
-        .disabled-button:hover {
+        #screenMap.disabled-button:hover {
+            background-color: #cccccc !important;
+        }
+        
+        #screenMap:disabled {
+            background-color: #cccccc !important;
+            color: #666666 !important;
+            cursor: not-allowed !important;
+            opacity: 0.7 !important;
+        }
+        
+        #screenMap:disabled:hover {
             background-color: #cccccc !important;
         }
 

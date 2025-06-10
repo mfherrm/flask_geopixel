@@ -160,6 +160,150 @@ def get_active_runpod_url():
         print(f"Error getting active RunPod URL: {e}")
         return None
 
+def check_pod_running_with_template(template_id):
+    """
+    Check if there's already a pod running with the specified template.
+    
+    Args:
+        template_id (str): The template ID to check for
+        
+    Returns:
+        dict: Dictionary containing pod status information
+    """
+    try:
+        # Get API key from global storage or environment
+        api_key = get_runpod_api_key()
+        if not api_key:
+            print("No RunPod API key found for template check")
+            return {
+                'running': False,
+                'pod_id': None,
+                'endpoint_url': None,
+                'error': 'No API key available'
+            }
+        
+        print(f"Checking for running pods with template: {template_id}")
+        
+        # Query RunPod API for running pods
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key.strip()}'
+        }
+        
+        query = """
+        query {
+            myself {
+                pods {
+                    id
+                    name
+                    desiredStatus
+                    templateId
+                    runtime {
+                        ports {
+                            ip
+                            isIpPublic
+                            privatePort
+                            publicPort
+                            type
+                        }
+                    }
+                }
+            }
+        }
+        """
+        
+        payload = {'query': query}
+        
+        # Try RunPod endpoints
+        endpoints = ['https://api.runpod.io/graphql', 'https://api.runpod.ai/graphql']
+        
+        for endpoint in endpoints:
+            try:
+                print(f"Querying {endpoint} for template check...")
+                response = requests.post(endpoint, json=payload, headers=headers, timeout=15)
+                print(f"Template check response status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if 'data' in data and 'myself' in data['data'] and 'pods' in data['data']['myself']:
+                        pods = data['data']['myself']['pods']
+                        print(f"Found {len(pods)} total pods")
+                        
+                        # Look for running pods with the specified template
+                        for pod in pods:
+                            pod_id = pod.get('id', 'unknown')
+                            pod_name = pod.get('name', 'unknown')
+                            pod_status = pod.get('desiredStatus', 'unknown')
+                            pod_template_id = pod.get('templateId', '')
+                            
+                            print(f"Pod: {pod_name} ({pod_id}) - Status: {pod_status}, Template: {pod_template_id}")
+                            
+                            # Check if this pod matches our template and is running
+                            if pod_status == 'RUNNING' and pod_template_id == template_id:
+                                print(f"Found running pod with matching template: {pod_id}")
+                                
+                                # Get endpoint URL if available
+                                endpoint_url = None
+                                if pod.get('runtime') and 'ports' in pod['runtime'] and pod['runtime']['ports']:
+                                    ports = pod['runtime']['ports']
+                                    
+                                    # Look for port 5000 (GeoPixel API)
+                                    for port in ports:
+                                        private_port = port.get('privatePort')
+                                        public_port = port.get('publicPort')
+                                        
+                                        if private_port == 5000 or public_port == 5000:
+                                            # Construct the standard RunPod proxy URL format
+                                            endpoint_url = f"https://{pod_id}-5000.proxy.runpod.net/"
+                                            print(f"Found endpoint URL: {endpoint_url}")
+                                            break
+                                
+                                return {
+                                    'running': True,
+                                    'pod_id': pod_id,
+                                    'pod_name': pod_name,
+                                    'endpoint_url': endpoint_url,
+                                    'error': None
+                                }
+                        
+                        print(f"No running pods found with template: {template_id}")
+                        return {
+                            'running': False,
+                            'pod_id': None,
+                            'endpoint_url': None,
+                            'error': None
+                        }
+                    else:
+                        print(f"Unexpected API response structure for template check")
+                        return {
+                            'running': False,
+                            'pod_id': None,
+                            'endpoint_url': None,
+                            'error': 'Unexpected API response'
+                        }
+                    
+            except Exception as e:
+                print(f"Error querying RunPod endpoint {endpoint} for template check: {e}")
+                continue
+        
+        print("Failed to query RunPod API from all endpoints for template check")
+        return {
+            'running': False,
+            'pod_id': None,
+            'endpoint_url': None,
+            'error': 'Failed to query RunPod API'
+        }
+        
+    except Exception as e:
+        print(f"Error checking pod status with template: {e}")
+        return {
+            'running': False,
+            'pod_id': None,
+            'endpoint_url': None,
+            'error': str(e)
+        }
+
 def image_coords_to_map_coords(map_bounds, image_coords, image_dims):
     """
     Transform image pixel coordinates to geographic coordinates.
@@ -708,3 +852,33 @@ def runpod_proxy():
         
     except Exception as e:
         return jsonify({'error': f'Proxy error: {str(e)}'}), 500
+
+@bp.route('/check-pod-status', methods=['POST'])
+def check_pod_status_endpoint():
+    """Endpoint to check if a pod is running with a specific template"""
+    try:
+        # Get the request data from the frontend
+        data = request.get_json()
+        api_key = data.get('api_key')
+        template_id = data.get('template_id')
+        
+        if not api_key or not template_id:
+            return jsonify({'error': 'API key and template ID are required'}), 400
+        
+        # Store the API key for the check
+        set_runpod_api_key(api_key.strip())
+        
+        # Check pod status with template
+        pod_status = check_pod_running_with_template(template_id.strip())
+        
+        return jsonify({
+            'success': True,
+            'pod_running': pod_status['running'],
+            'pod_id': pod_status['pod_id'],
+            'pod_name': pod_status.get('pod_name'),
+            'endpoint_url': pod_status['endpoint_url'],
+            'error': pod_status['error']
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Pod status check error: {str(e)}'}), 500
