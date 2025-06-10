@@ -285,6 +285,15 @@ async function processSingleTile(tileBlob, selection, tileBounds, tileDims, tile
         tileDims: tileDims
     }));
     
+    // Get RunPod API key from the interface and include it in the request
+    const runpodApiKey = document.getElementById('runpod-api-key')?.value?.trim();
+    if (runpodApiKey) {
+        formData.append('runpodApiKey', runpodApiKey);
+        console.log(`Including RunPod API key from interface (length: ${runpodApiKey.length})`);
+    } else {
+        console.log('No RunPod API key found in interface');
+    }
+    
     try {
         const response = await fetch('http://127.0.0.1:5000/receive', {
             method: 'POST',

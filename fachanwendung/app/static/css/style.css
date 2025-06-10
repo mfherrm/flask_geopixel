@@ -150,3 +150,111 @@ html,
         .disabled-button:hover {
             background-color: #cccccc !important;
         }
+
+        /* RunPod Panel Styles */
+        #runpod-panel {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        #runpod-panel input {
+            transition: border-color 0.2s ease;
+        }
+        
+        #runpod-panel input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+        
+        #runpod-panel button {
+            transition: all 0.2s ease;
+            font-weight: 500;
+            min-width: 80px;
+            height: 32px;
+            padding: 8px 16px;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+        
+        #runpod-panel button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        #runpod-panel button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #6c757d !important;
+            color: #ffffff !important;
+        }
+        
+        #runpod-stop:disabled {
+            background: #6c757d !important;
+            color: #ffffff !important;
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        #runpod-start:hover:not(:disabled) {
+            background: #218838;
+        }
+        
+        #runpod-stop:hover:not(:disabled) {
+            background: #c82333 !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+        }
+        
+        /* Prevent hover effects on disabled stop button */
+        #runpod-stop:disabled:hover {
+            background: #6c757d !important;
+            transform: none !important;
+            box-shadow: none !important;
+            cursor: not-allowed;
+        }
+        
+        /* Space below RunPod panel only when visible - applied dynamically */
+        #cadenza-container.runpod-panel-visible {
+            padding-bottom: 5px;
+        }
+        
+        #runpod-test:hover:not(:disabled) {
+            background: #138496;
+        }
+        
+        #runpod-status {
+            transition: background-color 0.3s ease;
+        }
+        
+        .status-running {
+            background: #d4edda !important;
+            border-color: #c3e6cb !important;
+        }
+        
+        .status-error {
+            background: #f8d7da !important;
+            border-color: #f5c6cb !important;
+        }
+        
+        .status-starting {
+            background: #fff3cd !important;
+            border-color: #ffeaa7 !important;
+        }
+        
+        @media (max-width: 768px) {
+            #runpod-panel {
+                margin: 10px !important;
+                max-width: none !important;
+                padding: 15px !important;
+            }
+            
+            #runpod-panel h4 {
+                font-size: 16px !important;
+            }
+            
+            #runpod-panel input, #runpod-panel button {
+                font-size: 14px !important;
+                padding: 10px !important;
+            }
+        }

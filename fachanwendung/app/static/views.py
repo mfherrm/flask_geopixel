@@ -31,8 +31,9 @@ def set_runpod_api_key(api_key):
     _runpod_api_key = api_key
 
 def get_runpod_api_key():
-    """Get the RunPod API key from global storage, config, or environment"""
+    """Get the RunPod API key from global storage (set by frontend), config, or environment"""
     global _runpod_api_key
+    # Priority: 1. Global variable (set by frontend), 2. Config, 3. Environment
     return _runpod_api_key or current_app.config.get('RUNPOD_API_KEY') or os.environ.get('RUNPOD_API_KEY')
 
 def get_active_runpod_url():
@@ -439,6 +440,12 @@ def receive_image():
     
     mapBounds = json.loads(request.form['mapExtent'])
     selection = json.loads(request.form['selection'])
+    
+    # Get RunPod API key from the request if provided (from frontend interface)
+    if 'runpodApiKey' in request.form and request.form['runpodApiKey'].strip():
+        frontend_api_key = request.form['runpodApiKey'].strip()
+        set_runpod_api_key(frontend_api_key)
+        print(f"Using API key from frontend interface (length: {len(frontend_api_key)})")
     
     # Check if this is a tile processing request
     tile_info = None
