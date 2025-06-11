@@ -84,4 +84,65 @@ document.addEventListener('DOMContentLoaded', function() {
             dropupContent.style.display = 'none';
         });
     });
+    
+    // Handle category interactions - with bounds checking
+    document.querySelectorAll('.category-header').forEach(header => {
+        header.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const categoryGroup = this.closest('.category-group');
+            const submenu = categoryGroup.querySelector('.subcategory-menu');
+            const dropupContent = this.closest('.dropup-content');
+            
+            // Close all other submenus first
+            document.querySelectorAll('.category-group').forEach(group => {
+                if (group !== categoryGroup) {
+                    group.classList.remove('show-submenu');
+                    const otherSubmenu = group.querySelector('.subcategory-menu');
+                    if (otherSubmenu) {
+                        otherSubmenu.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Toggle current submenu
+            if (categoryGroup.classList.contains('show-submenu')) {
+                categoryGroup.classList.remove('show-submenu');
+                submenu.style.display = 'none';
+            } else {
+                categoryGroup.classList.add('show-submenu');
+                submenu.style.display = 'block';
+                
+                // Ensure dropdown doesn't exceed bounds
+                setTimeout(() => {
+                    const dropupRect = dropupContent.getBoundingClientRect();
+                    const maxAllowedHeight = 400;
+                    
+                    if (dropupRect.height > maxAllowedHeight) {
+                        dropupContent.style.maxHeight = maxAllowedHeight + 'px';
+                        dropupContent.style.overflowY = 'auto';
+                    }
+                }, 10);
+            }
+        });
+    });
+    
+    // Handle window resize to reset mobile states
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            // Reset mobile-specific states when switching back to desktop
+            document.querySelectorAll('.category-group').forEach(group => {
+                group.classList.remove('active');
+                group.querySelector('.subcategory-menu').style.display = '';
+            });
+        }
+    });
+    
+    // Prevent subcategory menus from closing the main dropdown when clicking inside them
+    document.querySelectorAll('.subcategory-menu').forEach(menu => {
+        menu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
 });

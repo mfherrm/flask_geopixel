@@ -102,6 +102,13 @@ html,
             border: 1px solid #ccc;
         }
         
+        /* Override white-space for object categories but maintain size constraints */
+        .dropup-content.object-categories {
+            white-space: normal;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+        
         /* Improved scrollbar styling for dropup content */
         .dropup-content::-webkit-scrollbar {
             width: 8px;
@@ -315,3 +322,127 @@ html,
                 padding: 10px !important;
             }
         }
+/* Hierarchical Object Dropdown Styles */
+.object-categories {
+    min-width: 200px;
+}
+
+.category-group {
+    position: relative;
+    display: block;
+}
+
+/* Ensure subcategories don't exceed parent bounds */
+.object-categories .category-group {
+    max-height: none;
+}
+
+.category-header {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    cursor: pointer;
+    font-weight: 600;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.category-header:hover {
+    background-color: #e9ecef;
+    color: #007bff;
+}
+
+.subcategory-menu {
+    display: none;
+    background-color: #f8f9fa;
+    margin-left: 20px;
+    border-left: 3px solid #007bff;
+    border-radius: 4px;
+}
+
+/* Simple hover approach */
+.category-group:hover > .subcategory-menu {
+    display: block !important;
+}
+
+/* Also show on class toggle for JavaScript fallback */
+.category-group.show-submenu > .subcategory-menu {
+    display: block !important;
+}
+
+.subcategory-menu a {
+    color: #495057 !important;
+    padding: 10px 16px !important;
+    text-decoration: none;
+    display: block;
+    font-weight: normal;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.subcategory-menu a:last-child {
+    border-bottom: none;
+}
+
+.subcategory-menu a:hover {
+    background-color: #007bff !important;
+    color: white !important;
+}
+
+/* Improved scrollbar for subcategory menus */
+.subcategory-menu::-webkit-scrollbar {
+    width: 6px;
+}
+
+.subcategory-menu::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
+}
+
+.subcategory-menu::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 3px;
+}
+
+.subcategory-menu::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+/* Ensure proper positioning for dropup with categories */
+.dropup .object-categories {
+    padding: 0;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+    .subcategory-menu {
+        position: static;
+        display: none;
+        left: auto;
+        top: auto;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        margin-left: 16px;
+        margin-bottom: 8px;
+        border-radius: 0;
+        border: none;
+        border-left: 3px solid #007bff;
+    }
+    
+    .category-group:hover .subcategory-menu,
+    .category-group.active .subcategory-menu {
+        display: block;
+    }
+    
+    .category-header::after {
+        content: ' ▼';
+        float: right;
+        transition: transform 0.2s ease;
+    }
+    
+    .category-group:hover .category-header::after,
+    .category-group.active .category-header::after {
+        transform: rotate(180deg);
+    }
+}

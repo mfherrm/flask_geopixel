@@ -50,45 +50,6 @@ window.carLayer = new ol.layer.Vector({
 });
 map.addLayer(carLayer);
 
-const truckSource = new ol.source.Vector({});
-window.truckLayer = new ol.layer.Vector({
-  source: truckSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(200, 0, 0, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#990000', width: 2 })
-  })
-});
-map.addLayer(truckLayer);
-
-const busSource = new ol.source.Vector({});
-window.busLayer = new ol.layer.Vector({
-  source: busSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 100, 0, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#cc6600', width: 2 })
-  })
-});
-map.addLayer(busLayer);
-
-const motorcycleSource = new ol.source.Vector({});
-window.motorcycleLayer = new ol.layer.Vector({
-  source: motorcycleSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 50, 50, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#cc3333', width: 2 })
-  })
-});
-map.addLayer(motorcycleLayer);
-
-const bicycleSource = new ol.source.Vector({});
-window.bicycleLayer = new ol.layer.Vector({
-  source: bicycleSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 150, 0, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#cc9900', width: 2 })
-  })
-});
-map.addLayer(bicycleLayer);
 
 const trainSource = new ol.source.Vector({});
 window.trainLayer = new ol.layer.Vector({
@@ -120,15 +81,6 @@ window.shipLayer = new ol.layer.Vector({
 });
 map.addLayer(shipLayer);
 
-const boatSource = new ol.source.Vector({});
-window.boatLayer = new ol.layer.Vector({
-  source: boatSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(100, 100, 255, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#6666cc', width: 2 })
-  })
-});
-map.addLayer(boatLayer);
 
 // ===========================================
 // INFRASTRUCTURE LAYERS
@@ -155,15 +107,6 @@ window.houseLayer = new ol.layer.Vector({
 });
 map.addLayer(houseLayer);
 
-const skyscraperSource = new ol.source.Vector({});
-window.skyscraperLayer = new ol.layer.Vector({
-  source: skyscraperSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(105, 105, 105, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#696969', width: 3 })
-  })
-});
-map.addLayer(skyscraperLayer);
 
 const factorySource = new ol.source.Vector({});
 window.factoryLayer = new ol.layer.Vector({
@@ -185,15 +128,6 @@ window.warehouseLayer = new ol.layer.Vector({
 });
 map.addLayer(warehouseLayer);
 
-const schoolSource = new ol.source.Vector({});
-window.schoolLayer = new ol.layer.Vector({
-  source: schoolSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 215, 0, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#FFD700', width: 2 })
-  })
-});
-map.addLayer(schoolLayer);
 
 const hospitalSource = new ol.source.Vector({});
 window.hospitalLayer = new ol.layer.Vector({
@@ -235,15 +169,6 @@ window.highwayLayer = new ol.layer.Vector({
 });
 map.addLayer(highwayLayer);
 
-const runwaySource = new ol.source.Vector({});
-window.runwayLayer = new ol.layer.Vector({
-  source: runwaySource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(128, 128, 128, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#808080', width: 4 })
-  })
-});
-map.addLayer(runwayLayer);
 
 const parkingLotSource = new ol.source.Vector({});
 window.parkingLotLayer = new ol.layer.Vector({
@@ -310,25 +235,6 @@ window.oceanLayer = new ol.layer.Vector({
 });
 map.addLayer(oceanLayer);
 
-const streamSource = new ol.source.Vector({});
-window.streamLayer = new ol.layer.Vector({
-  source: streamSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(173, 216, 230, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#ADD8E6', width: 2 })
-  })
-});
-map.addLayer(streamLayer);
-
-const pondSource = new ol.source.Vector({});
-window.pondLayer = new ol.layer.Vector({
-  source: pondSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(135, 206, 250, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#87CEEB', width: 2 })
-  })
-});
-map.addLayer(pondLayer);
 
 const wetlandSource = new ol.source.Vector({});
 window.wetlandLayer = new ol.layer.Vector({
@@ -446,15 +352,6 @@ window.grassLayer = new ol.layer.Vector({
 });
 map.addLayer(grassLayer);
 
-const cropFieldSource = new ol.source.Vector({});
-window.cropFieldLayer = new ol.layer.Vector({
-  source: cropFieldSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 215, 0, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#FFD700', width: 2 })
-  })
-});
-map.addLayer(cropFieldLayer);
 
 const farmlandSource = new ol.source.Vector({});
 window.farmlandLayer = new ol.layer.Vector({
@@ -466,15 +363,6 @@ window.farmlandLayer = new ol.layer.Vector({
 });
 map.addLayer(farmlandLayer);
 
-const orchardSource = new ol.source.Vector({});
-window.orchardLayer = new ol.layer.Vector({
-  source: orchardSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(50, 205, 50, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#32CD32', width: 2 })
-  })
-});
-map.addLayer(orchardLayer);
 
 const vineyardSource = new ol.source.Vector({});
 window.vineyardLayer = new ol.layer.Vector({
@@ -506,15 +394,6 @@ window.gardenLayer = new ol.layer.Vector({
 });
 map.addLayer(gardenLayer);
 
-const shrubSource = new ol.source.Vector({});
-window.shrubLayer = new ol.layer.Vector({
-  source: shrubSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(85, 107, 47, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#556B2F', width: 2 })
-  })
-});
-map.addLayer(shrubLayer);
 
 const pastureSource = new ol.source.Vector({});
 window.pastureLayer = new ol.layer.Vector({
@@ -698,15 +577,6 @@ map.addLayer(erosionLayer);
 // ENVIRONMENTAL LAYERS
 // ===========================================
 
-const fireSource = new ol.source.Vector({});
-window.fireLayer = new ol.layer.Vector({
-  source: fireSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 69, 0, 0.6)' }),
-    stroke: new ol.style.Stroke({ color: '#FF4500', width: 3 })
-  })
-});
-map.addLayer(fireLayer);
 
 const floodSource = new ol.source.Vector({});
 window.floodLayer = new ol.layer.Vector({
@@ -738,15 +608,6 @@ window.iceLayer = new ol.layer.Vector({
 });
 map.addLayer(iceLayer);
 
-const cloudSource = new ol.source.Vector({});
-window.cloudLayer = new ol.layer.Vector({
-  source: cloudSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 255, 255, 0.3)' }),
-    stroke: new ol.style.Stroke({ color: '#FFFFFF', width: 2 })
-  })
-});
-map.addLayer(cloudLayer);
 
 const shadowSource = new ol.source.Vector({});
 window.shadowLayer = new ol.layer.Vector({
@@ -768,15 +629,6 @@ window.smokeLayer = new ol.layer.Vector({
 });
 map.addLayer(smokeLayer);
 
-const pollutionSource = new ol.source.Vector({});
-window.pollutionLayer = new ol.layer.Vector({
-  source: pollutionSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(139, 69, 19, 0.5)' }),
-    stroke: new ol.style.Stroke({ color: '#8B4513', width: 2 })
-  })
-});
-map.addLayer(pollutionLayer);
 
 // ===========================================
 // AGRICULTURE LAYERS
@@ -812,25 +664,6 @@ window.siloLayer = new ol.layer.Vector({
 });
 map.addLayer(siloLayer);
 
-const irrigationSource = new ol.source.Vector({});
-window.irrigationLayer = new ol.layer.Vector({
-  source: irrigationSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(0, 206, 209, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#00CED1', width: 2 })
-  })
-});
-map.addLayer(irrigationLayer);
-
-const livestockSource = new ol.source.Vector({});
-window.livestockLayer = new ol.layer.Vector({
-  source: livestockSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(222, 184, 135, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#DEB887', width: 2 })
-  })
-});
-map.addLayer(livestockLayer);
 
 // Helper functions to append features to rectangleLayer
 window.addRectangleToLayer = function (features, layer) {
