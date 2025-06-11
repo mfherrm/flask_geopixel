@@ -1,0 +1,42 @@
+<!-- RunPod Control Panel (initially hidden) -->
+<div id="runpod-panel" style="background: rgba(255,255,255,0.95); border: 2px solid #007bff; border-radius: 8px; padding: 15px; margin: 20px 0 10px 0; max-width: 800px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); display: none; position: relative; left: 0;">
+    <h4 style="margin: 0 0 15px 0; color: #007bff; font-size: 16px; font-weight: bold;">RunPod Control</h4>
+    
+    <!-- API Key Input -->
+    <div style="margin-bottom: 10px;">
+        <label for="runpod-api-key" style="display: block; font-size: 12px; margin-bottom: 5px;">API Key:</label>
+        <input type="password" id="runpod-api-key" placeholder="Enter RunPod API Key" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+        <div style="font-size: 10px; color: #666; margin-top: 2px;">
+            Get your API key from RunPod Console → Settings → API Keys
+        </div>
+    </div>
+    
+    <!-- Template ID Input -->
+    <div style="margin-bottom: 10px;">
+        <label for="runpod-template-id" style="display: block; font-size: 12px; margin-bottom: 5px;">Template ID:</label>
+        <input type="text" id="runpod-template-id" value="twv5k60kj1" placeholder="e.g., runpod/pytorch:2.0.1-py3.10-cuda11.8.0-devel-ubuntu22.04" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+        <div style="font-size: 10px; color: #666; margin-top: 2px;">
+            Format: Can be a Docker image (user/image:tag) or RunPod template ID
+        </div>
+    </div>
+    
+    <!-- Pod Name Input -->
+    <div style="margin-bottom: 15px;">
+        <label for="runpod-name" style="display: block; font-size: 12px; margin-bottom: 5px;">Pod Name:</label>
+        <input type="text" id="runpod-name" placeholder="Enter Pod Name (optional)" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+    </div>
+    
+    <!-- Control Buttons -->
+    <div style="margin-bottom: 15px;">
+        <button id="runpod-test" style="background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin-right: 5px; cursor: pointer; font-size: 11px;">Test API</button>
+        <button id="runpod-start" style="border: none; padding: 8px 16px; border-radius: 4px; margin-right: 10px; font-size: 12px;" enabled>Start Pod</button>
+        <button id="runpod-stop" style="border: none; padding: 8px 16px; border-radius: 4px; font-size: 12px;" disabled>Stop Pod</button>
+    </div>
+    
+    <!-- Status Display -->
+    <div id="runpod-status" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; font-size: 12px; min-height: 60px;">
+        <div style="font-weight: bold; margin-bottom: 5px;">Status: <span id="runpod-status-text">Not Connected</span></div>
+        <div id="runpod-details" style="color: #666; font-size: 11px;"></div>
+        <div id="runpod-error" style="color: #dc3545; font-size: 11px; margin-top: 5px;"></div>
+    </div>
+</div>
