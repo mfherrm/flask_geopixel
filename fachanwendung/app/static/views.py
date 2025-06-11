@@ -756,6 +756,86 @@ def receive_image():
 
     return jsonify({'error': 'Something went wrong'}), 500
 
+@bp.route('/check-health', methods=['POST'])
+def check_health():
+    """Proxy health check requests to RunPod endpoints to avoid CORS issues"""
+    import requests
+    
+    try:
+        # Get request data
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided', 'available': False}), 400
+            
+        pod_id = data.get('pod_id')
+        
+        if not pod_id:
+            return jsonify({'error': 'Pod ID is required', 'available': False}), 400
+        
+        # Construct health check URL
+        health_url = f'https://{pod_id}-5000.proxy.runpod.net/health'
+        print(f"Health Check Proxy: Checking {health_url}")
+        
+        try:
+            # Make request to health endpoint with short timeout
+            response = requests.get(health_url, timeout=5)
+            print(f"Health Check Proxy: Response status {response.status_code}")
+            
+            if response.status_code == 200:
+                try:
+                    health_data = response.json()
+                    print(f"Health Check Proxy: Response data: {health_data}")
+                    
+                    # Check if status is "ok"
+                    if health_data.get('status') == 'ok':
+                        print("Health Check Proxy: ✅ Status is 'ok' - endpoint available")
+                        return jsonify({
+                            'available': True,
+                            'status': 'ok',
+                            'health_data': health_data
+                        })
+                    else:
+                        print(f"Health Check Proxy: ❌ Status is '{health_data.get('status')}' - not ready")
+                        return jsonify({
+                            'available': False,
+                            'status': health_data.get('status', 'unknown'),
+                            'health_data': health_data
+                        })
+                        
+                except json.JSONDecodeError:
+                    print("Health Check Proxy: ❌ Invalid JSON response")
+                    return jsonify({
+                        'available': False,
+                        'error': 'Invalid JSON response from health endpoint'
+                    })
+            else:
+                print(f"Health Check Proxy: ❌ HTTP {response.status_code} - endpoint not ready")
+                return jsonify({
+                    'available': False,
+                    'error': f'HTTP {response.status_code}: {response.reason}'
+                })
+                
+        except requests.exceptions.Timeout:
+            print("Health Check Proxy: ❌ Request timeout")
+            return jsonify({
+                'available': False,
+                'error': 'Health check timeout'
+            })
+        except requests.exceptions.RequestException as e:
+            print(f"Health Check Proxy: ❌ Request exception: {str(e)}")
+            return jsonify({
+                'available': False,
+                'error': f'Network error: {str(e)}'
+            })
+            
+    except Exception as e:
+        print(f"Health Check Proxy: ❌ Unexpected error: {str(e)}")
+        return jsonify({
+            'available': False,
+            'error': f'Server error: {str(e)}'
+        }), 500
+
 @bp.route('/runpod-proxy', methods=['POST'])
 def runpod_proxy():
     """Proxy endpoint for RunPod API calls to avoid CORS issues"""

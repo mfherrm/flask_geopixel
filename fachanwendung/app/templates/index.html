@@ -385,7 +385,10 @@
             constructor() {
                 this.currentPodId = null;
                 this.statusCheckInterval = null;
+                this.healthCheckInterval = null; // New: dedicated health check interval
                 this.apiBaseUrl = '/runpod-proxy';
+                this.shouldCheckEndpointHealth = false; // Only check endpoint health when needed
+                this.endpointAvailable = false; // Track if endpoint is confirmed available
                 this.initializeEventListeners();
                 this.clearStaleData();
                 this.loadSavedCredentials();
@@ -415,8 +418,9 @@
                 // Clear any stale pod ID that might be cached
                 this.currentPodId = null;
                 
-                // Clear any running status check intervals
+                // Clear any running intervals
                 this.stopStatusChecking();
+                this.stopHealthCheckPolling();
                 
                 // Clear any stale pod state from localStorage (but keep credentials)
                 // Note: We keep the API key and template ID as those are user preferences
@@ -700,34 +704,20 @@
                     }
                     
                     if (data.success && data.pod_running) {
-                        // Pod is actually running - verify it's really accessible
-                        console.log(`Found running pod: ${data.pod_id}, verifying accessibility...`);
+                        // Pod is running - but don't check endpoint health on page load to reduce traffic
+                        console.log(`Found running pod: ${data.pod_id} - assuming available since it's running`);
                         this.currentPodId = data.pod_id;
+                        this.endpointAvailable = true; // Optimistically assume available if pod is running
                         
-                        // Update status to running but verify endpoint availability
-                        this.updateStatus('RUNNING', `Pod: ${data.pod_name || data.pod_id}\nVerifying endpoint...`);
+                        // Update status to running and assume endpoint is available
+                        this.updateStatus('RUNNING', `Pod: ${data.pod_name || data.pod_id}\nEndpoint: Available (cached)`);
                         this.startStatusChecking();
                         
-                        // Verify the endpoint is actually accessible before enabling Call GeoPixel
-                        this.checkEndpointAvailabilityWithFallback().then(isAvailable => {
-                            console.log(`Endpoint availability check result: ${isAvailable}`);
-                            if (isAvailable) {
-                                console.log('Pod verified as accessible - updating status and enabling button');
-                                this.updateStatus('RUNNING', `Pod: ${data.pod_name || data.pod_id}\nEndpoint: Available`);
-                                
-                                // Force update the Call GeoPixel button state immediately
-                                console.log('Forcing Call GeoPixel button update after successful endpoint check');
-                                this.updateCallGeoPixelButtonState();
-                            } else {
-                                console.log('Pod running but endpoint not yet accessible');
-                                this.updateStatus('RUNNING', `Pod: ${data.pod_name || data.pod_id}\nEndpoint: Starting...`);
-                            }
-                        }).catch(error => {
-                            console.error('Error in endpoint availability check:', error);
-                            this.updateStatus('RUNNING', `Pod: ${data.pod_name || data.pod_id}\nEndpoint: Check failed`);
-                        });
+                        // Don't check endpoint health on page load - assume it's available if pod is running
+                        console.log('Page load: Assuming endpoint is available for running pod (no health check)');
+                        this.updateCallGeoPixelButtonState();
                         
-                        console.log(`Verified running pod with template ${templateId}: ${data.pod_id}`);
+                        console.log(`Found running pod with template ${templateId}: ${data.pod_id}`);
                     } else if (data.success && !data.pod_running) {
                         // No pod running with this template - this is the expected state for fresh loads
                         console.log(`No running pod found with template ${templateId} - this is correct for fresh loads`);
@@ -810,35 +800,61 @@
                 
                 // OpenLayers is visible - check pod status AND endpoint availability
                 if (statusText === 'RUNNING' || statusText.toLowerCase().includes('running')) {
-                    // Pod is running - now check if endpoint is available
-                    console.log('Pod running and OpenLayers mode - checking endpoint availability...');
-                    this.checkEndpointAvailabilityWithFallback().then(isAvailable => {
-                        console.log(`updateCallGeoPixelButtonState: Endpoint availability result: ${isAvailable}`);
-                        if (isAvailable) {
-                            console.log('Endpoint available - enabling Call GeoPixel button');
-                            callGeoPixelButton.disabled = false;
-                            callGeoPixelButton.classList.add('enabled');
-                            callGeoPixelButton.classList.remove('disabled-button');
-                            console.log('Call GeoPixel button ENABLED:', {
-                                disabled: callGeoPixelButton.disabled,
-                                className: callGeoPixelButton.className
-                            });
-                        } else {
-                            console.log('Endpoint not yet available - keeping Call GeoPixel button disabled');
+                    // Pod is running - check if we should verify endpoint availability
+                    if (this.endpointAvailable) {
+                        // Endpoint is confirmed available - enable button immediately
+                        console.log('Pod running and endpoint confirmed available - enabling Call GeoPixel button');
+                        callGeoPixelButton.disabled = false;
+                        callGeoPixelButton.classList.add('enabled');
+                        callGeoPixelButton.classList.remove('disabled-button');
+                        console.log('Call GeoPixel button ENABLED (cached):', {
+                            disabled: callGeoPixelButton.disabled,
+                            className: callGeoPixelButton.className
+                        });
+                    } else if (this.shouldCheckEndpointHealth) {
+                        // Need to check endpoint availability
+                        console.log('Pod running - checking endpoint availability...');
+                        this.checkEndpointAvailabilityWithFallback().then(isAvailable => {
+                            console.log(`updateCallGeoPixelButtonState: Endpoint availability result: ${isAvailable}`);
+                            if (isAvailable) {
+                                this.endpointAvailable = true;
+                                this.shouldCheckEndpointHealth = false; // Stop checking once available
+                                console.log('Endpoint available - enabling Call GeoPixel button and stopping health checks');
+                                callGeoPixelButton.disabled = false;
+                                callGeoPixelButton.classList.add('enabled');
+                                callGeoPixelButton.classList.remove('disabled-button');
+                                console.log('Call GeoPixel button ENABLED:', {
+                                    disabled: callGeoPixelButton.disabled,
+                                    className: callGeoPixelButton.className
+                                });
+                            } else {
+                                console.log('Endpoint not yet available - keeping Call GeoPixel button disabled');
+                                callGeoPixelButton.disabled = true;
+                                callGeoPixelButton.classList.remove('enabled');
+                                callGeoPixelButton.classList.add('disabled-button');
+                                console.log('Call GeoPixel button DISABLED:', {
+                                    disabled: callGeoPixelButton.disabled,
+                                    className: callGeoPixelButton.className
+                                });
+                            }
+                        }).catch(error => {
+                            console.error('Error in updateCallGeoPixelButtonState endpoint check:', error);
                             callGeoPixelButton.disabled = true;
                             callGeoPixelButton.classList.remove('enabled');
                             callGeoPixelButton.classList.add('disabled-button');
-                            console.log('Call GeoPixel button DISABLED:', {
-                                disabled: callGeoPixelButton.disabled,
-                                className: callGeoPixelButton.className
-                            });
-                        }
-                    }).catch(error => {
-                        console.error('Error in updateCallGeoPixelButtonState endpoint check:', error);
-                        callGeoPixelButton.disabled = true;
-                        callGeoPixelButton.classList.remove('enabled');
-                        callGeoPixelButton.classList.add('disabled-button');
-                    });
+                        });
+                    } else {
+                        // Pod is running but we haven't checked endpoint yet - assume available for existing pods
+                        console.log('Pod running (existing pod assumed available) - enabling Call GeoPixel button');
+                        this.endpointAvailable = true; // Assume existing running pods are available
+                        callGeoPixelButton.disabled = false;
+                        callGeoPixelButton.classList.add('enabled');
+                        callGeoPixelButton.classList.remove('disabled-button');
+                        console.log('Call GeoPixel button ENABLED (assumed available):', {
+                            disabled: callGeoPixelButton.disabled,
+                            className: callGeoPixelButton.className
+                        });
+                    }
                 } else {
                     // No pod running - disable Call GeoPixel button
                     console.log(`No pod running (status: "${statusText}") - disabling Call GeoPixel button`);
@@ -862,7 +878,7 @@
             }
 
             async checkEndpointAvailability() {
-                // Check if the RunPod endpoint is actually available and responding
+                // Check if the RunPod endpoint is actually available and responding with status "ok"
                 try {
                     // Get the current pod ID
                     if (!this.currentPodId) {
@@ -870,39 +886,45 @@
                         return false;
                     }
 
-                    // Construct the RunPod proxy URL using the pod ID
-                    const endpointUrl = `https://${this.currentPodId}-5000.proxy.runpod.net`;
-                    console.log(`Checking endpoint availability: ${endpointUrl}`);
+                    console.log(`Checking endpoint health for pod: ${this.currentPodId}`);
                     
-                    // Try to make a simple health check request to the RunPod endpoint
                     try {
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout for starting pods
+                        // Use the backend proxy to check health (avoids CORS)
+                        const healthResponse = await fetch('/check-health', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                pod_id: this.currentPodId
+                            })
+                        });
                         
-                        // Try multiple endpoints to check availability
-                        const testEndpoints = [
-                            `${endpointUrl}/health`,
-                            `${endpointUrl}/`,
-                            `${endpointUrl}/process`
-                        ];
-                        
-                        for (const testUrl of testEndpoints) {
-                            try {
-                                console.log(`Testing endpoint: ${testUrl}`);
-                                const healthResponse = await fetch(testUrl, {
-                                    method: 'GET',
-                                    signal: controller.signal,
-                                    mode: 'no-cors' // Use no-cors to avoid CORS issues
-                                });
+                        if (healthResponse.ok) {
+                            const healthData = await healthResponse.json();
+                            console.log('Health proxy response:', healthData);
+                            
+                            // Check if the backend confirmed the endpoint is available with status "ok"
+                            if (healthData.available && healthData.status === 'ok') {
+                                console.log('✅ HEALTH CHECK PASSED: Backend confirmed status = "ok"');
                                 
-                                // With no-cors mode, we can't read the response, but if the fetch succeeds,
-                                // it means the endpoint is reachable
-                                console.log(`Endpoint ${testUrl} is reachable (no-cors mode)`);
-                                clearTimeout(timeoutId);
+                                // Set endpoint as available and stop health checks
+                                this.endpointAvailable = true;
+                                this.shouldCheckEndpointHealth = false;
+                                console.log('ENDPOINT HEALTHY: Flags set - endpointAvailable=true, shouldCheckEndpointHealth=false');
                                 
-                                // IMMEDIATE button state update - don't wait for promise chains
-                                console.log('IMMEDIATE BUTTON UPDATE: Endpoint detected as reachable');
+                                // Update status to show endpoint is available
+                                this.updateStatus('RUNNING', `Pod: ${this.currentPodId}\nEndpoint: Available (status: ok)`);
+                                
+                                // CRITICAL: Set initialization complete flag when health check passes
                                 const callGeoPixelBtn = document.getElementById('screenMap');
+                                if (callGeoPixelBtn) {
+                                    callGeoPixelBtn.setAttribute('data-initialization-complete', 'true');
+                                    console.log('✅ INITIALIZATION COMPLETE: Set to true after successful health check');
+                                }
+                                
+                                // IMMEDIATE button state update
+                                console.log('IMMEDIATE BUTTON UPDATE: Health check passed with status "ok"');
                                 if (callGeoPixelBtn) {
                                     const openLayersRadio = document.getElementById('olbtn');
                                     const isOpenLayersMode = openLayersRadio && openLayersRadio.checked;
@@ -911,15 +933,18 @@
                                     console.log('IMMEDIATE UPDATE - Button conditions:', {
                                         initializationComplete,
                                         isOpenLayersMode,
-                                        currentDisabled: callGeoPixelBtn.disabled
+                                        currentDisabled: callGeoPixelBtn.disabled,
+                                        healthStatus: healthData.status,
+                                        available: healthData.available
                                     });
                                     
                                     if (initializationComplete && isOpenLayersMode) {
-                                        console.log('IMMEDIATE BUTTON UPDATE: Enabling Call GeoPixel button NOW');
+                                        console.log('IMMEDIATE BUTTON UPDATE: Enabling Call GeoPixel button - health check OK');
                                         callGeoPixelBtn.disabled = false;
                                         callGeoPixelBtn.classList.add('enabled');
                                         callGeoPixelBtn.classList.remove('disabled-button');
-                                        console.log('Button state after immediate update:', {
+                                        console.log('✅ CALL GEOPIXEL BUTTON ENABLED - Health check successful!');
+                                        console.log('Button state after health check passed:', {
                                             disabled: callGeoPixelBtn.disabled,
                                             className: callGeoPixelBtn.className
                                         });
@@ -929,53 +954,23 @@
                                 }
                                 
                                 return true;
-                                
-                            } catch (endpointError) {
-                                console.log(`Endpoint ${testUrl} test failed:`, endpointError.message);
-                                // Continue to next endpoint
+                            } else {
+                                console.log(`❌ HEALTH CHECK FAILED: Backend reported available=${healthData.available}, status="${healthData.status}"`);
+                                return false;
                             }
-                        }
-                        
-                        clearTimeout(timeoutId);
-                        
-                    } catch (fetchError) {
-                        console.log('RunPod endpoint connectivity test failed:', fetchError.message);
-                        
-                        // For RunPod endpoints, network errors often mean the service is starting
-                        // but not yet fully available. We'll be more permissive here.
-                        const errorMessage = fetchError.message.toLowerCase();
-                        
-                        // These error types suggest the endpoint exists but isn't ready yet
-                        if (errorMessage.includes('cors') ||
-                            errorMessage.includes('network') ||
-                            errorMessage.includes('fetch') ||
-                            errorMessage.includes('timeout') ||
-                            fetchError.name === 'AbortError') {
-                            console.log('Network/CORS error detected - endpoint likely starting, considering available');
-                            return true;
-                        }
-                        
-                        // Connection refused or similar errors suggest the pod isn't ready yet
-                        if (errorMessage.includes('refused') ||
-                            errorMessage.includes('unreachable') ||
-                            errorMessage.includes('not found')) {
-                            console.log('Connection error - endpoint not yet ready');
+                        } else {
+                            console.log(`❌ HEALTH CHECK FAILED: Backend proxy error ${healthResponse.status}`);
                             return false;
                         }
                         
-                        // For unknown errors, be optimistic if the pod is marked as running
-                        console.log('Unknown error type - assuming endpoint is available since pod is running');
-                        return true;
+                    } catch (fetchError) {
+                        console.log('❌ HEALTH CHECK FAILED: Backend proxy error:', fetchError.message);
+                        return false;
                     }
                     
-                    // If we get here, none of the endpoints responded
-                    console.log('No endpoints responded - service may still be starting');
-                    return false;
-                    
                 } catch (error) {
-                    console.log('Error checking endpoint availability:', error.message);
-                    // If there's an error in our logic, be optimistic since the pod is running
-                    return true;
+                    console.log('❌ HEALTH CHECK FAILED: Unexpected error:', error.message);
+                    return false;
                 }
             }
 
@@ -1087,6 +1082,57 @@
                         return true;
                     }
                     return false;
+                }
+            }
+
+            startHealthCheckPolling() {
+                // Start continuous health check polling every 5 seconds
+                console.log('🔄 Starting health check polling every 5 seconds...');
+                this.stopHealthCheckPolling(); // Clear any existing interval
+                
+                this.healthCheckInterval = setInterval(async () => {
+                    // Check if we should stop polling
+                    const callGeoPixelBtn = document.getElementById('screenMap');
+                    const isButtonEnabled = callGeoPixelBtn && !callGeoPixelBtn.disabled;
+                    
+                    // Stop if: no pod ID (terminated) OR Call GeoPixel button is enabled
+                    if (!this.currentPodId) {
+                        console.log('🛑 Stopping health check polling - no pod ID (pod terminated)');
+                        this.stopHealthCheckPolling();
+                        return;
+                    }
+                    
+                    if (isButtonEnabled) {
+                        console.log('🛑 Stopping health check polling - Call GeoPixel button is enabled');
+                        this.stopHealthCheckPolling();
+                        return;
+                    }
+                    
+                    console.log('🩺 Running scheduled health check...');
+                    const isHealthy = await this.checkEndpointAvailability();
+                    
+                    if (isHealthy) {
+                        console.log('✅ Health check passed - stopping polling and updating button');
+                        this.stopHealthCheckPolling();
+                        // Force immediate button state update
+                        this.updateCallGeoPixelButtonState();
+                    } else {
+                        console.log('❌ Health check failed - continuing polling in 5 seconds');
+                        // Show current status in the UI
+                        const statusText = document.getElementById('runpod-status-text').textContent;
+                        if (statusText === 'RUNNING') {
+                            this.updateStatus('RUNNING', `Pod: ${this.currentPodId}\nEndpoint: Starting... (checking every 5s)`);
+                        }
+                    }
+                }, 5000); // 5 second interval
+            }
+
+            stopHealthCheckPolling() {
+                // Stop the health check polling interval
+                if (this.healthCheckInterval) {
+                    console.log('🛑 Stopping health check polling interval');
+                    clearInterval(this.healthCheckInterval);
+                    this.healthCheckInterval = null;
                 }
             }
 
@@ -1298,8 +1344,12 @@
                     
                     if (result.podFindAndDeployOnDemand) {
                         this.currentPodId = result.podFindAndDeployOnDemand.id;
+                        this.endpointAvailable = false; // Reset endpoint availability
+                        this.shouldCheckEndpointHealth = true; // Enable health checks for new pod
+                        console.log('Pod started - starting continuous health checks every 5 seconds');
                         this.updateStatus('Starting', `Pod ID: ${this.currentPodId}`);
                         this.startStatusChecking();
+                        this.startHealthCheckPolling(); // Start 5-second health check loop
                     } else {
                         throw new Error('Failed to create pod');
                     }
@@ -1352,7 +1402,11 @@
                     await this.makeGraphQLRequest(mutation, variables);
                     
                     this.currentPodId = null;
+                    this.endpointAvailable = false; // Reset endpoint availability
+                    this.shouldCheckEndpointHealth = false; // Disable health checks until next pod start
+                    console.log('Pod stopped - resetting health check flags. Health checks will resume only when starting a new pod.');
                     this.stopStatusChecking();
+                    this.stopHealthCheckPolling(); // Stop health check polling
                     this.updateStatus('Stopped', 'Pod terminated successfully');
                     
                     // Clear any manual styling from both buttons after stopping
@@ -1446,23 +1500,33 @@
                                 }
                             }
                             
-                            // Update status but also check endpoint availability for running pods
+                            // Update status and only check endpoint availability when needed
                             if (status === 'RUNNING') {
-                                // For running pods, check if endpoint is available before updating status
-                                this.checkEndpointAvailabilityWithFallback().then(isAvailable => {
-                                    console.log(`Periodic status check: Endpoint availability: ${isAvailable}`);
-                                    if (isAvailable) {
-                                        this.updateStatus(status, details + '\nEndpoint: Available');
-                                        console.log('Periodic check: Endpoint available, forcing button state update');
-                                        // Force button state update after confirming endpoint is available
-                                        this.updateCallGeoPixelButtonState();
-                                    } else {
-                                        this.updateStatus(status, details + '\nEndpoint: Starting...');
-                                    }
-                                }).catch(error => {
-                                    console.error('Error in periodic endpoint check:', error);
-                                    this.updateStatus(status, details + '\nEndpoint: Check failed');
-                                });
+                                if (this.shouldCheckEndpointHealth && !this.endpointAvailable) {
+                                    // Only check endpoint health if we should and it's not already confirmed available
+                                    console.log('Periodic check: Checking endpoint availability...');
+                                    this.checkEndpointAvailabilityWithFallback().then(isAvailable => {
+                                        console.log(`Periodic status check: Endpoint availability: ${isAvailable}`);
+                                        if (isAvailable) {
+                                            this.endpointAvailable = true;
+                                            this.shouldCheckEndpointHealth = false; // Stop checking once available
+                                            console.log('Periodic check: Endpoint available - stopping health checks and updating button');
+                                            this.updateStatus(status, details + '\nEndpoint: Available');
+                                            this.updateCallGeoPixelButtonState();
+                                        } else {
+                                            this.updateStatus(status, details + '\nEndpoint: Starting...');
+                                        }
+                                    }).catch(error => {
+                                        console.error('Error in periodic endpoint check:', error);
+                                        this.updateStatus(status, details + '\nEndpoint: Check failed');
+                                    });
+                                } else if (this.endpointAvailable) {
+                                    // Endpoint already confirmed available
+                                    this.updateStatus(status, details + '\nEndpoint: Available (cached)');
+                                } else {
+                                    // Not checking endpoint health
+                                    this.updateStatus(status, details + '\nEndpoint: Assumed available');
+                                }
                             } else {
                                 this.updateStatus(status, details);
                             }
