@@ -26,72 +26,8 @@
         <!-- Both elements visible initially to allow proper initialization -->
 
         <div id="OL-map" class="olmap" style="width: 95%; height: 95vh; display: block; position: relative;">
-            <!-- Layer Switcher Control -->
-            <div id="layer-switcher-control" class="layer-switcher-control">
-                <div class="layer-switcher-header" onclick="toggleLayerSwitcher()">
-                    <span>Base Layers</span>
-                    <button class="layer-switcher-toggle" type="button" title="Toggle layer switcher">🌍</button>
-                </div>
-                <div class="layer-switcher-content" id="layer-switcher-content" style="display: none;">
-                    <div class="layer-switcher-group">
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="google" checked onchange="switchBaseLayer(this.value)">
-                            <span>Google Satellite</span>
-                        </label>
-                    </div>
-                    <div class="layer-switcher-group">
-                        <h4>ArcGIS Wayback</h4>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2025" onchange="switchBaseLayer(this.value)">
-                            <span>2025</span>
-                        </label>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2024" onchange="switchBaseLayer(this.value)">
-                            <span>2024</span>
-                        </label>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2023" onchange="switchBaseLayer(this.value)">
-                            <span>2023</span>
-                        </label>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2022" onchange="switchBaseLayer(this.value)">
-                            <span>2022</span>
-                        </label>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2021" onchange="switchBaseLayer(this.value)">
-                            <span>2021</span>
-                        </label>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2020" onchange="switchBaseLayer(this.value)">
-                            <span>2020</span>
-                        </label>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2019" onchange="switchBaseLayer(this.value)">
-                            <span>2019</span>
-                        </label>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2018" onchange="switchBaseLayer(this.value)">
-                            <span>2018</span>
-                        </label>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2017" onchange="switchBaseLayer(this.value)">
-                            <span>2017</span>
-                        </label>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2016" onchange="switchBaseLayer(this.value)">
-                            <span>2016</span>
-                        </label>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2015" onchange="switchBaseLayer(this.value)">
-                            <span>2015</span>
-                        </label>
-                        <label class="layer-switcher-item">
-                            <input type="radio" name="baseLayer" value="2014" onchange="switchBaseLayer(this.value)">
-                            <span>2014</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
+            <!-- Base Layer Switcher Control -->
+            {% include 'base_layer_switcher.html' %}
         </div>
         <iframe id="cadenza-iframe" style="height: 95vh; width: 95%; display: block;"></iframe>
         
