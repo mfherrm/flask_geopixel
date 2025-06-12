@@ -17,7 +17,8 @@ import {
     processTiledImage,
     calculateTileBounds,
     processSingleTile,
-    combineAndDisplayTileResults
+    combineAndDisplayTileResults,
+    updateTileConfig
 } from './tile-processing.js';
 
 // Global tile configuration
@@ -57,29 +58,16 @@ function setButtonLoadingState(isLoading) {
     }
 }
 
-function updateTileConfig(tileCount) {
-    // Define optimal grid configurations for different tile counts
-    const tileConfigs = {
-        1: { rows: 1, cols: 1, label: "1 tile (1x1)" },
-        6: { rows: 2, cols: 3, label: "6 tiles (2x3)" },
-        12: { rows: 3, cols: 4, label: "12 tiles (3x4)" },
-        20: { rows: 4, cols: 5, label: "20 tiles (4x5)" },
-        24: { rows: 4, cols: 6, label: "24 tiles (4x6)" },
-        30: { rows: 5, cols: 6, label: "30 tiles (5x6)" },
-        42: { rows: 6, cols: 7, label: "42 tiles (6x7)" }
-    };
-    
-    if (tileConfigs[tileCount]) {
-        tileConfig = {
-            count: tileCount,
-            rows: tileConfigs[tileCount].rows,
-            cols: tileConfigs[tileCount].cols,
-            label: tileConfigs[tileCount].label
-        };
-    } else {
-        console.error(`Unknown tile count: ${tileCount}`);
+// Wrapper function to update the global tileConfig using the imported function
+function updateTileConfigWrapper(tileCount) {
+    const newConfig = updateTileConfig(tileCount);
+    if (newConfig) {
+        tileConfig = newConfig;
     }
 }
+
+// Update the window reference to use the wrapper
+window.updateTileConfig = updateTileConfigWrapper;
 
 document.getElementById('screenMap').addEventListener('click', async (event) => {
     // Check if the button is disabled

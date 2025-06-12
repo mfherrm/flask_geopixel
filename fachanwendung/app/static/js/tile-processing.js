@@ -5,6 +5,36 @@ import {
 } from './geometry-utils.js';
 
 /**
+ * Updates the tile configuration based on the specified tile count
+ * @param {number} tileCount - The number of tiles to configure
+ * @returns {Object} The updated tile configuration object
+ */
+export function updateTileConfig(tileCount) {
+    // Define optimal grid configurations for different tile counts
+    const tileConfigs = {
+        1: { rows: 1, cols: 1, label: "1 tile (1x1)" },
+        6: { rows: 2, cols: 3, label: "6 tiles (2x3)" },
+        12: { rows: 3, cols: 4, label: "12 tiles (3x4)" },
+        20: { rows: 4, cols: 5, label: "20 tiles (4x5)" },
+        24: { rows: 4, cols: 6, label: "24 tiles (4x6)" },
+        30: { rows: 5, cols: 6, label: "30 tiles (5x6)" },
+        42: { rows: 6, cols: 7, label: "42 tiles (6x7)" }
+    };
+    
+    if (tileConfigs[tileCount]) {
+        return {
+            count: tileCount,
+            rows: tileConfigs[tileCount].rows,
+            cols: tileConfigs[tileCount].cols,
+            label: tileConfigs[tileCount].label
+        };
+    } else {
+        console.error(`Unknown tile count: ${tileCount}`);
+        return null;
+    }
+}
+
+/**
  * Processes an image by dividing it into tiles and processing each tile separately
  * @param {Blob} imageBlob - The image blob to process
  * @param {string} selection - The object selection string for processing
