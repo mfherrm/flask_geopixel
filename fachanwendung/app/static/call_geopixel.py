@@ -364,10 +364,32 @@ def get_object_outlines(api_base_url, image_path, query):
             print("Processing mask for improved contour detection...")
             mask_uint8 = pred_masks.astype(np.uint8).squeeze()
             
+            # Debug: Check mask content
+            unique_values = np.unique(mask_uint8)
+            non_zero_pixels = np.count_nonzero(mask_uint8)
+            print(f"Mask debug: unique values = {unique_values}, non-zero pixels = {non_zero_pixels}, total pixels = {mask_uint8.size}")
+            
+            # If mask is completely empty, provide helpful feedback
+            if non_zero_pixels == 0:
+                print("WARNING: Mask is completely empty - no objects detected. This could be due to:")
+                print("  1. No matching objects in the image")
+                print("  2. Image resolution too low after tiling")
+                print("  3. Query format not optimal for the AI model")
+                print("  4. Objects too small to detect in tile")
+            
             contours, hierarchy = cv2.findContours(mask_uint8, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)
+            print(f"Found {len(contours)} total contours before filtering")
+            
+            # Debug: Show contour areas before filtering
+            if len(contours) > 0:
+                contour_areas = [cv2.contourArea(cnt) for cnt in contours]
+                print(f"Contour areas: {contour_areas}")
             
             # Filter contours by area to remove tiny noise contours
-            min_contour_area = 5
+            # Make minimum area proportional to image size for tile processing
+            image_area = mask_uint8.shape[0] * mask_uint8.shape[1]
+            min_contour_area = max(1, int(image_area * 0.000001))  # 0.0001% of image area, minimum 1 pixel
+            print(f"Using minimum contour area: {min_contour_area} pixels (image area: {image_area})")
             filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
             
             print(f"Found {len(filtered_contours)} significant contours after filtering")

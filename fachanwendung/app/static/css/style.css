@@ -82,6 +82,21 @@ html,
             background-color: #2980B9;
         }
         
+        /* Stats Button */
+        .stats-btn {
+            background-color: #28a745;
+            color: white;
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .stats-btn:hover {
+            background-color: #218838;
+        }
+        
         /* Dropup content (Hidden by Default) */
         .dropup-content {
             display: none;
@@ -737,5 +752,359 @@ html,
     
     .layer-switcher-content::-webkit-scrollbar-thumb:hover {
         background: #adb5bd;
+    }
+}
+
+/* ===========================================
+   LAYER STATISTICS MODAL STYLES
+   =========================================== */
+
+/* Modal overlay */
+.modal {
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* Modal content container */
+.modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    position: relative;
+    animation: modalFadeIn 0.3s ease;
+    overflow: hidden;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Modal header */
+.modal-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 8px 8px 0 0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Close button */
+.close {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* Modal body */
+.modal-body {
+    padding: 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Statistics summary */
+.stats-summary {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.stats-summary h3 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #28a745;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Category sections */
+.stats-category {
+    margin-bottom: 24px;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.stats-category h4 {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    margin: 0;
+    padding: 16px 20px;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Layer rows */
+.stats-layers {
+    padding: 16px 20px;
+}
+
+.stats-layer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.stats-layer:last-child {
+    border-bottom: none;
+}
+
+.stats-layer:hover {
+    background-color: #f8f9fa;
+    margin: 12px -20px;
+    padding: 12px 20px;
+    border-radius: 4px;
+}
+
+.layer-name {
+    font-weight: 500;
+    color: #495057;
+    font-size: 14px;
+}
+
+.layer-count {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 13px;
+    min-width: 40px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}
+
+/* Empty state */
+.stats-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.stats-empty p {
+    font-size: 16px;
+    margin: 0;
+    font-style: italic;
+}
+
+/* Custom scrollbar for modal body */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+        max-height: 85vh;
+    }
+    
+    .modal-header {
+        padding: 16px 20px;
+    }
+    
+    .modal-header h2 {
+        font-size: 20px;
+    }
+    
+    .modal-body {
+        padding: 20px;
+        max-height: 65vh;
+    }
+    
+    .stats-summary {
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .stats-summary h3 {
+        font-size: 24px;
+    }
+    
+    .stats-category h4 {
+        padding: 12px 16px;
+        font-size: 16px;
+    }
+    
+    .stats-layers {
+        padding: 12px 16px;
+    }
+    
+    .stats-layer {
+        padding: 10px 0;
+    }
+    
+    .stats-layer:hover {
+        margin: 10px -16px;
+        padding: 10px 16px;
+    }
+    
+    .layer-name {
+        font-size: 13px;
+    }
+    
+    .layer-count {
+        font-size: 12px;
+        padding: 4px 10px;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .modal-content {
+        background-color: #343a40;
+        color: #e9ecef;
+    }
+    
+    .stats-summary {
+        background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+        border-color: #6c757d;
+    }
+    
+    .stats-category {
+        background: #495057;
+        border-color: #6c757d;
+    }
+    
+    .stats-layers {
+        background: #495057;
+    }
+    
+    .stats-layer {
+        border-bottom-color: #6c757d;
+    }
+    
+    .stats-layer:hover {
+        background-color: #6c757d;
+    }
+    
+    .layer-name {
+        color: #e9ecef;
+    }
+    
+    .stats-empty {
+        color: #adb5bd;
+    }
+    
+    .modal-body::-webkit-scrollbar-track {
+        background: #495057;
+    }
+    
+    .modal-body::-webkit-scrollbar-thumb {
+        background: #6c757d;
+    }
+    
+    .modal-body::-webkit-scrollbar-thumb:hover {
+        background: #adb5bd;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .modal-content {
+        border: 3px solid #000;
+    }
+    
+    .modal-header {
+        background: #000;
+        border-bottom: 2px solid #000;
+    }
+    
+    .stats-category {
+        border: 2px solid #000;
+    }
+    
+    .stats-category h4 {
+        background: #000;
+        border-bottom: 1px solid #000;
+    }
+    
+    .layer-count {
+        background: #000;
+        border: 1px solid #fff;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .modal-content {
+        animation: none;
+    }
+    
+    .close:hover,
+    .stats-layer {
+        transition: none;
+    }
+    
+    .close:hover {
+        transform: none;
     }
 }

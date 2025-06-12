@@ -55,10 +55,28 @@
 
             <!-- RunPod Control Button only -->
             <button id="runpod-toggle-btn" class="runpod-btn">RunPod Control</button>
+            
+            <!-- Layer Statistics Button -->
+            <button id="layer-stats-btn" class="stats-btn">Layer Stats</button>
         </div>
 
         <!-- RunPod Control Panel (positioned below buttons) -->
         {% include 'runpod_control_panel.html' %}
+
+        <!-- Layer Statistics Modal -->
+        <div id="layer-stats-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Layer Statistics</h2>
+                    <span class="close" id="stats-modal-close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div id="layer-stats-content">
+                        <!-- Statistics content will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts loaded at the end for better performance -->

@@ -1,7 +1,12 @@
 // Using the bundled version of OpenLayers
 
 // Import all vector layers from dedicated module
-import { getAllVectorLayersArray, allVectorLayers } from './vector-layers.js';
+import {
+  getAllVectorLayersArray,
+  allVectorLayers,
+  showLayerStatsModal,
+  hideLayerStatsModal
+} from './vector-layers.js';
 
 // Import all base layers from dedicated module
 import {
@@ -101,6 +106,50 @@ window.toggleLayerSwitcher = function () {
 };
 
 console.log('Layer switcher control initialized in HTML template');
+
+// ===========================================
+// LAYER STATISTICS CONTROL
+// ===========================================
+
+// Initialize stats button functionality when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  // Stats button event listener
+  const statsButton = document.getElementById('layer-stats-btn');
+  if (statsButton) {
+    statsButton.addEventListener('click', function() {
+      showLayerStatsModal();
+    });
+  }
+
+  // Modal close button event listener
+  const closeButton = document.getElementById('stats-modal-close');
+  if (closeButton) {
+    closeButton.addEventListener('click', function() {
+      hideLayerStatsModal();
+    });
+  }
+
+  // Close modal when clicking outside of it
+  const modal = document.getElementById('layer-stats-modal');
+  if (modal) {
+    modal.addEventListener('click', function(event) {
+      if (event.target === modal) {
+        hideLayerStatsModal();
+      }
+    });
+  }
+
+  // Close modal with Escape key
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      hideLayerStatsModal();
+    }
+  });
+});
+
+// Expose stats functions to window for debugging/external access
+window.showLayerStatsModal = showLayerStatsModal;
+window.hideLayerStatsModal = hideLayerStatsModal;
 
 // ===========================================
 // ADDITIONAL HELPER FUNCTIONS

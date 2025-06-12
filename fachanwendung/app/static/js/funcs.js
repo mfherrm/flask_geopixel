@@ -69,6 +69,215 @@ function updateTileConfigWrapper(tileCount) {
 // Update the window reference to use the wrapper
 window.updateTileConfig = updateTileConfigWrapper;
 
+/**
+ * Handle successful image capture and process it
+ */
+function handleSuccessfulCapture(blob, mapBounds, setButtonLoadingState) {
+    // Get form data
+    const object = document.getElementById('objbttn').textContent.trim();
+    const color = document.getElementById('colorbttn').textContent.trim();
+
+    if (object === "Object" || object === "") {
+        alert("Error: object needs to be selected");
+        setButtonLoadingState(false);
+        return;
+    }
+
+    let colorValue = color;
+    let selection;
+    if (color === "No color" || color === "Color") {
+        selection = JSON.stringify(object.toLowerCase());
+    } else {
+        selection = JSON.stringify(colorValue.toLowerCase() + " " + object.toLowerCase());
+    }
+
+    console.log("Selection", selection);
+
+    // Process image in tiles using selected configuration
+    console.log(`Processing image with ${tileConfig.label}`);
+    processTiledImage(blob, selection, mapBounds, object, tileConfig, setButtonLoadingState);
+}
+
+/**
+ * Fallback to Google Satellite when CORS errors occur
+ */
+function handleCORSFallback(layers, originalVisibility, mapBounds, setButtonLoadingState) {
+    console.log("Implementing CORS fallback to Google Satellite layer");
+    
+    // Force only Google Satellite to be visible
+    layers.forEach((layer, index) => {
+        const layerName = layer.get('name');
+        const isGoogleSatellite = layerName && layerName.includes('Google Satellite');
+        
+        if (isGoogleSatellite) {
+            layer.setVisible(true);
+        } else {
+            layer.setVisible(false);
+        }
+    });
+    
+    // Re-render map with Google Satellite only
+    map.renderSync();
+    
+    // Attempt capture again with Google Satellite
+    map.once('rendercomplete', function () {
+        const mapCanvas = document.createElement('canvas');
+        const size = map.getSize();
+        mapCanvas.width = size[0];
+        mapCanvas.height = size[1];
+        const mapContext = mapCanvas.getContext('2d');
+        
+        Array.prototype.forEach.call(
+            map.getViewport().querySelectorAll('.ol-layer canvas, canvas.ol-layer'),
+            function (canvas) {
+                if (canvas.width > 0) {
+                    const opacity =
+                        canvas.parentNode.style.opacity || canvas.style.opacity;
+                    mapContext.globalAlpha = opacity === '' ? 1 : Number(opacity);
+                    let matrix;
+                    const transform = canvas.style.transform;
+                    if (transform) {
+                        matrix = transform
+                            .match(/^matrix\(([^\(]*)\)$/)[1]
+                            .split(',')
+                            .map(Number);
+                    } else {
+                        matrix = [
+                            parseFloat(canvas.style.width) / canvas.width,
+                            0,
+                            0,
+                            parseFloat(canvas.style.height) / canvas.height,
+                            0,
+                            0,
+                        ];
+                    }
+                    CanvasRenderingContext2D.prototype.setTransform.apply(
+                        mapContext,
+                        matrix,
+                    );
+                    const backgroundColor = canvas.parentNode.style.backgroundColor;
+                    if (backgroundColor) {
+                        mapContext.fillStyle = backgroundColor;
+                        mapContext.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                    mapContext.drawImage(canvas, 0, 0);
+                }
+            },
+        );
+        mapContext.globalAlpha = 1;
+        mapContext.setTransform(1, 0, 0, 1, 0, 0);
+
+        // Convert fallback canvas to blob
+        mapCanvas.toBlob(function (blob) {
+            console.log("Fallback canvas converted to blob:", blob);
+            
+            if (!blob) {
+                console.error("Failed to create blob from fallback canvas");
+                alert("Failed to capture map image even with fallback");
+                setButtonLoadingState(false);
+                return;
+            }
+
+            handleSuccessfulCapture(blob, mapBounds, setButtonLoadingState);
+            
+        }, 'image/png');
+        
+        // Restore original layer visibility after fallback capture
+        setTimeout(() => {
+            layers.forEach((layer, index) => {
+                layer.setVisible(originalVisibility[index]);
+            });
+            map.renderSync();
+        }, 100);
+    });
+    
+    map.renderSync();
+}
+
+/**
+ * Attempt canvas capture with CORS-safe error handling
+ */
+function attemptCanvasCapture(layers, layerVisibility, mapBounds, setButtonLoadingState) {
+    const mapCanvas = document.createElement('canvas');
+    const size = map.getSize();
+    mapCanvas.width = size[0];
+    mapCanvas.height = size[1];
+    const mapContext = mapCanvas.getContext('2d');
+    
+    try {
+        Array.prototype.forEach.call(
+            map.getViewport().querySelectorAll('.ol-layer canvas, canvas.ol-layer'),
+            function (canvas) {
+                if (canvas.width > 0) {
+                    const opacity =
+                        canvas.parentNode.style.opacity || canvas.style.opacity;
+                    mapContext.globalAlpha = opacity === '' ? 1 : Number(opacity);
+                    let matrix;
+                    const transform = canvas.style.transform;
+                    if (transform) {
+                        matrix = transform
+                            .match(/^matrix\(([^\(]*)\)$/)[1]
+                            .split(',')
+                            .map(Number);
+                    } else {
+                        matrix = [
+                            parseFloat(canvas.style.width) / canvas.width,
+                            0,
+                            0,
+                            parseFloat(canvas.style.height) / canvas.height,
+                            0,
+                            0,
+                        ];
+                    }
+                    CanvasRenderingContext2D.prototype.setTransform.apply(
+                        mapContext,
+                        matrix,
+                    );
+                    const backgroundColor = canvas.parentNode.style.backgroundColor;
+                    if (backgroundColor) {
+                        mapContext.fillStyle = backgroundColor;
+                        mapContext.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                    // This is where CORS errors typically occur
+                    mapContext.drawImage(canvas, 0, 0);
+                }
+            },
+        );
+        mapContext.globalAlpha = 1;
+        mapContext.setTransform(1, 0, 0, 1, 0, 0);
+
+        // Convert canvas to blob - this may also trigger CORS errors
+        mapCanvas.toBlob(function (blob) {
+            console.log("Canvas converted to blob:", blob);
+            console.log("Blob size:", blob ? blob.size : "null");
+            console.log("Blob type:", blob ? blob.type : "null");
+
+            if (!blob) {
+                console.error("Failed to create blob from canvas");
+                console.log("Attempting CORS fallback due to blob creation failure");
+                handleCORSFallback(layers, layerVisibility, mapBounds, setButtonLoadingState);
+                return;
+            }
+
+            handleSuccessfulCapture(blob, mapBounds, setButtonLoadingState);
+            
+            // Restore original layer visibility after successful capture
+            setTimeout(() => {
+                layers.forEach((layer, index) => {
+                    layer.setVisible(layerVisibility[index]);
+                });
+                map.renderSync();
+            }, 100);
+            
+        }, 'image/png');
+        
+    } catch (corsError) {
+        console.warn("CORS error during canvas operations:", corsError);
+        console.log("Attempting CORS fallback due to canvas error");
+        handleCORSFallback(layers, layerVisibility, mapBounds, setButtonLoadingState);
+    }
+}
+
 document.getElementById('screenMap').addEventListener('click', async (event) => {
     // Check if the button is disabled
     if (event.target.disabled) {
@@ -94,17 +303,30 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
     var mapBounds = [[mbs[0], mbs[3]], [mbs[2], mbs[1]]]
     console.log("Transformed mapBounds: \n \t NW: ", mapBounds[0], "\n \t SE: ", mapBounds[1])
 
-    // Store current visibility of vector layers
+    // Store current visibility of all layers
     const layerVisibility = [];
     
-    // Hide vector layers for satellite-only capture
+    // Hide only vector/overlay layers, preserve visible base layer for capture
     const layers = map.getLayers().getArray();
     layers.forEach((layer, index) => {
         layerVisibility[index] = layer.getVisible();
-        // Hide all layers except the first one (satellite base layer)
-        if (index > 0) {
+        
+        // Check if this is a vector layer (contains geometries that should be hidden during capture)
+        const layerName = layer.get('name');
+        const isVectorLayer = layerName && (
+            layerName.includes('car') ||
+            layerName.includes('building') ||
+            layerName.includes('tree') ||
+            layerName.includes('person') ||
+            layerName.includes('vector') ||
+            layer.getSource().constructor.name.includes('Vector')
+        );
+        
+        // Hide vector layers but keep base layers (satellite, OSM, etc.) as they are
+        if (isVectorLayer) {
             layer.setVisible(false);
         }
+        // Base layers keep their current visibility state - no change
     });
     
     // Force map re-render without vector layers
@@ -116,6 +338,7 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
         mapCanvas.width = size[0];
         mapCanvas.height = size[1];
         const mapContext = mapCanvas.getContext('2d');
+        
         Array.prototype.forEach.call(
             map.getViewport().querySelectorAll('.ol-layer canvas, canvas.ol-layer'),
             function (canvas) {
@@ -126,7 +349,6 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
                     let matrix;
                     const transform = canvas.style.transform;
                     if (transform) {
-                        // Get the transform parameters from the style's transform matrix
                         matrix = transform
                             .match(/^matrix\(([^\(]*)\)$/)[1]
                             .split(',')
@@ -141,7 +363,6 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
                             0,
                         ];
                     }
-                    // Apply the transform to the export map context
                     CanvasRenderingContext2D.prototype.setTransform.apply(
                         mapContext,
                         matrix,
@@ -158,7 +379,7 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
         mapContext.globalAlpha = 1;
         mapContext.setTransform(1, 0, 0, 1, 0, 0);
 
-        // Convert canvas to blob and handle tiled processing
+        // Convert canvas to blob
         mapCanvas.toBlob(function (blob) {
             console.log("Canvas converted to blob:", blob);
             console.log("Blob size:", blob ? blob.size : "null");
@@ -171,44 +392,21 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
                 return;
             }
 
-            // Get form data
-            const object = document.getElementById('objbttn').textContent.trim();
-            const color = document.getElementById('colorbttn').textContent.trim();
-
-            if (object === "Object" || object === "") {
-                alert("Error: object needs to be selected");
-                setButtonLoadingState(false);
-                return;
-            }
-
-            let colorValue = color;
-            let selection;
-            if (color === "No color" || color === "Color") {
-                selection = JSON.stringify(object.toLowerCase());
-            } else {
-                selection = JSON.stringify(colorValue.toLowerCase() + " " + object.toLowerCase());
-            }
-
-            console.log("Selection", selection);
-
-            // Process image in tiles using selected configuration
-            console.log(`Processing image with ${tileConfig.label}`);
-            processTiledImage(blob, selection, mapBounds, object, tileConfig, setButtonLoadingState);
+            handleSuccessfulCapture(blob, mapBounds, setButtonLoadingState);
             
         }, 'image/png');
         
-        // Restore original layer visibility after screenshot
-        layers.forEach((layer, index) => {
-            layer.setVisible(layerVisibility[index]);
-        });
-        
-        // Re-render map with restored layers
-        map.renderSync();
+        // Restore original layer visibility after capture
+        setTimeout(() => {
+            layers.forEach((layer, index) => {
+                layer.setVisible(layerVisibility[index]);
+            });
+            map.renderSync();
+        }, 100);
     });
     map.renderSync();
 
 });
-
 
 
 

@@ -29,6 +29,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/25285/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2025 tile:', src);
         imageTile.getImage().src = src;
@@ -41,6 +42,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/39767/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2024 tile:', src);
         imageTile.getImage().src = src;
@@ -53,6 +55,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/47963/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2023 tile:', src);
         imageTile.getImage().src = src;
@@ -65,6 +68,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/13851/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2022 tile:', src);
         imageTile.getImage().src = src;
@@ -77,6 +81,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/8432/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2021 tile:', src);
         imageTile.getImage().src = src;
@@ -89,6 +94,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/9549/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2020 tile:', src);
         imageTile.getImage().src = src;
@@ -101,6 +107,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/14829/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2018 tile:', src);
         imageTile.getImage().src = src;
@@ -113,6 +120,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/3026/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2014 tile:', src);
         imageTile.getImage().src = src;
@@ -125,6 +133,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/16681/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2019 tile:', src);
         imageTile.getImage().src = src;
@@ -137,6 +146,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/3319/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2017 tile:', src);
         imageTile.getImage().src = src;
@@ -149,6 +159,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/5097/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2016 tile:', src);
         imageTile.getImage().src = src;
@@ -161,6 +172,7 @@ const waybackLayers = {
     source: new ol.source.XYZ({
       url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/24007/{z}/{y}/{x}',
       maxZoom: 19,
+      crossOrigin: 'anonymous',
       tileLoadFunction: function (imageTile, src) {
         console.log('📥 Loading 2015 tile:', src);
         imageTile.getImage().src = src;

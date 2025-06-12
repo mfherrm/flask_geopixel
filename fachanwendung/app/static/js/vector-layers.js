@@ -859,3 +859,242 @@ export const getAllVectorLayersArray = () => {
 export const getLayerByName = (layerName) => {
   return allVectorLayers[layerName];
 };
+
+// ===========================================
+// LAYER STATISTICS FUNCTIONALITY
+// ===========================================
+
+// Function to get individual geometry count for a single layer
+export const getLayerFeatureCount = (layer) => {
+  if (!layer || !layer.getSource) {
+    return 0;
+  }
+  const source = layer.getSource();
+  const features = source.getFeatures ? source.getFeatures() : [];
+  
+  let totalGeometries = 0;
+  
+  features.forEach(feature => {
+    const geometry = feature.getGeometry();
+    if (geometry) {
+      const geometryType = geometry.getType();
+      
+      // Count individual geometries within MultiPolygon and MultiLineString
+      if (geometryType === 'MultiPolygon') {
+        const polygons = geometry.getPolygons();
+        totalGeometries += polygons.length;
+      } else if (geometryType === 'MultiLineString') {
+        const lineStrings = geometry.getLineStrings();
+        totalGeometries += lineStrings.length;
+      } else if (geometryType === 'MultiPoint') {
+        const points = geometry.getPoints();
+        totalGeometries += points.length;
+      } else if (geometryType === 'GeometryCollection') {
+        const geometries = geometry.getGeometries();
+        totalGeometries += geometries.length;
+      } else {
+        // Single geometry types (Polygon, LineString, Point, etc.)
+        totalGeometries += 1;
+      }
+    }
+  });
+  
+  return totalGeometries;
+};
+
+// Function to get statistics for all layers organized by category
+export const getLayerStatistics = () => {
+  const stats = {
+    transportation: {},
+    infrastructure: {},
+    naturalFeatures: {},
+    vegetation: {},
+    urbanFeatures: {},
+    geological: {},
+    environmental: {},
+    agriculture: {},
+    total: 0
+  };
+
+  // Transportation layers statistics
+  Object.entries(transportationLayers).forEach(([layerName, layer]) => {
+    const count = getLayerFeatureCount(layer);
+    stats.transportation[layerName] = count;
+    stats.total += count;
+  });
+
+  // Infrastructure layers statistics
+  Object.entries(infrastructureLayers).forEach(([layerName, layer]) => {
+    const count = getLayerFeatureCount(layer);
+    stats.infrastructure[layerName] = count;
+    stats.total += count;
+  });
+
+  // Natural features layers statistics
+  Object.entries(naturalFeaturesLayers).forEach(([layerName, layer]) => {
+    const count = getLayerFeatureCount(layer);
+    stats.naturalFeatures[layerName] = count;
+    stats.total += count;
+  });
+
+  // Vegetation layers statistics
+  Object.entries(vegetationLayers).forEach(([layerName, layer]) => {
+    const count = getLayerFeatureCount(layer);
+    stats.vegetation[layerName] = count;
+    stats.total += count;
+  });
+
+  // Urban features layers statistics
+  Object.entries(urbanFeaturesLayers).forEach(([layerName, layer]) => {
+    const count = getLayerFeatureCount(layer);
+    stats.urbanFeatures[layerName] = count;
+    stats.total += count;
+  });
+
+  // Geological layers statistics
+  Object.entries(geologicalLayers).forEach(([layerName, layer]) => {
+    const count = getLayerFeatureCount(layer);
+    stats.geological[layerName] = count;
+    stats.total += count;
+  });
+
+  // Environmental layers statistics
+  Object.entries(environmentalLayers).forEach(([layerName, layer]) => {
+    const count = getLayerFeatureCount(layer);
+    stats.environmental[layerName] = count;
+    stats.total += count;
+  });
+
+  // Agriculture layers statistics
+  Object.entries(agricultureLayers).forEach(([layerName, layer]) => {
+    const count = getLayerFeatureCount(layer);
+    stats.agriculture[layerName] = count;
+    stats.total += count;
+  });
+
+  return stats;
+};
+
+// Function to format layer name for display
+const formatLayerName = (layerName) => {
+  // Remove 'Layer' suffix and convert camelCase to readable format
+  return layerName
+    .replace(/Layer$/, '')
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, str => str.toUpperCase())
+    .trim();
+};
+
+// Function to generate HTML for statistics display
+export const generateStatsHTML = () => {
+  const stats = getLayerStatistics();
+  
+  let html = `<div class="stats-summary">
+    <h3>Total Objects: ${stats.total}</h3>
+  </div>`;
+
+  const categories = [
+    { key: 'transportation', name: 'Transportation', data: stats.transportation },
+    { key: 'infrastructure', name: 'Infrastructure', data: stats.infrastructure },
+    { key: 'naturalFeatures', name: 'Natural Features', data: stats.naturalFeatures },
+    { key: 'vegetation', name: 'Vegetation', data: stats.vegetation },
+    { key: 'urbanFeatures', name: 'Urban Features', data: stats.urbanFeatures },
+    { key: 'geological', name: 'Geological', data: stats.geological },
+    { key: 'environmental', name: 'Environmental', data: stats.environmental },
+    { key: 'agriculture', name: 'Agriculture', data: stats.agriculture }
+  ];
+
+  categories.forEach(category => {
+    const categoryTotal = Object.values(category.data).reduce((sum, count) => sum + count, 0);
+    
+    if (categoryTotal > 0) {
+      html += `<div class="stats-category">
+        <h4>${category.name} (${categoryTotal} objects)</h4>
+        <div class="stats-layers">`;
+      
+      Object.entries(category.data).forEach(([layerName, count]) => {
+        if (count > 0) {
+          html += `<div class="stats-layer">
+            <span class="layer-name">${formatLayerName(layerName)}:</span>
+            <span class="layer-count">${count}</span>
+          </div>`;
+        }
+      });
+      
+      html += `</div></div>`;
+    }
+  });
+
+  if (stats.total === 0) {
+    html += `<div class="stats-empty">
+      <p>No objects found in any layer. Draw some features to see statistics!</p>
+    </div>`;
+  }
+
+  return html;
+};
+
+// Function to show the statistics modal
+export const showLayerStatsModal = () => {
+  const modal = document.getElementById('layer-stats-modal');
+  const content = document.getElementById('layer-stats-content');
+  
+  if (modal && content) {
+    content.innerHTML = generateStatsHTML();
+    modal.style.display = 'block';
+  }
+};
+
+// Function to hide the statistics modal
+export const hideLayerStatsModal = () => {
+  const modal = document.getElementById('layer-stats-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+};
+
+// Test function to add sample data for demonstration
+export const addSampleData = () => {
+  console.log('Adding sample data for Layer Statistics demonstration...');
+  
+  // Add sample polygons to car layer
+  const carPolygon1 = new ol.Feature({
+    geometry: new ol.geom.Polygon([[[932000, 6275000], [932100, 6275000], [932100, 6275100], [932000, 6275100], [932000, 6275000]]])
+  });
+  const carPolygon2 = new ol.Feature({
+    geometry: new ol.geom.Polygon([[[932200, 6275000], [932300, 6275000], [932300, 6275100], [932200, 6275100], [932200, 6275000]]])
+  });
+  carLayer.getSource().addFeatures([carPolygon1, carPolygon2]);
+  
+  // Add sample MultiPolygon to building layer (this will count as 3 individual geometries)
+  const multiPolygonGeometry = new ol.geom.MultiPolygon([
+    [[[932000, 6275200], [932050, 6275200], [932050, 6275250], [932000, 6275250], [932000, 6275200]]],
+    [[[932100, 6275200], [932150, 6275200], [932150, 6275250], [932100, 6275250], [932100, 6275200]]],
+    [[[932200, 6275200], [932250, 6275200], [932250, 6275250], [932200, 6275250], [932200, 6275200]]]
+  ]);
+  const buildingMultiPolygon = new ol.Feature({
+    geometry: multiPolygonGeometry
+  });
+  buildingLayer.getSource().addFeature(buildingMultiPolygon);
+  
+  // Add sample points to tree layer
+  const tree1 = new ol.Feature({
+    geometry: new ol.geom.Point([932050, 6275300])
+  });
+  const tree2 = new ol.Feature({
+    geometry: new ol.geom.Point([932150, 6275300])
+  });
+  const tree3 = new ol.Feature({
+    geometry: new ol.geom.Point([932250, 6275300])
+  });
+  treeLayer.getSource().addFeatures([tree1, tree2, tree3]);
+  
+  console.log('Sample data added:');
+  console.log('- 2 car polygons');
+  console.log('- 1 MultiPolygon building (contains 3 individual polygons)');
+  console.log('- 3 tree points');
+  console.log('Total expected geometries: 8');
+};
+
+// Expose test function to window for manual testing
+window.addSampleLayerData = addSampleData;
