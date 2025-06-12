@@ -562,7 +562,7 @@ def create_simple_overlay_images(original_img, contours, masks, save_folder):
 def add_cors_headers(response):
     cadenza_uri = current_app.config.get('CADENZA_URI', '')
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://mt0.google.com https://mt1.google.com https://mt2.google.com https://mt3.google.com; frame-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000 https://api.runpod.ai https://api.runpod.io https://*.proxy.runpod.net; frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/;"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.google.com https://*.arcgis.com https://*.arcgisonline.com https://wayback.maptiles.arcgis.com https://*.maptiles.arcgis.com; frame-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000 https://api.runpod.ai https://api.runpod.io https://*.proxy.runpod.net https://*.arcgis.com https://*.arcgisonline.com https://wayback.maptiles.arcgis.com https://*.maptiles.arcgis.com; frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/;"
     return response
 
 @bp.route('/')

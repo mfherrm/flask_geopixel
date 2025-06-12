@@ -7,9 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Geopixel implemented into disy Cadenza">
     <meta name="theme-color" content="#ffffff">
-    <!-- CSP updated to allow RunPod proxy connections -->
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://mt0.google.com https://mt1.google.com https://mt2.google.com https://mt3.google.com; frame-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000 https://api.runpod.ai https://api.runpod.io https://*.proxy.runpod.net; frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/;">
+    <!-- CSP completely removed to allow ArcGIS Wayback integration -->
 
     <title>GeoPixel for disy Cadenza</title>
 
@@ -27,7 +25,74 @@
     <div id="cadenza-container">
         <!-- Both elements visible initially to allow proper initialization -->
 
-        <div id="OL-map" class="olmap" style="width: 95%; height: 95vh; display: block;"></div>
+        <div id="OL-map" class="olmap" style="width: 95%; height: 95vh; display: block; position: relative;">
+            <!-- Layer Switcher Control -->
+            <div id="layer-switcher-control" class="layer-switcher-control">
+                <div class="layer-switcher-header" onclick="toggleLayerSwitcher()">
+                    <span>Base Layers</span>
+                    <button class="layer-switcher-toggle" type="button" title="Toggle layer switcher">🌍</button>
+                </div>
+                <div class="layer-switcher-content" id="layer-switcher-content" style="display: none;">
+                    <div class="layer-switcher-group">
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="google" checked onchange="switchBaseLayer(this.value)">
+                            <span>Google Satellite</span>
+                        </label>
+                    </div>
+                    <div class="layer-switcher-group">
+                        <h4>ArcGIS Wayback</h4>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2025" onchange="switchBaseLayer(this.value)">
+                            <span>2025</span>
+                        </label>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2024" onchange="switchBaseLayer(this.value)">
+                            <span>2024</span>
+                        </label>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2023" onchange="switchBaseLayer(this.value)">
+                            <span>2023</span>
+                        </label>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2022" onchange="switchBaseLayer(this.value)">
+                            <span>2022</span>
+                        </label>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2021" onchange="switchBaseLayer(this.value)">
+                            <span>2021</span>
+                        </label>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2020" onchange="switchBaseLayer(this.value)">
+                            <span>2020</span>
+                        </label>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2019" onchange="switchBaseLayer(this.value)">
+                            <span>2019</span>
+                        </label>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2018" onchange="switchBaseLayer(this.value)">
+                            <span>2018</span>
+                        </label>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2017" onchange="switchBaseLayer(this.value)">
+                            <span>2017</span>
+                        </label>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2016" onchange="switchBaseLayer(this.value)">
+                            <span>2016</span>
+                        </label>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2015" onchange="switchBaseLayer(this.value)">
+                            <span>2015</span>
+                        </label>
+                        <label class="layer-switcher-item">
+                            <input type="radio" name="baseLayer" value="2014" onchange="switchBaseLayer(this.value)">
+                            <span>2014</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
         <iframe id="cadenza-iframe" style="height: 95vh; width: 95%; display: block;"></iframe>
         
         <!-- Control buttons positioned right below the map -->
