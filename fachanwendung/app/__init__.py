@@ -17,6 +17,9 @@ def create_app():
     app.config.from_object(Config)
     
     from .static import views
+    from . import runpod
+    
     app.register_blueprint(views.bp)
+    app.register_blueprint(runpod.runpod_bp)
 
     return app
