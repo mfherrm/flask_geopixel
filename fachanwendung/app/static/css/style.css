@@ -196,6 +196,37 @@ html,
         #screenMap:disabled:hover {
             background-color: #cccccc !important;
         }
+        
+        /* Loading state for Call GeoPixel button */
+        #screenMap.loading {
+            background-color: #ffc107 !important;
+            color: #212529 !important;
+            cursor: wait !important;
+            opacity: 1 !important;
+            position: relative;
+        }
+        
+        #screenMap.loading:hover {
+            background-color: #ffc107 !important;
+        }
+        
+        /* Loading spinner animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #212529;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
 
         /* RunPod Panel Styles */
         #runpod-panel {

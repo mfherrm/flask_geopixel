@@ -14,6 +14,29 @@ let tileConfig = {
 // Add tile configuration update to window so it can be called from HTML
 window.updateTileConfig = updateTileConfig;
 
+/**
+ * Manages the loading state of the Call GeoPixel button
+ * @param {boolean} isLoading - Whether to show loading state
+ */
+function setButtonLoadingState(isLoading) {
+    const button = document.getElementById('screenMap');
+    const originalText = 'Call GeoPixel';
+    
+    if (isLoading) {
+        // Disable button and show loading state
+        button.disabled = true;
+        button.classList.add('loading');
+        button.innerHTML = '<span class="loading-spinner"></span>Processing...';
+        button.setAttribute('data-original-text', originalText);
+    } else {
+        // Re-enable button and restore original state
+        button.disabled = false;
+        button.classList.remove('loading');
+        button.innerHTML = button.getAttribute('data-original-text') || originalText;
+        button.removeAttribute('data-original-text');
+    }
+}
+
 function updateTileConfig(tileCount) {
     // Define optimal grid configurations for different tile counts
     const tileConfigs = {
@@ -45,6 +68,15 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
         alert('Please start a RunPod instance first to use GeoPixel functionality.');
         return;
     }
+    
+    // Check if the button is already in loading state
+    if (event.target.classList.contains('loading')) {
+        event.preventDefault();
+        return;
+    }
+    
+    // Disable button and show loading state
+    setButtonLoadingState(true);
     
     let mbs = map.getView().calculateExtent()
 
@@ -127,6 +159,7 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
             if (!blob) {
                 console.error("Failed to create blob from canvas");
                 alert("Failed to capture map image");
+                setButtonLoadingState(false);
                 return;
             }
 
@@ -136,6 +169,7 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
 
             if (object === "Object" || object === "") {
                 alert("Error: object needs to be selected");
+                setButtonLoadingState(false);
                 return;
             }
 
@@ -333,6 +367,7 @@ function combineAndDisplayTileResults(tileResults, object) {
     
     if (validResults.length === 0) {
         alert("No valid results from tile processing");
+        setButtonLoadingState(false);
         return;
     }
     
@@ -590,6 +625,9 @@ function combineAndDisplayTileResults(tileResults, object) {
     map.renderSync();
     
     console.log("Tiled processing with mask combining complete!");
+    
+    // Re-enable the Call GeoPixel button
+    setButtonLoadingState(false);
 }
 
 
