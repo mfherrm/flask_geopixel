@@ -4,8 +4,7 @@
 import {
   getAllVectorLayersArray,
   allVectorLayers,
-  showLayerStatsModal,
-  hideLayerStatsModal
+  toggleLayerSwitcher
 } from './vector-layers.js';
 
 // Import all base layers from dedicated module
@@ -85,14 +84,7 @@ window.addRectangleToLayer = addRectangleToLayer;
 // LAYER SWITCHING CONTROL
 // ===========================================
 
-// Toggle function for layer switcher (called from HTML)
-window.toggleLayerSwitcher = function () {
-  const content = document.getElementById('layer-switcher-content');
-  if (content) {
-    const isVisible = content.style.display !== 'none';
-    content.style.display = isVisible ? 'none' : 'block';
-    console.log('Layer switcher toggled:', !isVisible ? 'opened' : 'closed');
-  }
-};
+// Expose layer switcher function to window for backward compatibility
+window.toggleLayerSwitcher = toggleLayerSwitcher;
 
 console.log('Layer switcher control initialized in HTML template');

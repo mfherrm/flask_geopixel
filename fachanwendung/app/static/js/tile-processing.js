@@ -1,7 +1,6 @@
 // Import geometry utility functions
 import {
     isPolygonClockwise,
-    combineNeighboringMasks,
     combineAndMergeAllMasks
 } from './geometry-utils.js';
 
@@ -275,34 +274,22 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
         layer = allVectorLayers.carLayer;
     } else if (object === "Truck") {
         layer = allVectorLayers.truckLayer;
-    } else if (object === "Bus") {
-        layer = allVectorLayers.busLayer;
-    } else if (object === "Motorcycle") {
-        layer = allVectorLayers.motorcycleLayer;
-    } else if (object === "Bicycle") {
-        layer = allVectorLayers.bicycleLayer;
     } else if (object === "Train") {
         layer = allVectorLayers.trainLayer;
     } else if (object === "Aircraft") {
         layer = allVectorLayers.aircraftLayer;
     } else if (object === "Ship") {
         layer = allVectorLayers.shipLayer;
-    } else if (object === "Boat") {
-        layer = allVectorLayers.boatLayer;
     
     // Infrastructure layers
     } else if (object === "Building") {
         layer = allVectorLayers.buildingLayer;
     } else if (object === "House") {
         layer = allVectorLayers.houseLayer;
-    } else if (object === "Skyscraper") {
-        layer = allVectorLayers.skyscraperLayer;
     } else if (object === "Factory") {
         layer = allVectorLayers.factoryLayer;
     } else if (object === "Warehouse") {
         layer = allVectorLayers.warehouseLayer;
-    } else if (object === "School") {
-        layer = allVectorLayers.schoolLayer;
     } else if (object === "Hospital") {
         layer = allVectorLayers.hospitalLayer;
     } else if (object === "Bridge") {
@@ -327,10 +314,6 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
         layer = allVectorLayers.lakeLayer;
     } else if (object === "Ocean") {
         layer = allVectorLayers.oceanLayer;
-    } else if (object === "Stream") {
-        layer = allVectorLayers.streamLayer;
-    } else if (object === "Pond") {
-        layer = allVectorLayers.pondLayer;
     } else if (object === "Wetland") {
         layer = allVectorLayers.wetlandLayer;
     } else if (object === "Mountain") {
@@ -355,20 +338,14 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
         layer = allVectorLayers.treeLayer;
     } else if (object === "Grass") {
         layer = allVectorLayers.grassLayer;
-    } else if (object === "Crop Field") {
-        layer = allVectorLayers.cropFieldLayer;
     } else if (object === "Farmland") {
         layer = allVectorLayers.farmlandLayer;
-    } else if (object === "Orchard") {
-        layer = allVectorLayers.orchardLayer;
     } else if (object === "Vineyard") {
         layer = allVectorLayers.vineyardLayer;
     } else if (object === "Park") {
         layer = allVectorLayers.parkLayer;
     } else if (object === "Garden") {
         layer = allVectorLayers.gardenLayer;
-    } else if (object === "Shrub") {
-        layer = allVectorLayers.shrubLayer;
     } else if (object === "Pasture") {
         layer = allVectorLayers.pastureLayer;
     
@@ -417,14 +394,8 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
         layer = allVectorLayers.snowLayer;
     } else if (object === "Ice") {
         layer = allVectorLayers.iceLayer;
-    } else if (object === "Cloud") {
-        layer = allVectorLayers.cloudLayer;
-    } else if (object === "Shadow") {
-        layer = allVectorLayers.shadowLayer;
     } else if (object === "Smoke") {
         layer = allVectorLayers.smokeLayer;
-    } else if (object === "Pollution") {
-        layer = allVectorLayers.pollutionLayer;
     
     // Agriculture layers
     } else if (object === "Greenhouse") {
@@ -433,8 +404,6 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
         layer = allVectorLayers.barnLayer;
     } else if (object === "Silo") {
         layer = allVectorLayers.siloLayer;
-    } else if (object === "Irrigation") {
-        layer = allVectorLayers.irrigationLayer;
     } else if (object === "Livestock") {
         layer = allVectorLayers.livestockLayer;
     

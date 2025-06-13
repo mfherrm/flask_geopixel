@@ -38,32 +38,8 @@ export const truckLayer = new ol.layer.Vector({
   })
 });
 
-const busSource = new ol.source.Vector({});
-export const busLayer = new ol.layer.Vector({
-  source: busSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 165, 0, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#FFA500', width: 2 })
-  })
-});
 
-const motorcycleSource = new ol.source.Vector({});
-export const motorcycleLayer = new ol.layer.Vector({
-  source: motorcycleSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(220, 20, 60, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#DC143C', width: 2 })
-  })
-});
 
-const bicycleSource = new ol.source.Vector({});
-export const bicycleLayer = new ol.layer.Vector({
-  source: bicycleSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 192, 203, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#FFC0CB', width: 2 })
-  })
-});
 
 const trainSource = new ol.source.Vector({});
 export const trainLayer = new ol.layer.Vector({
@@ -92,14 +68,6 @@ export const shipLayer = new ol.layer.Vector({
   })
 });
 
-const boatSource = new ol.source.Vector({});
-export const boatLayer = new ol.layer.Vector({
-  source: boatSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(70, 130, 180, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#4682B4', width: 2 })
-  })
-});
 
 // ===========================================
 // INFRASTRUCTURE LAYERS
@@ -124,14 +92,6 @@ export const houseLayer = new ol.layer.Vector({
   })
 });
 
-const skyscraperSource = new ol.source.Vector({});
-export const skyscraperLayer = new ol.layer.Vector({
-  source: skyscraperSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(112, 128, 144, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#708090', width: 3 })
-  })
-});
 
 const factorySource = new ol.source.Vector({});
 export const factoryLayer = new ol.layer.Vector({
@@ -151,14 +111,6 @@ export const warehouseLayer = new ol.layer.Vector({
   })
 });
 
-const schoolSource = new ol.source.Vector({});
-export const schoolLayer = new ol.layer.Vector({
-  source: schoolSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 255, 0, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#FFFF00', width: 2 })
-  })
-});
 
 const hospitalSource = new ol.source.Vector({});
 export const hospitalLayer = new ol.layer.Vector({
@@ -264,23 +216,7 @@ export const oceanLayer = new ol.layer.Vector({
   })
 });
 
-const streamSource = new ol.source.Vector({});
-export const streamLayer = new ol.layer.Vector({
-  source: streamSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(135, 206, 235, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#87CEEB', width: 2 })
-  })
-});
 
-const pondSource = new ol.source.Vector({});
-export const pondLayer = new ol.layer.Vector({
-  source: pondSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(72, 209, 204, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#48D1CC', width: 2 })
-  })
-});
 
 const wetlandSource = new ol.source.Vector({});
 export const wetlandLayer = new ol.layer.Vector({
@@ -387,14 +323,6 @@ export const grassLayer = new ol.layer.Vector({
   })
 });
 
-const cropFieldSource = new ol.source.Vector({});
-export const cropFieldLayer = new ol.layer.Vector({
-  source: cropFieldSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 215, 0, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#FFD700', width: 2 })
-  })
-});
 
 const farmlandSource = new ol.source.Vector({});
 export const farmlandLayer = new ol.layer.Vector({
@@ -405,14 +333,6 @@ export const farmlandLayer = new ol.layer.Vector({
   })
 });
 
-const orchardSource = new ol.source.Vector({});
-export const orchardLayer = new ol.layer.Vector({
-  source: orchardSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(154, 205, 50, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#9ACD32', width: 2 })
-  })
-});
 
 const vineyardSource = new ol.source.Vector({});
 export const vineyardLayer = new ol.layer.Vector({
@@ -441,14 +361,6 @@ export const gardenLayer = new ol.layer.Vector({
   })
 });
 
-const shrubSource = new ol.source.Vector({});
-export const shrubLayer = new ol.layer.Vector({
-  source: shrubSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(107, 142, 35, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#6B8E23', width: 2 })
-  })
-});
 
 const pastureSource = new ol.source.Vector({});
 export const pastureLayer = new ol.layer.Vector({
@@ -651,23 +563,7 @@ export const iceLayer = new ol.layer.Vector({
   })
 });
 
-const cloudSource = new ol.source.Vector({});
-export const cloudLayer = new ol.layer.Vector({
-  source: cloudSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(255, 255, 255, 0.6)' }),
-    stroke: new ol.style.Stroke({ color: '#FFFFFF', width: 2 })
-  })
-});
 
-const shadowSource = new ol.source.Vector({});
-export const shadowLayer = new ol.layer.Vector({
-  source: shadowSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(0, 0, 0, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#000000', width: 2 })
-  })
-});
 
 const smokeSource = new ol.source.Vector({});
 export const smokeLayer = new ol.layer.Vector({
@@ -678,14 +574,6 @@ export const smokeLayer = new ol.layer.Vector({
   })
 });
 
-const pollutionSource = new ol.source.Vector({});
-export const pollutionLayer = new ol.layer.Vector({
-  source: pollutionSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(139, 69, 19, 0.5)' }),
-    stroke: new ol.style.Stroke({ color: '#8B4513', width: 2 })
-  })
-});
 
 // ===========================================
 // AGRICULTURE LAYERS
@@ -718,14 +606,6 @@ export const siloLayer = new ol.layer.Vector({
   })
 });
 
-const irrigationSource = new ol.source.Vector({});
-export const irrigationLayer = new ol.layer.Vector({
-  source: irrigationSource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(65, 105, 225, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#4169E1', width: 2 })
-  })
-});
 
 const livestockSource = new ol.source.Vector({});
 export const livestockLayer = new ol.layer.Vector({
@@ -744,22 +624,16 @@ export const livestockLayer = new ol.layer.Vector({
 export const transportationLayers = {
   carLayer,
   truckLayer,
-  busLayer,
-  motorcycleLayer,
-  bicycleLayer,
   trainLayer,
   aircraftLayer,
-  shipLayer,
-  boatLayer
+  shipLayer
 };
 
 export const infrastructureLayers = {
   buildingLayer,
   houseLayer,
-  skyscraperLayer,
   factoryLayer,
   warehouseLayer,
-  schoolLayer,
   hospitalLayer,
   bridgeLayer,
   roadLayer,
@@ -774,8 +648,6 @@ export const naturalFeaturesLayers = {
   riverLayer,
   lakeLayer,
   oceanLayer,
-  streamLayer,
-  pondLayer,
   wetlandLayer,
   mountainLayer,
   hillLayer,
@@ -790,13 +662,10 @@ export const vegetationLayers = {
   forestLayer,
   treeLayer,
   grassLayer,
-  cropFieldLayer,
   farmlandLayer,
-  orchardLayer,
   vineyardLayer,
   parkLayer,
   gardenLayer,
-  shrubLayer,
   pastureLayer
 };
 
@@ -827,17 +696,13 @@ export const environmentalLayers = {
   floodLayer,
   snowLayer,
   iceLayer,
-  cloudLayer,
-  shadowLayer,
-  smokeLayer,
-  pollutionLayer
+  smokeLayer
 };
 
 export const agricultureLayers = {
   greenhouseLayer,
   barnLayer,
   siloLayer,
-  irrigationLayer,
   livestockLayer
 };
 
@@ -1066,87 +931,6 @@ export const hideLayerStatsModal = () => {
     modal.style.display = 'none';
   }
 };
-
-// Test function to add sample data for demonstration
-export const addSampleData = () => {
-  console.log('Adding sample data for Layer Statistics demonstration...');
-  
-  // Add sample polygons to car layer
-  const carPolygon1 = new ol.Feature({
-    geometry: new ol.geom.Polygon([[[932000, 6275000], [932100, 6275000], [932100, 6275100], [932000, 6275100], [932000, 6275000]]])
-  });
-  const carPolygon2 = new ol.Feature({
-    geometry: new ol.geom.Polygon([[[932200, 6275000], [932300, 6275000], [932300, 6275100], [932200, 6275100], [932200, 6275000]]])
-  });
-  carLayer.getSource().addFeatures([carPolygon1, carPolygon2]);
-  
-  // Add sample MultiPolygon to building layer (this will count as 3 individual geometries)
-  const multiPolygonGeometry = new ol.geom.MultiPolygon([
-    [[[932000, 6275200], [932050, 6275200], [932050, 6275250], [932000, 6275250], [932000, 6275200]]],
-    [[[932100, 6275200], [932150, 6275200], [932150, 6275250], [932100, 6275250], [932100, 6275200]]],
-    [[[932200, 6275200], [932250, 6275200], [932250, 6275250], [932200, 6275250], [932200, 6275200]]]
-  ]);
-  const buildingMultiPolygon = new ol.Feature({
-    geometry: multiPolygonGeometry
-  });
-  buildingLayer.getSource().addFeature(buildingMultiPolygon);
-  
-  // Add sample points to tree layer
-  const tree1 = new ol.Feature({
-    geometry: new ol.geom.Point([932050, 6275300])
-  });
-  const tree2 = new ol.Feature({
-    geometry: new ol.geom.Point([932150, 6275300])
-  });
-  const tree3 = new ol.Feature({
-    geometry: new ol.geom.Point([932250, 6275300])
-  });
-  treeLayer.getSource().addFeatures([tree1, tree2, tree3]);
-  
-  console.log('Sample data added:');
-  console.log('- 2 car polygons');
-  console.log('- 1 MultiPolygon building (contains 3 individual polygons)');
-  console.log('- 3 tree points');
-  console.log('Total expected geometries: 8');
-};
-
-// Expose test function to window for manual testing
-window.addSampleLayerData = addSampleData;
-
-// Test function to demonstrate containment detection with nested geometries
-export const addContainmentTestData = () => {
-  console.log('Adding containment test data...');
-  
-  // Add a large outer building polygon
-  const outerBuilding = new ol.Feature({
-    geometry: new ol.geom.Polygon([[[932000, 6275000], [932200, 6275000], [932200, 6275200], [932000, 6275200], [932000, 6275000]]])
-  });
-  
-  // Add smaller inner building polygons that are contained within the outer one
-  const innerBuilding1 = new ol.Feature({
-    geometry: new ol.geom.Polygon([[[932020, 6275020], [932080, 6275020], [932080, 6275080], [932020, 6275080], [932020, 6275020]]])
-  });
-  
-  const innerBuilding2 = new ol.Feature({
-    geometry: new ol.geom.Polygon([[[932120, 6275120], [932180, 6275120], [932180, 6275180], [932120, 6275180], [932120, 6275120]]])
-  });
-  
-  // Add a separate building that's not contained (outside the outer building)
-  const separateBuilding = new ol.Feature({
-    geometry: new ol.geom.Polygon([[[932250, 6275000], [932350, 6275000], [932350, 6275100], [932250, 6275100], [932250, 6275000]]])
-  });
-  
-  buildingLayer.getSource().addFeatures([outerBuilding, innerBuilding1, innerBuilding2, separateBuilding]);
-  
-  console.log('Containment test data added:');
-  console.log('- 1 large outer building (200x200m)');
-  console.log('- 2 smaller inner buildings contained within the outer building');
-  console.log('- 1 separate building outside the outer building');
-  console.log('Expected result: Large building with 2 holes, plus 1 separate building');
-};
-
-// Expose containment test function to window
-window.addContainmentTestData = addContainmentTestData;
 
 // ===========================================
 // LAYER OVERLAP ANALYSIS FUNCTIONALITY
@@ -1438,3 +1222,20 @@ const setupOverlapResultsEventListeners = () => {
 
 // Expose overlap analysis function to window for manual testing
 window.showLayerOverlapAnalysis = showLayerOverlapAnalysis;
+
+// ===========================================
+// LAYER SWITCHER FUNCTIONALITY
+// ===========================================
+
+/**
+ * Toggle function for layer switcher (called from HTML)
+ * Shows/hides the layer switcher content panel
+ */
+export function toggleLayerSwitcher() {
+  const content = document.getElementById('layer-switcher-content');
+  if (content) {
+    const isVisible = content.style.display !== 'none';
+    content.style.display = isVisible ? 'none' : 'block';
+    console.log('Layer switcher toggled:', !isVisible ? 'opened' : 'closed');
+  }
+}
