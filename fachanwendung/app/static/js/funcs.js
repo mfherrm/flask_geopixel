@@ -1,39 +1,17 @@
 import './cadenza3.0.4.js';
-// Import geometry utility functions from dedicated module
-import {
-    calculatePolygonDistance,
-    calculatePolygonArea,
-    isPolygonClockwise,
-    crossProduct,
-    convexHull,
-    combineMasks,
-    combineNeighboringMasks,
-    areDirectNeighbors,
-    areNeighboringTiles
-} from './geometry-utils.js';
 
 // Import tile processing functions from dedicated module
 import {
     processTiledImage,
-    calculateTileBounds,
-    processSingleTile,
-    combineAndDisplayTileResults,
-    updateTileConfig
+    updateTileConfigWrapper,
+    tileConfig
 } from './tile-processing.js';
-
-// Global tile configuration
-let tileConfig = {
-    count: 1,
-    rows: 1,
-    cols: 1,
-    label: "1 tile (1x1)"
-};
 
 // Dropup functionality is now handled in the HTML file
 // This ensures proper loading and execution order
 
 // Add tile configuration update to window so it can be called from HTML
-window.updateTileConfig = updateTileConfig;
+window.updateTileConfig = updateTileConfigWrapper;
 
 /**
  * Manages the loading state of the Call GeoPixel button
@@ -58,16 +36,6 @@ function setButtonLoadingState(isLoading) {
     }
 }
 
-// Wrapper function to update the global tileConfig using the imported function
-function updateTileConfigWrapper(tileCount) {
-    const newConfig = updateTileConfig(tileCount);
-    if (newConfig) {
-        tileConfig = newConfig;
-    }
-}
-
-// Update the window reference to use the wrapper
-window.updateTileConfig = updateTileConfigWrapper;
 
 /**
  * Handle successful image capture and process it
@@ -96,186 +64,6 @@ function handleSuccessfulCapture(blob, mapBounds, setButtonLoadingState) {
     // Process image in tiles using selected configuration
     console.log(`Processing image with ${tileConfig.label}`);
     processTiledImage(blob, selection, mapBounds, object, tileConfig, setButtonLoadingState);
-}
-
-/**
- * Fallback to Google Satellite when CORS errors occur
- */
-function handleCORSFallback(layers, originalVisibility, mapBounds, setButtonLoadingState) {
-    console.log("Implementing CORS fallback to Google Satellite layer");
-    
-    // Force only Google Satellite to be visible
-    layers.forEach((layer, index) => {
-        const layerName = layer.get('name');
-        const isGoogleSatellite = layerName && layerName.includes('Google Satellite');
-        
-        if (isGoogleSatellite) {
-            layer.setVisible(true);
-        } else {
-            layer.setVisible(false);
-        }
-    });
-    
-    // Re-render map with Google Satellite only
-    map.renderSync();
-    
-    // Attempt capture again with Google Satellite
-    map.once('rendercomplete', function () {
-        const mapCanvas = document.createElement('canvas');
-        const size = map.getSize();
-        mapCanvas.width = size[0];
-        mapCanvas.height = size[1];
-        const mapContext = mapCanvas.getContext('2d');
-        
-        Array.prototype.forEach.call(
-            map.getViewport().querySelectorAll('.ol-layer canvas, canvas.ol-layer'),
-            function (canvas) {
-                if (canvas.width > 0) {
-                    const opacity =
-                        canvas.parentNode.style.opacity || canvas.style.opacity;
-                    mapContext.globalAlpha = opacity === '' ? 1 : Number(opacity);
-                    let matrix;
-                    const transform = canvas.style.transform;
-                    if (transform) {
-                        matrix = transform
-                            .match(/^matrix\(([^\(]*)\)$/)[1]
-                            .split(',')
-                            .map(Number);
-                    } else {
-                        matrix = [
-                            parseFloat(canvas.style.width) / canvas.width,
-                            0,
-                            0,
-                            parseFloat(canvas.style.height) / canvas.height,
-                            0,
-                            0,
-                        ];
-                    }
-                    CanvasRenderingContext2D.prototype.setTransform.apply(
-                        mapContext,
-                        matrix,
-                    );
-                    const backgroundColor = canvas.parentNode.style.backgroundColor;
-                    if (backgroundColor) {
-                        mapContext.fillStyle = backgroundColor;
-                        mapContext.fillRect(0, 0, canvas.width, canvas.height);
-                    }
-                    mapContext.drawImage(canvas, 0, 0);
-                }
-            },
-        );
-        mapContext.globalAlpha = 1;
-        mapContext.setTransform(1, 0, 0, 1, 0, 0);
-
-        // Convert fallback canvas to blob
-        mapCanvas.toBlob(function (blob) {
-            console.log("Fallback canvas converted to blob:", blob);
-            
-            if (!blob) {
-                console.error("Failed to create blob from fallback canvas");
-                alert("Failed to capture map image even with fallback");
-                setButtonLoadingState(false);
-                return;
-            }
-
-            handleSuccessfulCapture(blob, mapBounds, setButtonLoadingState);
-            
-        }, 'image/png');
-        
-        // Restore original layer visibility after fallback capture
-        setTimeout(() => {
-            layers.forEach((layer, index) => {
-                layer.setVisible(originalVisibility[index]);
-            });
-            map.renderSync();
-        }, 100);
-    });
-    
-    map.renderSync();
-}
-
-/**
- * Attempt canvas capture with CORS-safe error handling
- */
-function attemptCanvasCapture(layers, layerVisibility, mapBounds, setButtonLoadingState) {
-    const mapCanvas = document.createElement('canvas');
-    const size = map.getSize();
-    mapCanvas.width = size[0];
-    mapCanvas.height = size[1];
-    const mapContext = mapCanvas.getContext('2d');
-    
-    try {
-        Array.prototype.forEach.call(
-            map.getViewport().querySelectorAll('.ol-layer canvas, canvas.ol-layer'),
-            function (canvas) {
-                if (canvas.width > 0) {
-                    const opacity =
-                        canvas.parentNode.style.opacity || canvas.style.opacity;
-                    mapContext.globalAlpha = opacity === '' ? 1 : Number(opacity);
-                    let matrix;
-                    const transform = canvas.style.transform;
-                    if (transform) {
-                        matrix = transform
-                            .match(/^matrix\(([^\(]*)\)$/)[1]
-                            .split(',')
-                            .map(Number);
-                    } else {
-                        matrix = [
-                            parseFloat(canvas.style.width) / canvas.width,
-                            0,
-                            0,
-                            parseFloat(canvas.style.height) / canvas.height,
-                            0,
-                            0,
-                        ];
-                    }
-                    CanvasRenderingContext2D.prototype.setTransform.apply(
-                        mapContext,
-                        matrix,
-                    );
-                    const backgroundColor = canvas.parentNode.style.backgroundColor;
-                    if (backgroundColor) {
-                        mapContext.fillStyle = backgroundColor;
-                        mapContext.fillRect(0, 0, canvas.width, canvas.height);
-                    }
-                    // This is where CORS errors typically occur
-                    mapContext.drawImage(canvas, 0, 0);
-                }
-            },
-        );
-        mapContext.globalAlpha = 1;
-        mapContext.setTransform(1, 0, 0, 1, 0, 0);
-
-        // Convert canvas to blob - this may also trigger CORS errors
-        mapCanvas.toBlob(function (blob) {
-            console.log("Canvas converted to blob:", blob);
-            console.log("Blob size:", blob ? blob.size : "null");
-            console.log("Blob type:", blob ? blob.type : "null");
-
-            if (!blob) {
-                console.error("Failed to create blob from canvas");
-                console.log("Attempting CORS fallback due to blob creation failure");
-                handleCORSFallback(layers, layerVisibility, mapBounds, setButtonLoadingState);
-                return;
-            }
-
-            handleSuccessfulCapture(blob, mapBounds, setButtonLoadingState);
-            
-            // Restore original layer visibility after successful capture
-            setTimeout(() => {
-                layers.forEach((layer, index) => {
-                    layer.setVisible(layerVisibility[index]);
-                });
-                map.renderSync();
-            }, 100);
-            
-        }, 'image/png');
-        
-    } catch (corsError) {
-        console.warn("CORS error during canvas operations:", corsError);
-        console.log("Attempting CORS fallback due to canvas error");
-        handleCORSFallback(layers, layerVisibility, mapBounds, setButtonLoadingState);
-    }
 }
 
 document.getElementById('screenMap').addEventListener('click', async (event) => {
@@ -407,8 +195,6 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
     map.renderSync();
 
 });
-
-
 
 
 // Wait for Cadenza to initialize before setting up the toggle functionality

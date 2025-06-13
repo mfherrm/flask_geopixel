@@ -1,13 +1,35 @@
 // Import geometry utility functions
 import {
     isPolygonClockwise,
-    combineNeighboringMasks
+    combineNeighboringMasks,
+    combineAndMergeAllMasks
 } from './geometry-utils.js';
 
 // Import all vector layers directly
 import {
     allVectorLayers
 } from './vector-layers.js';
+
+// Global tile configuration
+export let tileConfig = {
+    count: 1,
+    rows: 1,
+    cols: 1,
+    label: "1 tile (1x1)"
+};
+
+/**
+ * Wrapper function to update the global tileConfig using the updateTileConfig function
+ * @param {number} tileCount - The number of tiles to configure
+ * @returns {Object} The updated tile configuration object
+ */
+export function updateTileConfigWrapper(tileCount) {
+    const newConfig = updateTileConfig(tileCount);
+    if (newConfig) {
+        tileConfig = newConfig;
+    }
+    return tileConfig;
+}
 
 /**
  * Updates the tile configuration based on the specified tile count
@@ -464,12 +486,20 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
         }
     });
     
-    // Combine neighboring tile masks if they are close enough
-    const combinedGeometries = combineNeighboringMasks(allGeometries, tileConfig);
+    // Combine neighboring tile masks and merge contained masks within the same layer
+    const combinedGeometries = combineAndMergeAllMasks(allGeometries, tileConfig);
     
     // Convert combined geometries to features and add to map
     if (combinedGeometries.length > 0) {
-        const geoms = combinedGeometries.map(geom => [geom.coordinates]);
+        const geoms = combinedGeometries.map(geom => {
+            if (geom.holes && geom.holes.length > 0) {
+                // Create polygon with holes: [exterior, hole1, hole2, ...]
+                return [geom.coordinates, ...geom.holes];
+            } else {
+                // Simple polygon without holes
+                return [geom.coordinates];
+            }
+        });
         
         const polygon = {
             "type": "MultiPolygon",
@@ -487,7 +517,17 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
                 layer.getSource().addFeature(feature);
             });
             
+            // Log detailed information about merging
+            const totalOriginalMasks = combinedGeometries.reduce((sum, geom) => {
+                return sum + 1 + (geom.containedMasks ? geom.containedMasks.length : 0);
+            }, 0);
+            const masksWithHoles = combinedGeometries.filter(geom => geom.holes && geom.holes.length > 0).length;
+            
             console.log(`Added ${features.length} combined features to map`);
+            console.log(`Processed ${totalOriginalMasks} original masks into ${combinedGeometries.length} final features`);
+            if (masksWithHoles > 0) {
+                console.log(`${masksWithHoles} features contain holes from contained masks`);
+            }
         } catch (error) {
             console.error(`Error creating combined features:`, error);
         }

@@ -20,6 +20,9 @@ import {
   switchToWaybackTime
 } from './base-layers.js';
 
+// Import geometry utilities
+import { addRectangleToLayer } from './geometry-utils.js';
+
 // ===========================================
 // MAP INITIALIZATION
 // ===========================================
@@ -75,21 +78,8 @@ window.setBaseLayerOpacity = setBaseLayerOpacity;
 window.switchToWaybackTime = switchToWaybackTime;
 
 
-// Helper functions to append features to rectangleLayer
-window.addRectangleToLayer = function (features, layer) {
-  // Handle both single feature and array of features
-  const featureArray = Array.isArray(features) ? features : [features];
-
-  featureArray.forEach(feature => {
-    feature.setStyle(layer.getStyle());
-    layer.getSource().addFeature(feature);
-  });
-
-  return features;
-};
-
-// Add another rectangle
-//addRectangleToLayer(window.rectangleLayer, [[[930000, 6275000], [935000, 6275000], [935000, 6280000], [930000, 6280000], [930000, 6275000]]]);
+// Expose geometry utilities to window for backward compatibility
+window.addRectangleToLayer = addRectangleToLayer;
 
 // ===========================================
 // LAYER SWITCHING CONTROL
@@ -106,52 +96,3 @@ window.toggleLayerSwitcher = function () {
 };
 
 console.log('Layer switcher control initialized in HTML template');
-
-// ===========================================
-// LAYER STATISTICS CONTROL
-// ===========================================
-
-// Initialize stats button functionality when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-  // Stats button event listener
-  const statsButton = document.getElementById('layer-stats-btn');
-  if (statsButton) {
-    statsButton.addEventListener('click', function() {
-      showLayerStatsModal();
-    });
-  }
-
-  // Modal close button event listener
-  const closeButton = document.getElementById('stats-modal-close');
-  if (closeButton) {
-    closeButton.addEventListener('click', function() {
-      hideLayerStatsModal();
-    });
-  }
-
-  // Close modal when clicking outside of it
-  const modal = document.getElementById('layer-stats-modal');
-  if (modal) {
-    modal.addEventListener('click', function(event) {
-      if (event.target === modal) {
-        hideLayerStatsModal();
-      }
-    });
-  }
-
-  // Close modal with Escape key
-  document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-      hideLayerStatsModal();
-    }
-  });
-});
-
-// Expose stats functions to window for debugging/external access
-window.showLayerStatsModal = showLayerStatsModal;
-window.hideLayerStatsModal = hideLayerStatsModal;
-
-// ===========================================
-// ADDITIONAL HELPER FUNCTIONS
-// ===========================================
-
