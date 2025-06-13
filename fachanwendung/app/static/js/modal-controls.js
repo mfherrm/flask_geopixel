@@ -3,11 +3,11 @@
  * Handles all modal interactions and controls
  */
 
-// Import modal functions from vector-layers module
+// Import modal functions from vector-functions module
 import {
   showLayerStatsModal,
   hideLayerStatsModal
-} from './vector-layers.js';
+} from './vector-functions.js';
 
 // Initialize modal functionality when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {

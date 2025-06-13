@@ -3,20 +3,15 @@
 // Import all vector layers from dedicated module
 import {
   getAllVectorLayersArray,
-  allVectorLayers,
-  toggleLayerSwitcher
+  allVectorLayers
 } from './vector-layers.js';
+import { toggleLayerSwitcher } from './vector-functions.js';
 
 // Import all base layers from dedicated module
 import {
   baseLayers,
   getAllBaseLayersArray,
   switchBaseLayer,
-  testWaybackURL,
-  compareLayers,
-  getCurrentBaseLayer,
-  setBaseLayerOpacity,
-  switchToWaybackTime
 } from './base-layers.js';
 
 // Import geometry utilities
@@ -70,11 +65,7 @@ Object.entries(allVectorLayers).forEach(([layerName, layer]) => {
 // Expose base layers and utilities to window for backward compatibility
 window.baseLayers = baseLayers;
 window.switchBaseLayer = switchBaseLayer;
-window.testWaybackURL = testWaybackURL;
-window.compareLayers = compareLayers;
-window.getCurrentBaseLayer = getCurrentBaseLayer;
-window.setBaseLayerOpacity = setBaseLayerOpacity;
-window.switchToWaybackTime = switchToWaybackTime;
+
 
 
 // Expose geometry utilities to window for backward compatibility
