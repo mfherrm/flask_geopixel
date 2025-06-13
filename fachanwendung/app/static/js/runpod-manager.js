@@ -123,6 +123,7 @@ class RunPodManager {
             // Call GeoPixel button MUST be disabled initially until pod status is verified
             callGeoPixelBtn.disabled = true;
             callGeoPixelBtn.classList.remove('enabled');
+            callGeoPixelBtn.classList.remove('cadenza-disabled');
             callGeoPixelBtn.classList.add('disabled-button');
             callGeoPixelBtn.setAttribute('data-initialization-complete', 'false');
             
@@ -273,6 +274,7 @@ class RunPodManager {
         if (callGeoPixelBtn) {
             callGeoPixelBtn.disabled = true;
             callGeoPixelBtn.classList.remove('enabled');
+            callGeoPixelBtn.classList.remove('cadenza-disabled');
             callGeoPixelBtn.classList.add('disabled-button');
             callGeoPixelBtn.setAttribute('data-initialization-complete', 'false');
         }
@@ -401,6 +403,7 @@ class RunPodManager {
             console.log('Initialization not complete - keeping Call GeoPixel button disabled');
             callGeoPixelButton.disabled = true;
             callGeoPixelButton.classList.remove('enabled');
+            callGeoPixelButton.classList.remove('cadenza-disabled');
             callGeoPixelButton.classList.add('disabled-button');
             return;
         }
@@ -412,11 +415,12 @@ class RunPodManager {
         });
         
         if (!isOpenLayersMode) {
-            // Cadenza is visible - disable button regardless of pod status
-            console.log('Cadenza mode - disabling Call GeoPixel button');
+            // Cadenza is visible - disable button with RunPod-style appearance
+            console.log('Cadenza mode - disabling Call GeoPixel button with RunPod styling');
             callGeoPixelButton.disabled = true;
             callGeoPixelButton.classList.remove('enabled');
-            callGeoPixelButton.classList.add('disabled-button');
+            callGeoPixelButton.classList.remove('disabled-button');
+            callGeoPixelButton.classList.add('cadenza-disabled');
             return;
         }
         
@@ -429,6 +433,7 @@ class RunPodManager {
                 callGeoPixelButton.disabled = false;
                 callGeoPixelButton.classList.add('enabled');
                 callGeoPixelButton.classList.remove('disabled-button');
+                callGeoPixelButton.classList.remove('cadenza-disabled');
                 console.log('Call GeoPixel button ENABLED (cached):', {
                     disabled: callGeoPixelButton.disabled,
                     className: callGeoPixelButton.className
@@ -445,6 +450,7 @@ class RunPodManager {
                         callGeoPixelButton.disabled = false;
                         callGeoPixelButton.classList.add('enabled');
                         callGeoPixelButton.classList.remove('disabled-button');
+                        callGeoPixelButton.classList.remove('cadenza-disabled');
                         console.log('Call GeoPixel button ENABLED:', {
                             disabled: callGeoPixelButton.disabled,
                             className: callGeoPixelButton.className
@@ -453,6 +459,7 @@ class RunPodManager {
                         console.log('Endpoint not yet available - keeping Call GeoPixel button disabled');
                         callGeoPixelButton.disabled = true;
                         callGeoPixelButton.classList.remove('enabled');
+                        callGeoPixelButton.classList.remove('cadenza-disabled');
                         callGeoPixelButton.classList.add('disabled-button');
                         console.log('Call GeoPixel button DISABLED:', {
                             disabled: callGeoPixelButton.disabled,
@@ -463,6 +470,7 @@ class RunPodManager {
                     console.error('Error in updateCallGeoPixelButtonState endpoint check:', error);
                     callGeoPixelButton.disabled = true;
                     callGeoPixelButton.classList.remove('enabled');
+                    callGeoPixelButton.classList.remove('cadenza-disabled');
                     callGeoPixelButton.classList.add('disabled-button');
                 });
             } else {
@@ -472,6 +480,7 @@ class RunPodManager {
                 callGeoPixelButton.disabled = false;
                 callGeoPixelButton.classList.add('enabled');
                 callGeoPixelButton.classList.remove('disabled-button');
+                callGeoPixelButton.classList.remove('cadenza-disabled');
                 console.log('Call GeoPixel button ENABLED (assumed available):', {
                     disabled: callGeoPixelButton.disabled,
                     className: callGeoPixelButton.className
@@ -482,6 +491,7 @@ class RunPodManager {
             console.log(`No pod running (status: "${statusText}") - disabling Call GeoPixel button`);
             callGeoPixelButton.disabled = true;
             callGeoPixelButton.classList.remove('enabled');
+            callGeoPixelButton.classList.remove('cadenza-disabled');
             callGeoPixelButton.classList.add('disabled-button');
             
             // Extra logging for debugging
@@ -781,6 +791,7 @@ class RunPodManager {
                 // Explicitly disable Call GeoPixel button when credentials are missing
                 callGeoPixelBtn.disabled = true;
                 callGeoPixelBtn.classList.remove('enabled');
+                callGeoPixelBtn.classList.remove('cadenza-disabled');
                 callGeoPixelBtn.classList.add('disabled-button');
                 
                 // Also ensure Stop Pod button is disabled when no credentials
@@ -1214,6 +1225,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (callGeoPixelBtn) {
                                 callGeoPixelBtn.disabled = true;
                                 callGeoPixelBtn.classList.remove('enabled');
+                                callGeoPixelBtn.classList.remove('cadenza-disabled');
                                 callGeoPixelBtn.classList.add('disabled-button');
                             }
                         }

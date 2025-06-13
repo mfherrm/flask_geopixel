@@ -272,8 +272,6 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
     // Transportation layers
     if (object === "Car") {
         layer = allVectorLayers.carLayer;
-    } else if (object === "Truck") {
-        layer = allVectorLayers.truckLayer;
     } else if (object === "Train") {
         layer = allVectorLayers.trainLayer;
     } else if (object === "Aircraft") {
@@ -396,6 +394,8 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
         layer = allVectorLayers.iceLayer;
     } else if (object === "Smoke") {
         layer = allVectorLayers.smokeLayer;
+    } else if (object === "Shadow") {
+        layer = allVectorLayers.shadowLayer;
     
     // Agriculture layers
     } else if (object === "Greenhouse") {
