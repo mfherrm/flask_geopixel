@@ -33,9 +33,6 @@ window.map = new ol.Map({
         url: '/static/geodata/deutschlandGeoJSON/4_kreise/2_hoch.geo.json',
       }),
       style: new ol.style.Style({
-        //fill: new ol.style.Fill({
-        //color: 'rgba(255, 0, 0, 0.05)'  // Semi-transparent red fill
-        //}),
         stroke: new ol.style.Stroke({
           color: '#ff0000',  // Red outline
           width: 2

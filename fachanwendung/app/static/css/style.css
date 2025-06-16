@@ -14,13 +14,12 @@
 
     /* Common color values */
     --primary-blue: #007bff;
-    --primary-blue-dark: #0056b3;
     --button-blue: #3498DB;
     --button-blue-dark: #2980B9;
     --success-green: #28a745;
     --success-green-dark: #218838;
     --gray-light: #f8f9fa;
-    --gray-medium: #6c757d;
+    --gray-medium: #979da3;
     --border-color: #e9ecef;
     --text-color: #495057;
 
@@ -30,17 +29,58 @@
 
 }
 
-body {
+/* ===========================================
+   DISABLED BUTTON STYLES | START POD/ CALL GEOPIXEL / STOP POD 
+   =========================================== */
+
+/* Universal disabled button class */
+.disabled-button {
+    background-color: var(--gray-medium) !important;
+    cursor: not-allowed !important;
+}
+
+/* ===========================================
+   ENABLED BUTTON STYLES | START POD / CALL GEOPIXEL / LAYER STATS | STOP POD
+   =========================================== */
+
+.enabled-button-start {
+    background-color: var(--success-green) !important;
+    cursor: pointer;
+}
+
+.enabled-button-stop {
+    background: #dc3545 !important;
+    cursor: pointer;
+}
+
+/* ===========================================
+   MENU BUTTON STYLES | COLOR / OBJECT / TILES / TILE SCALING / RUNPOD CONTROL
+   =========================================== */
+
+.menu-button {
+    background-color: var(--button-blue) !important;
+}
+
+/* ===========================================
+   MENU BUTTON STYLES | COLOR / OBJECT / TILES / TILE SCALING / RUNPOD CONTROL
+   =========================================== */
+
+.loading-button {
+    background-color: #ffc107 !important;
+     color: #212529 !important;
+      cursor: wait !important;
+      opacity: 1 !important; 
+      position: relative;
+}
+
+body, html {
     font-family: sans-serif;
     margin: var(--container-margin);
     font-size: var(--base-font-size);
-}
-
-html,
-body {
     height: 100%;
     margin: 0;
 }
+
 
 #button-container {
     margin-left: var(--container-gap);
@@ -59,47 +99,29 @@ body {
 }
 
 /* Common button base styles */
-.dropbtn,
-.runpod-btn,
-.stats-btn {
-    color: white;
+.disabled-button,
+.enabled-button-start,
+.enabled-button-stop,
+.menu-button {
+    color: #ffffff;
     padding: var(--button-padding);
     font-size: var(--button-font-size);
     border: none;
     cursor: pointer;
     border-radius: var(--button-border-radius);
-    transition: var(--transition-fast);
+    display: block !important;
 }
 
-.dropbtn,
-.runpod-btn {
-    background-color: var(--button-blue);
+.menu-button:hover{
+    background-color: var(--button-blue-dark) !important;
 }
 
-.stats-btn {
-    background-color: var(--success-green);
-}
-
-/* Common hover transform and shadow effect */
-.dropbtn:hover,
-.runpod-btn:hover,
-.stats-btn:hover,
-#runpod-panel button:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.dropbtn:hover,
-.runpod-btn:hover {
-    background-color: var(--button-blue-dark);
-}
-
-.stats-btn:hover {
-    background-color: var(--success-green-dark);
+.enabled-button-start:hover {
+    background-color: var(--success-green-dark) !important;
 }
 
 /* Dropup content (Hidden by Default) */
-.dropup-content {
+.menu-button-content {
     display: none;
     position: absolute;
     bottom: 100%;
@@ -118,33 +140,33 @@ body {
     border: 1px solid #ccc;
 }
 
-.dropup-content.object-categories {
+.menu-button-content.object-categories  {
     white-space: normal;
 }
 
 /* Consolidated scrollbar styles */
-.dropup-content::-webkit-scrollbar, .modal-body::-webkit-scrollbar { width: 8px; }
+.modal-body::-webkit-scrollbar, .menu-button-content::-webkit-scrollbar { width: 8px; }
 .subcategory-menu::-webkit-scrollbar, .layer-switcher-content::-webkit-scrollbar { width: 6px; }
 
-.dropup-content::-webkit-scrollbar-track, .modal-body::-webkit-scrollbar-track {
+.modal-body::-webkit-scrollbar-track, .menu-button-content::-webkit-scrollbar-track {
     background: #f1f1f1; border-radius: 4px;
 }
 .subcategory-menu::-webkit-scrollbar-track, .layer-switcher-content::-webkit-scrollbar-track {
     background: #f8f9fa; border-radius: 3px;
 }
 
-.dropup-content::-webkit-scrollbar-thumb, .modal-body::-webkit-scrollbar-thumb {
+.modal-body::-webkit-scrollbar-thumb, .menu-button-content::-webkit-scrollbar-thumb {
     background: #c1c1c1; border-radius: 4px;
 }
 .subcategory-menu::-webkit-scrollbar-thumb, .layer-switcher-content::-webkit-scrollbar-thumb {
     background: #dee2e6; border-radius: 3px;
 }
 
-.dropup-content::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
+.menu-button-content::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
 .subcategory-menu::-webkit-scrollbar-thumb:hover, .layer-switcher-content::-webkit-scrollbar-thumb:hover, .modal-body::-webkit-scrollbar-thumb:hover { background: #adb5bd; }
 
 /* Links inside the dropup */
-.dropup-content a {
+.menu-button-content a {
     color: black;
     padding: 11px 15px;
     text-decoration: none;
@@ -153,21 +175,9 @@ body {
 }
 
 /* Change color of dropup links on hover */
-.dropup-content a:hover {
+.menu-button-content a:hover {
     background-color: #ddd;
 }
-
-
-/* Call GeoPixel button consolidated */
-#screenMap {
-    background-color: #cccccc !important; color: #666666 !important; padding: var(--button-padding); font-size: var(--button-font-size); border: none; cursor: not-allowed !important; border-radius: var(--button-border-radius); opacity: 0.7 !important; transition: all 0.2s ease;
-}
-#screenMap.enabled { background-color: #4CAF50 !important; color: white !important; cursor: pointer !important; opacity: 1 !important; }
-#screenMap.enabled:hover { background-color: #45a049 !important; }
-#screenMap.disabled-button, #screenMap:disabled { background-color: #cccccc !important; color: #666666 !important; cursor: not-allowed !important; opacity: 0.7 !important; }
-#screenMap.disabled-button:hover, #screenMap:disabled:hover, #screenMap:hover { background-color: #cccccc !important; }
-#screenMap.loading, #screenMap.loading:hover { background-color: #ffc107 !important; color: #212529 !important; cursor: wait !important; opacity: 1 !important; position: relative; }
-
 
 /* RunPod Panel Styles */
 #runpod-panel {
@@ -185,28 +195,21 @@ body {
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
-#runpod-panel button {
-    transition: all 0.2s ease;
-    font-weight: 500;
-    min-width: clamp(70px, 6vw, 90px);
-    height: clamp(28px, 2.5vw, 36px);
-    padding: clamp(6px, 0.6vw, 10px) clamp(12px, 1.2vw, 18px);
-    font-size: clamp(11px, 0.9vw, 14px);
-    box-sizing: border-box;
-    border-radius: var(--button-border-radius);
-}
-
-
 /* RunPod button states consolidated */
-#runpod-panel button:disabled:not(#runpod-stop), #runpod-panel #runpod-stop, #runpod-panel #runpod-stop:disabled {
-    background: #6c757d !important; color: #ffffff !important; cursor: not-allowed !important;
+#runpod-panel #runpod-test:disabled,
+#runpod-panel #runpod-start:disabled,
+#runpod-panel #runpod-stop:disabled {
+    background: #6c757d !important;
+    color: #ffffff !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
 }
-#runpod-panel button:disabled:not(#runpod-stop) { opacity: 0.6; }
-#runpod-panel #runpod-stop, #runpod-panel #runpod-stop:disabled { opacity: 0.7 !important; border: none !important; transition: all 0.2s ease !important; }
 
-#runpod-panel #runpod-stop.enabled:not(:disabled) { background: #dc3545 !important; color: white !important; cursor: pointer !important; opacity: 1 !important; }
-#runpod-panel #runpod-stop.enabled:not(:disabled):hover { background: #c82333 !important; transform: translateY(-1px) !important; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; }
-#runpod-panel #runpod-stop:disabled:hover, #runpod-panel #runpod-stop:not(.enabled):hover { background: #6c757d !important; transform: none !important; box-shadow: none !important; cursor: not-allowed !important; opacity: 0.7 !important; }
+#runpod-panel #runpod-stop:disabled {
+    opacity: 0.7 !important;
+    border: none !important;
+    transition: all 0.2s ease !important;
+}
 
 #runpod-start:hover:not(:disabled) { background: #218838; }
 #runpod-test:hover:not(:disabled) { background: #138496; }
@@ -238,66 +241,6 @@ body {
         --button-font-size: clamp(13px, 1.2vw, 15px);
         --button-padding: clamp(7px, 0.9vw, 10px);
         --container-gap: clamp(7px, 0.9vw, 10px);
-    }
-}
-
-/* Small screens (mobile) */
-@media (max-width: 768px) {
-    :root {
-        --base-font-size: clamp(12px, 1.8vw, 15px);
-        --button-font-size: clamp(12px, 1.6vw, 14px);
-        --button-padding: clamp(6px, 1.2vw, 9px);
-        --container-gap: clamp(6px, 1.2vw, 9px);
-        --container-margin: clamp(12px, 2vw, 18px);
-        --panel-padding: clamp(10px, 1.5vw, 15px);
-    }
-
-    #button-container {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: clamp(4px, 1vw, 8px);
-    }
-
-    #runpod-panel {
-        margin: var(--panel-padding) !important;
-        max-width: none !important;
-        padding: var(--panel-padding) !important;
-    }
-
-    #runpod-panel h4 {
-        font-size: clamp(14px, 1.5vw, 16px) !important;
-    }
-
-    #runpod-panel input,
-    #runpod-panel button {
-        font-size: clamp(11px, 1.3vw, 14px) !important;
-        padding: clamp(8px, 1.2vw, 12px) !important;
-    }
-}
-
-/* Very small screens */
-@media (max-width: 480px) {
-    :root {
-        --base-font-size: clamp(11px, 2.2vw, 14px);
-        --button-font-size: clamp(11px, 2vw, 13px);
-        --button-padding: clamp(5px, 1.4vw, 8px);
-        --container-gap: clamp(4px, 1.5vw, 8px);
-        --container-margin: clamp(8px, 2.5vw, 16px);
-    }
-
-    #button-container {
-        flex-direction: column;
-        align-items: stretch;
-        gap: clamp(3px, 1.2vw, 6px);
-    }
-
-    .dropbtn,
-    .runpod-btn,
-    .stats-btn,
-    #screenMap {
-        width: 100%;
-        max-width: 300px;
-        margin: 0 auto;
     }
 }
 
@@ -862,44 +805,4 @@ body {
 
 .overlap-error p {
     margin: 8px 0;
-}
-
-/* Modal mobile responsive */
-@media (max-width: 768px) {
-    .modal-content { margin: 10% auto; width: 95%; max-height: 85vh; }
-    .modal-header { padding: 16px 20px; }
-    .modal-header h2 { font-size: 20px; }
-    .modal-body { padding: 20px; max-height: 65vh; }
-    .stats-summary { padding: 16px; margin-bottom: 20px; }
-    .stats-summary h3 { font-size: 24px; }
-    .stats-category h4 { padding: 12px 16px; font-size: 16px; }
-    .stats-layers { padding: 12px 16px; }
-    .stats-layer { padding: 10px 0; }
-    .stats-layer:hover { margin: 10px -16px; padding: 10px 16px; }
-    .layer-name { font-size: 13px; }
-    .layer-count { font-size: 12px; padding: 4px 10px; }
-    
-    /* Overlap analysis mobile */
-    .overlap-analysis { padding: 16px; margin-top: 16px; }
-    .overlap-analysis h3 { font-size: 18px; }
-    .overlap-results h4 { font-size: 16px; }
-    .analysis-buttons { flex-direction: column; }
-    .analysis-buttons button { width: 100%; margin-bottom: 8px; }
-    .back-buttons { flex-direction: column; }
-    .back-buttons button { width: 100%; margin-bottom: 8px; }
-}
-
-/* Dark mode support consolidated */
-@media (prefers-color-scheme: dark) {
-    .modal-content { background-color: #343a40; color: #e9ecef; }
-    .stats-summary { background: linear-gradient(135deg, #495057 0%, #6c757d 100%); border-color: #6c757d; }
-    .stats-category { background: #495057; border-color: #6c757d; }
-    .stats-layers { background: #495057; }
-    .stats-layer { border-bottom-color: #6c757d; }
-    .stats-layer:hover { background-color: #6c757d; }
-    .layer-name { color: #e9ecef; }
-    .stats-empty { color: #adb5bd; }
-    .modal-body::-webkit-scrollbar-track { background: #495057; }
-    .modal-body::-webkit-scrollbar-thumb { background: #6c757d; }
-    .modal-body::-webkit-scrollbar-thumb:hover { background: #adb5bd; }
 }

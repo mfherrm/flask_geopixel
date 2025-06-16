@@ -36,13 +36,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
-
-  // Close modal with Escape key
-  document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-      hideLayerStatsModal();
-    }
-  });
 });
 
 // Expose stats functions to window for debugging/external access

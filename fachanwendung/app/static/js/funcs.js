@@ -7,9 +7,6 @@ import {
     tileConfig
 } from './tile-processing.js';
 
-// Dropup functionality is now handled in the HTML file
-// This ensures proper loading and execution order
-
 // Add tile configuration update to window so it can be called from HTML
 window.updateTileConfig = updateTileConfigWrapper;
 
@@ -67,13 +64,6 @@ function handleSuccessfulCapture(blob, mapBounds, setButtonLoadingState) {
 }
 
 document.getElementById('screenMap').addEventListener('click', async (event) => {
-    // Check if the button is disabled
-    if (event.target.disabled) {
-        event.preventDefault();
-        alert('Please start a RunPod instance first to use GeoPixel functionality.');
-        return;
-    }
-    
     // Check if the button is already in loading state
     if (event.target.classList.contains('loading')) {
         event.preventDefault();
@@ -86,11 +76,8 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
     let mbs = map.getView().calculateExtent()
 
     console.log("Map bounds (extent): [minX, minY, maxX, maxY] = ", mbs)
-    console.log("Map bounds: \n \t SW: ", mbs[0], mbs[1], "\n \t NE: ", mbs[2], mbs[3])
     // As NW and SE
     var mapBounds = [[mbs[0], mbs[3]], [mbs[2], mbs[1]]]
-    console.log("Transformed mapBounds: \n \t NW: ", mapBounds[0], "\n \t SE: ", mapBounds[1])
-
     // Store current visibility of all layers
     const layerVisibility = [];
     
@@ -102,11 +89,6 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
         // Check if this is a vector layer (contains geometries that should be hidden during capture)
         const layerName = layer.get('name');
         const isVectorLayer = layerName && (
-            layerName.includes('car') ||
-            layerName.includes('building') ||
-            layerName.includes('tree') ||
-            layerName.includes('person') ||
-            layerName.includes('vector') ||
             layer.getSource().constructor.name.includes('Vector')
         );
         
@@ -210,10 +192,6 @@ $(document).ready(function () {
 
             // Toggle Cadenza iframe
             $('#cadenza-iframe').toggle(value === 2 && this.checked);
-
-            // Button state management is now handled exclusively by RunPodManager
-            // The RunPodManager will be notified of radio button changes via event listeners
-            // set up in the HTML file and will update the button state accordingly
         });
 
         // Manually trigger the change event on the checked radio button

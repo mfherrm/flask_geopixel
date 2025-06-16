@@ -33,7 +33,7 @@
         
         <!-- Control buttons positioned right below the map -->
         <div id="button-container">
-            <button id="screenMap" disabled>Call GeoPixel</button>
+            <button id="screenMap" class="disabled-button" disabled>Call GeoPixel</button>
             <!-- Dropup Controls -->
             {% include 'color_dropup.html' %}
             {% include 'object_dropup.html' %}
@@ -54,29 +54,17 @@
             </div>
 
             <!-- RunPod Control Button only -->
-            <button id="runpod-toggle-btn" class="runpod-btn">RunPod Control</button>
+            <button id="runpod-toggle-btn" class="menu-button">RunPod Control</button>
             
             <!-- Layer Statistics Button -->
-            <button id="layer-stats-btn" class="stats-btn">Layer Stats</button>
+            <button id="layer-stats-btn" class="enabled-button-start" style = "visibility: visible !important; display: block !important">Layer Stats</button>
         </div>
 
         <!-- RunPod Control Panel (positioned below buttons) -->
         {% include 'runpod_control_panel.html' %}
 
         <!-- Layer Statistics Modal -->
-        <div id="layer-stats-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Layer Statistics</h2>
-                    <span class="close" id="stats-modal-close">&times;</span>
-                </div>
-                <div class="modal-body">
-                    <div id="layer-stats-content">
-                        <!-- Statistics content will be populated here -->
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% include 'layer_stats_modal.html' %}
     </div>
 
     <!-- Scripts loaded at the end for better performance -->

@@ -5,13 +5,13 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     // Handle dropdown button clicks to show/hide content
-    document.querySelectorAll('.dropbtn').forEach(button => {
+    document.querySelectorAll('.menu-button').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             
             // Close all other dropups first
-            document.querySelectorAll('.dropup-content').forEach(content => {
+            document.querySelectorAll('.menu-button-content').forEach(content => {
                 if (content !== this.nextElementSibling) {
                     content.classList.remove('show');
                     content.style.display = 'none';
@@ -36,9 +36,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Close dropups when clicking outside
     document.addEventListener('click', function(e) {
         // Check if the click is outside any dropup container
-        const clickedInsideDropup = e.target.closest('.dropup');
+        const clickedInsideDropup = e.target.closest('.menu-button');
         if (!clickedInsideDropup) {
-            document.querySelectorAll('.dropup-content').forEach(content => {
+            document.querySelectorAll('.menu-button-content').forEach(content => {
                 content.classList.remove('show');
                 content.style.display = 'none';
             });
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             const tileCount = parseInt(this.dataset.tiles);
             document.getElementById('tilesbttn').textContent = `Tiles: ${tileCount}`;
-            const dropupContent = this.closest('.dropup-content');
+            const dropupContent = this.closest('.menu-button-content');
             dropupContent.classList.remove('show');
             dropupContent.style.display = 'none';
             
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             e.stopPropagation();
             document.getElementById('colorbttn').textContent = this.textContent;
-            const dropupContent = this.closest('.dropup-content');
+            const dropupContent = this.closest('.menu-button-content');
             dropupContent.classList.remove('show');
             dropupContent.style.display = 'none';
         });
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             e.stopPropagation();
             document.getElementById('objbttn').textContent = this.textContent;
-            const dropupContent = this.closest('.dropup-content');
+            const dropupContent = this.closest('.menu-button-content');
             dropupContent.classList.remove('show');
             dropupContent.style.display = 'none';
         });
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const categoryGroup = this.closest('.category-group');
             const submenu = categoryGroup.querySelector('.subcategory-menu');
-            const dropupContent = this.closest('.dropup-content');
+            const dropupContent = this.closest('.menu-button-content');
             
             // Close all other submenus first
             document.querySelectorAll('.category-group').forEach(group => {

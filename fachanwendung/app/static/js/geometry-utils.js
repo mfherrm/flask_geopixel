@@ -86,72 +86,6 @@ export function crossProduct(O, A, B) {
     return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
 }
 
-/**
- * Computes the convex hull of a set of points using Graham scan algorithm.
- *
- * @param {Array} points - Array of [x, y] coordinates
- * @returns {Array} - Convex hull as array of [x, y] coordinates
- */
-export function convexHull(points) {
-    if (points.length < 3) return points;
-    
-    // Remove duplicate points
-    const uniquePoints = [];
-    const seen = new Set();
-    points.forEach(point => {
-        const key = `${point[0]},${point[1]}`;
-        if (!seen.has(key)) {
-            seen.add(key);
-            uniquePoints.push(point);
-        }
-    });
-    
-    if (uniquePoints.length < 3) return uniquePoints;
-    
-    // Find the bottom-most point (and leftmost in case of tie)
-    let start = 0;
-    for (let i = 1; i < uniquePoints.length; i++) {
-        if (uniquePoints[i][1] < uniquePoints[start][1] ||
-            (uniquePoints[i][1] === uniquePoints[start][1] && uniquePoints[i][0] < uniquePoints[start][0])) {
-            start = i;
-        }
-    }
-    
-    // Swap start point to beginning
-    [uniquePoints[0], uniquePoints[start]] = [uniquePoints[start], uniquePoints[0]];
-    
-    // Sort points by polar angle with respect to start point
-    const startPoint = uniquePoints[0];
-    uniquePoints.slice(1).sort((a, b) => {
-        const angleA = Math.atan2(a[1] - startPoint[1], a[0] - startPoint[0]);
-        const angleB = Math.atan2(b[1] - startPoint[1], b[0] - startPoint[0]);
-        if (angleA === angleB) {
-            // If angles are equal, sort by distance
-            const distA = Math.pow(a[0] - startPoint[0], 2) + Math.pow(a[1] - startPoint[1], 2);
-            const distB = Math.pow(b[0] - startPoint[0], 2) + Math.pow(b[1] - startPoint[1], 2);
-            return distA - distB;
-        }
-        return angleA - angleB;
-    });
-    
-    // Build convex hull
-    const hull = [uniquePoints[0], uniquePoints[1]];
-    
-    for (let i = 2; i < uniquePoints.length; i++) {
-        // Remove points that make clockwise turn
-        while (hull.length > 1 && crossProduct(hull[hull.length - 2], hull[hull.length - 1], uniquePoints[i]) <= 0) {
-            hull.pop();
-        }
-        hull.push(uniquePoints[i]);
-    }
-    
-    // Close the polygon
-    if (hull.length > 0 && JSON.stringify(hull[0]) !== JSON.stringify(hull[hull.length - 1])) {
-        hull.push([...hull[0]]);
-    }
-    
-    return hull;
-}
 
 /**
  * Combines multiple masks into a single unified mask.
@@ -206,28 +140,6 @@ export function areDirectNeighbors(tileIndex1, tileIndex2, cols) {
     return (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1);
 }
 
-/**
- * Determines if two tiles are neighbors in the grid.
- *
- * @param {number} tileIndex1 - First tile index
- * @param {number} tileIndex2 - Second tile index
- * @param {number} cols - Number of columns in tile grid
- * @param {number} rows - Number of rows in tile grid
- * @returns {boolean} - True if tiles are neighbors
- */
-export function areNeighboringTiles(tileIndex1, tileIndex2, cols, rows) {
-    // Convert tile indices to row, col coordinates
-    const row1 = Math.floor(tileIndex1 / cols);
-    const col1 = tileIndex1 % cols;
-    const row2 = Math.floor(tileIndex2 / cols);
-    const col2 = tileIndex2 % cols;
-    
-    // Check if tiles are adjacent (horizontally, vertically, or diagonally)
-    const rowDiff = Math.abs(row1 - row2);
-    const colDiff = Math.abs(col1 - col2);
-    
-    return (rowDiff <= 1 && colDiff <= 1) && !(rowDiff === 0 && colDiff === 0);
-}
 
 /**
  * Combines neighboring tile masks that are within a small threshold distance.

@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isCurrentlyVisible) {
                 runpodPanel.style.display = 'none';
                 document.getElementById('cadenza-container').classList.remove('runpod-panel-visible');
+                document.getElementById('layer-stats-btn').style.display = 'block';
             } else {
                 // Position the panel to align borders with the button
                 const buttonRect = runpodButton.getBoundingClientRect();
@@ -27,16 +28,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Account for button border and padding to align the blue borders
                 const buttonStyle = window.getComputedStyle(runpodButton);
                 const buttonBorderLeft = parseInt(buttonStyle.borderLeftWidth) || 0;
-                const buttonPaddingLeft = parseInt(buttonStyle.paddingLeft) || 0;
                 
                 // Calculate offset to align the blue borders
                 const leftOffset = buttonRect.left - containerRect.left - buttonBorderLeft;
                 
                 runpodPanel.style.display = 'block';
-                runpodPanel.style.marginLeft = leftOffset + 'px';
-                runpodPanel.style.marginRight = 'auto';
-                runpodPanel.style.marginBottom = '15px'; // Add reduced bottom margin
+                runpodPanel.style.marginLeft = leftOffset+15 + 'px';
                 document.getElementById('cadenza-container').classList.add('runpod-panel-visible');
+                document.getElementById('layer-stats-btn').style.display = 'block';
                 
                 // Scroll to the RunPod Control Panel smoothly
                 setTimeout(() => {
