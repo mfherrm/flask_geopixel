@@ -8,8 +8,12 @@
  * - Layer switching functionality
  */
 
-// Import geometry utilities for overlap calculations
-import { calculateLayerOverlap } from './geometry-utils.js';
+// Import geometry utilities for overlap calculations and tile processing
+import {
+  calculateLayerOverlap,
+  combineAndMergeAllMasks,
+  isPolygonClockwise
+} from './geometry-utils.js';
 
 // Import layer definitions
 import {
@@ -47,15 +51,6 @@ export const getLayerFeatureCount = (layer) => {
       if (geometryType === 'MultiPolygon') {
         const polygons = geometry.getPolygons();
         totalGeometries += polygons.length;
-      } else if (geometryType === 'MultiLineString') {
-        const lineStrings = geometry.getLineStrings();
-        totalGeometries += lineStrings.length;
-      } else if (geometryType === 'MultiPoint') {
-        const points = geometry.getPoints();
-        totalGeometries += points.length;
-      } else if (geometryType === 'GeometryCollection') {
-        const geometries = geometry.getGeometries();
-        totalGeometries += geometries.length;
       } else {
         // Single geometry types (Polygon, LineString, Point, etc.)
         totalGeometries += 1;
@@ -80,61 +75,26 @@ export const getLayerStatistics = () => {
     total: 0
   };
 
-  // Transportation layers statistics
-  Object.entries(transportationLayers).forEach(([layerName, layer]) => {
-    const count = getLayerFeatureCount(layer);
-    stats.transportation[layerName] = count;
-    stats.total += count;
-  });
+  // Categories with their corresponding layer objects
+  const categories = {
+    transportation: transportationLayers,
+    infrastructure: infrastructureLayers,
+    naturalFeatures: naturalFeaturesLayers,
+    vegetation: vegetationLayers,
+    urbanFeatures: urbanFeaturesLayers,
+    geological: geologicalLayers,
+    environmental: environmentalLayers,
+    agriculture: agricultureLayers
+  };
 
-  // Infrastructure layers statistics
-  Object.entries(infrastructureLayers).forEach(([layerName, layer]) => {
-    const count = getLayerFeatureCount(layer);
-    stats.infrastructure[layerName] = count;
-    stats.total += count;
-  });
-
-  // Natural features layers statistics
-  Object.entries(naturalFeaturesLayers).forEach(([layerName, layer]) => {
-    const count = getLayerFeatureCount(layer);
-    stats.naturalFeatures[layerName] = count;
-    stats.total += count;
-  });
-
-  // Vegetation layers statistics
-  Object.entries(vegetationLayers).forEach(([layerName, layer]) => {
-    const count = getLayerFeatureCount(layer);
-    stats.vegetation[layerName] = count;
-    stats.total += count;
-  });
-
-  // Urban features layers statistics
-  Object.entries(urbanFeaturesLayers).forEach(([layerName, layer]) => {
-    const count = getLayerFeatureCount(layer);
-    stats.urbanFeatures[layerName] = count;
-    stats.total += count;
-  });
-
-  // Geological layers statistics
-  Object.entries(geologicalLayers).forEach(([layerName, layer]) => {
-    const count = getLayerFeatureCount(layer);
-    stats.geological[layerName] = count;
-    stats.total += count;
-  });
-
-  // Environmental layers statistics
-  Object.entries(environmentalLayers).forEach(([layerName, layer]) => {
-    const count = getLayerFeatureCount(layer);
-    stats.environmental[layerName] = count;
-    stats.total += count;
-  });
-
-  // Agriculture layers statistics
-  Object.entries(agricultureLayers).forEach(([layerName, layer]) => {
-    const count = getLayerFeatureCount(layer);
-    stats.agriculture[layerName] = count;
-    stats.total += count;
-  });
+  // Iterate through each category using a for loop
+  for (const [categoryKey, layers] of Object.entries(categories)) {
+    Object.entries(layers).forEach(([layerName, layer]) => {
+      const count = getLayerFeatureCount(layer);
+      stats[categoryKey][layerName] = count;
+      stats.total += count;
+    });
+  }
 
   return stats;
 };
@@ -534,4 +494,274 @@ export function toggleLayerSwitcher() {
     content.style.display = isVisible ? 'none' : 'block';
     console.log('Layer switcher toggled:', !isVisible ? 'opened' : 'closed');
   }
+}
+
+// ===========================================
+// TILE PROCESSING RESULT HANDLING
+// ===========================================
+
+/**
+ * Combines and displays results from multiple tile processing operations
+ * @param {Array} tileResults - Array of tile processing results
+ * @param {string} object - The object type being processed
+ * @param {Object} tileConfig - The tile configuration object
+ * @param {Function} setButtonLoadingState - Function to manage button loading state
+ */
+export function combineAndDisplayTileResults(tileResults, object, tileConfig, setButtonLoadingState) {
+    console.log(`Combining results from ${tileConfig.label}...`);
+    
+    const validResults = tileResults.filter(result => result !== null);
+    console.log(`Successfully processed ${validResults.length} tiles out of ${tileConfig.count} total tiles`);
+    
+    if (validResults.length === 0) {
+        alert("No valid results from tile processing");
+        setButtonLoadingState(false);
+        return;
+    }
+    
+    // Determine target layer based on object type
+    let layer = "";
+    
+    // Transportation layers
+    if (object === "Car") {
+        layer = allVectorLayers.carLayer;
+    } else if (object === "Train") {
+        layer = allVectorLayers.trainLayer;
+    } else if (object === "Aircraft") {
+        layer = allVectorLayers.aircraftLayer;
+    } else if (object === "Ship") {
+        layer = allVectorLayers.shipLayer;
+    
+    // Infrastructure layers
+    } else if (object === "Building") {
+        layer = allVectorLayers.buildingLayer;
+    } else if (object === "House") {
+        layer = allVectorLayers.houseLayer;
+    } else if (object === "Factory") {
+        layer = allVectorLayers.factoryLayer;
+    } else if (object === "Warehouse") {
+        layer = allVectorLayers.warehouseLayer;
+    } else if (object === "Hospital") {
+        layer = allVectorLayers.hospitalLayer;
+    } else if (object === "Bridge") {
+        layer = allVectorLayers.bridgeLayer;
+    } else if (object === "Road") {
+        layer = allVectorLayers.roadLayer;
+    } else if (object === "Highway") {
+        layer = allVectorLayers.highwayLayer;
+    } else if (object === "Runway") {
+        layer = allVectorLayers.runwayLayer;
+    } else if (object === "Parking Lot") {
+        layer = allVectorLayers.parkingLotLayer;
+    } else if (object === "Solar Panel") {
+        layer = allVectorLayers.solarPanelLayer;
+    } else if (object === "Wind Turbine") {
+        layer = allVectorLayers.windTurbineLayer;
+    
+    // Natural features layers
+    } else if (object === "River") {
+        layer = allVectorLayers.riverLayer;
+    } else if (object === "Lake") {
+        layer = allVectorLayers.lakeLayer;
+    } else if (object === "Ocean") {
+        layer = allVectorLayers.oceanLayer;
+    } else if (object === "Wetland") {
+        layer = allVectorLayers.wetlandLayer;
+    } else if (object === "Mountain") {
+        layer = allVectorLayers.mountainLayer;
+    } else if (object === "Hill") {
+        layer = allVectorLayers.hillLayer;
+    } else if (object === "Valley") {
+        layer = allVectorLayers.valleyLayer;
+    } else if (object === "Canyon") {
+        layer = allVectorLayers.canyonLayer;
+    } else if (object === "Beach") {
+        layer = allVectorLayers.beachLayer;
+    } else if (object === "Coastline") {
+        layer = allVectorLayers.coastlineLayer;
+    } else if (object === "Island") {
+        layer = allVectorLayers.islandLayer;
+    
+    // Vegetation layers
+    } else if (object === "Forest") {
+        layer = allVectorLayers.forestLayer;
+    } else if (object === "Tree") {
+        layer = allVectorLayers.treeLayer;
+    } else if (object === "Grass") {
+        layer = allVectorLayers.grassLayer;
+    } else if (object === "Farmland") {
+        layer = allVectorLayers.farmlandLayer;
+    } else if (object === "Vineyard") {
+        layer = allVectorLayers.vineyardLayer;
+    } else if (object === "Park") {
+        layer = allVectorLayers.parkLayer;
+    } else if (object === "Garden") {
+        layer = allVectorLayers.gardenLayer;
+    } else if (object === "Pasture") {
+        layer = allVectorLayers.pastureLayer;
+    
+    // Urban features layers
+    } else if (object === "Urban Area") {
+        layer = allVectorLayers.urbanAreaLayer;
+    } else if (object === "Residential") {
+        layer = allVectorLayers.residentialLayer;
+    } else if (object === "Commercial") {
+        layer = allVectorLayers.commercialLayer;
+    } else if (object === "Industrial") {
+        layer = allVectorLayers.industrialLayer;
+    } else if (object === "Construction Site") {
+        layer = allVectorLayers.constructionSiteLayer;
+    } else if (object === "Stadium") {
+        layer = allVectorLayers.stadiumLayer;
+    } else if (object === "Sports Field") {
+        layer = allVectorLayers.sportsFieldLayer;
+    } else if (object === "Golf Course") {
+        layer = allVectorLayers.golfCourseLayer;
+    } else if (object === "Cemetery") {
+        layer = allVectorLayers.cemeteryLayer;
+    
+    // Geological layers
+    } else if (object === "Rock Formation") {
+        layer = allVectorLayers.rockFormationLayer;
+    } else if (object === "Sand") {
+        layer = allVectorLayers.sandLayer;
+    } else if (object === "Desert") {
+        layer = allVectorLayers.desertLayer;
+    } else if (object === "Quarry") {
+        layer = allVectorLayers.quarryLayer;
+    } else if (object === "Mine") {
+        layer = allVectorLayers.mineLayer;
+    } else if (object === "Landslide") {
+        layer = allVectorLayers.landslideLayer;
+    } else if (object === "Erosion") {
+        layer = allVectorLayers.erosionLayer;
+    
+    // Environmental layers
+    } else if (object === "Fire") {
+        layer = allVectorLayers.fireLayer;
+    } else if (object === "Flood") {
+        layer = allVectorLayers.floodLayer;
+    } else if (object === "Snow") {
+        layer = allVectorLayers.snowLayer;
+    } else if (object === "Ice") {
+        layer = allVectorLayers.iceLayer;
+    } else if (object === "Smoke") {
+        layer = allVectorLayers.smokeLayer;
+    } else if (object === "Shadow") {
+        layer = allVectorLayers.shadowLayer;
+    
+    // Agriculture layers
+    } else if (object === "Greenhouse") {
+        layer = allVectorLayers.greenhouseLayer;
+    } else if (object === "Barn") {
+        layer = allVectorLayers.barnLayer;
+    } else if (object === "Silo") {
+        layer = allVectorLayers.siloLayer;
+    } else if (object === "Livestock") {
+        layer = allVectorLayers.livestockLayer;
+    
+    // Default fallback to building layer
+    } else {
+        layer = allVectorLayers.buildingLayer;
+        console.warn(`Unknown object type: ${object}, using building layer as fallback`);
+    }
+    
+    console.log("Target layer:", layer);
+    
+    // First pass: collect all geometries with their tile information
+    const allGeometries = [];
+    
+    validResults.forEach(result => {
+        const { tileIndex, data } = result;
+        
+        if (data.outline && data.outline.length > 0) {
+            console.log(`Processing geometries from tile ${tileIndex}`);
+            
+            if (data.coordinates_transformed) {
+                // Process all contours from this tile
+                data.outline.forEach((contour, contourIndex) => {
+                    console.log(`Tile ${tileIndex}, contour ${contourIndex}: ${contour.length} points`);
+                    
+                    let mapCoords = contour; // Already in geographic coordinates
+                    
+                    // Ensure polygon is closed
+                    if (mapCoords.length > 0 && JSON.stringify(mapCoords[0]) !== JSON.stringify(mapCoords[mapCoords.length - 1])) {
+                        mapCoords.push([...mapCoords[0]]);
+                    }
+                    
+                    // Check and fix polygon orientation
+                    const isClockwise = isPolygonClockwise(mapCoords);
+                    if (isClockwise) {
+                        console.log(`Tile ${tileIndex}, contour ${contourIndex}: reversing clockwise polygon`);
+                        mapCoords.reverse();
+                    }
+                    
+                    // Store geometry with tile information for mask combining
+                    allGeometries.push({
+                        tileIndex: tileIndex,
+                        contourIndex: contourIndex,
+                        coordinates: mapCoords,
+                        processed: false
+                    });
+                });
+            }
+        }
+    });
+    
+    // Combine neighboring tile masks and merge contained masks within the same layer
+    const combinedGeometries = combineAndMergeAllMasks(allGeometries, tileConfig);
+    
+    // Convert combined geometries to features and add to map
+    if (combinedGeometries.length > 0) {
+        const geoms = combinedGeometries.map(geom => {
+            if (geom.holes && geom.holes.length > 0) {
+                // Create polygon with holes: [exterior, hole1, hole2, ...]
+                return [geom.coordinates, ...geom.holes];
+            } else {
+                // Simple polygon without holes
+                return [geom.coordinates];
+            }
+        });
+        
+        const polygon = {
+            "type": "MultiPolygon",
+            "coordinates": geoms,
+        };
+        
+        try {
+            const features = new ol.format.GeoJSON().readFeatures(polygon, {
+                dataProjection: 'EPSG:3857',
+                featureProjection: 'EPSG:3857',
+            });
+            
+            features.forEach(feature => {
+                feature.setStyle(layer.getStyle());
+                layer.getSource().addFeature(feature);
+            });
+            
+            // Log detailed information about merging
+            const totalOriginalMasks = combinedGeometries.reduce((sum, geom) => {
+                return sum + 1 + (geom.containedMasks ? geom.containedMasks.length : 0);
+            }, 0);
+            const masksWithHoles = combinedGeometries.filter(geom => geom.holes && geom.holes.length > 0).length;
+            
+            console.log(`Added ${features.length} combined features to map`);
+            console.log(`Processed ${totalOriginalMasks} original masks into ${combinedGeometries.length} final features`);
+            if (masksWithHoles > 0) {
+                console.log(`${masksWithHoles} features contain holes from contained masks`);
+            }
+        } catch (error) {
+            console.error(`Error creating combined features:`, error);
+        }
+    }
+    
+    // Refresh the layer and map
+    layer.changed();
+    map.render();
+    map.renderSync();
+    
+    console.log("Tiled processing with mask combining complete!");
+    
+    // Re-enable the Call GeoPixel button
+    setButtonLoadingState(false);
 }

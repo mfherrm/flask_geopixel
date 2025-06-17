@@ -21,15 +21,19 @@ function setButtonLoadingState(isLoading) {
     if (isLoading) {
         // Disable button and show loading state
         button.disabled = true;
-        button.classList.add('loading');
+        button.classList.add('loading-button');
+        button.classList.remove('enabled-button-start')
         button.innerHTML = '<span class="loading-spinner"></span>Processing...';
         button.setAttribute('data-original-text', originalText);
     } else {
         // Re-enable button and restore original state
         button.disabled = false;
-        button.classList.remove('loading');
-        button.innerHTML = button.getAttribute('data-original-text') || originalText;
+        const savedText = button.getAttribute('data-original-text') || originalText;
         button.removeAttribute('data-original-text');
+        button.classList.add('enabled-button-start')
+        button.classList.remove('loading-button');
+        button.innerHTML = savedText;
+        
     }
 }
 
