@@ -103,9 +103,7 @@ class RunPodManager {
             console.log('Forcing correct initial button states (ignoring any cached data)...');
 
             // Start button should be ENABLED initially (assume no pod running until verified)
-            startBtn.disabled = false;
-            startBtn.classList.add('enabled-button-start');
-            startBtn.classList.remove('disabled-button');
+            this.set_btn_enabled(startBtn, "start")
             console.log('Initial state - START button: ENABLED (green)');
 
             callGeoPixelBtn.setAttribute('data-initialization-complete', 'false');
@@ -143,69 +141,49 @@ class RunPodManager {
         // Update button states only if requested
         const startBtn = document.getElementById('runpod-start');
         const stopBtn = document.getElementById('runpod-stop');
-        
+
         if (updateButtons) {
 
-        // CORRECT LOGIC: Start enabled when no pod, Stop enabled when pod running
-        if (status === 'RUNNING' || status.toLowerCase().includes('running') || status === 'Already Running') {
-            // Pod is running: DISABLE start, ENABLE stop
-            if (startBtn) {
-                startBtn.disabled = true;
-                startBtn.classList.add('disabled-button');
-                startBtn.classList.remove('enabled-button-start');
-                console.log('Pod running - START button DISABLED');
+            // CORRECT LOGIC: Start enabled when no pod, Stop enabled when pod running
+            if (status === 'RUNNING' || status.toLowerCase().includes('running') || status === 'Already Running') {
+                // Pod is running: DISABLE start, ENABLE stop
+                if (startBtn) {
+                    this.set_btn_disabled(startBtn)
+                    console.log('Pod running - START button DISABLED');
+                }
+                if (stopBtn) {
+                    this.set_btn_enabled(stopBtn, "stop")
+                    console.log('Pod running - STOP button ENABLED (red)');
+                }
+            } else if (status === 'Starting' || status === 'Starting...' || status === 'STARTING' || status.toLowerCase().includes('starting')) {
+                if (startBtn) {
+                    this.set_btn_loading(startBtn)
+                    console.log('Pod starting - START button DISABLED');
+                }
+                if (stopBtn) {
+                    this.set_btn_enabled(stopBtn, "stop")
+                    console.log('Pod starting - STOP button DISABLED');
+                }
+            } else if (status === 'Checking...') {
+                if (startBtn) {
+                    this.set_btn_disabled(startBtn)
+                    console.log('Pod starting - START button DISABLED');
+                }
+                if (stopBtn) {
+                    this.set_btn_disabled(stopBtn)
+                    console.log('Pod starting - STOP button DISABLED');
+                }
+            } else {
+                // For other states (Error, Stopped, Not Connected, Not Running, etc.): ENABLE start, DISABLE stop
+                if (startBtn) {
+                    this.set_btn_enabled(startBtn, "start")
+                    console.log(`Status "${status}" - START button ENABLED`);
+                }
+                if (stopBtn) {
+                    this.set_btn_disabled(stopBtn)
+                    console.log(`Status "${status}" - STOP button DISABLED`);
+                }
             }
-            if (stopBtn) {
-                // ENABLE Stop button: remove disabled attribute AND add enabled class
-                stopBtn.disabled = false;
-                stopBtn.classList.add('enabled-button-stop');
-                stopBtn.classList.remove('disabled-button');
-                // Force override any CSS that might be interfering
-                console.log('Pod running - STOP button ENABLED (red)');
-            }
-        } else if (status === 'Starting' || status === 'Starting...' || status === 'STARTING' || status.toLowerCase().includes('starting')) {
-            if (startBtn) {
-                startBtn.disabled = true;
-                startBtn.classList.add('loading-button');
-                startBtn.classList.remove('enabled-button-start');
-                console.log('Pod starting - START button DISABLED');
-            }
-            if (stopBtn) {
-                // DISABLE Stop button: add disabled attribute AND remove enabled class
-                stopBtn.disabled = false;
-                stopBtn.classList.add('enabled-button-stop');
-                stopBtn.classList.remove('disabled-button');
-                console.log('Pod starting - STOP button DISABLED');
-            }
-        } else if (status === 'Checking...') {
-            if (startBtn) {
-                startBtn.disabled = true;
-                startBtn.classList.add('disabled-button');
-                startBtn.classList.remove('enabled-button-start');
-                console.log('Pod starting - START button DISABLED');
-            }
-            if (stopBtn) {
-                stopBtn.disabled = true;
-                stopBtn.classList.add('disabled-button');
-                stopBtn.classList.remove('enabled-button-stop');
-                console.log('Pod starting - STOP button DISABLED');
-            }
-        } else {
-            // For other states (Error, Stopped, Not Connected, Not Running, etc.): ENABLE start, DISABLE stop
-            if (startBtn) {
-                startBtn.disabled = false;
-                startBtn.classList.add('enabled-button-start');
-                startBtn.classList.remove('loading-button', 'disabled-button'); // Remove any conflicting classes
-                console.log(`Status "${status}" - START button ENABLED`);
-            }
-            if (stopBtn) {
-                // DISABLE Stop button: add disabled attribute AND remove enabled class
-                stopBtn.disabled = true;
-                stopBtn.classList.add('disabled-button');
-                stopBtn.classList.remove('enabled-button-stop');
-                console.log(`Status "${status}" - STOP button DISABLED`);
-            }
-        }
         }
 
         // Only update Call GeoPixel button state if buttons should be updated
@@ -253,24 +231,17 @@ class RunPodManager {
 
         // ALWAYS start with these states regardless of any cached data
         if (callGeoPixelBtn) {
-            callGeoPixelBtn.disabled = true;
-            callGeoPixelBtn.classList.add('disabled-button');
-            callGeoPixelBtn.classList.remove('enabled-button-start');
-
+            this.set_btn_disabled(callGeoPixelBtn)
             callGeoPixelBtn.setAttribute('data-initialization-complete', 'false');
         }
 
         if (startBtn) {
-            startBtn.disabled = false; // Start enabled (assume no pod until verified)
-            startBtn.classList.add('enabled-button-start');
-            startBtn.classList.remove('disabled-button');
+            this.set_btn_enabled(startBtn, "start")
             console.log('FORCED - START button: ENABLED (green)');
         }
 
         if (stopBtn) {
-            stopBtn.disabled = true; // Stop disabled (assume no pod until verified)
-            stopBtn.classList.add('disabled-button');
-            stopBtn.classList.remove('enabled-button-stop');
+            this.set_btn_disabled(stopBtn)
             console.log('FORCED - STOP button: DISABLED');
         }
 
@@ -397,9 +368,7 @@ class RunPodManager {
             if (this.endpointAvailable) {
                 // Endpoint is confirmed available - enable button immediately
                 console.log('Pod running and endpoint confirmed available - enabling Call GeoPixel button');
-                callGeoPixelButton.disabled = false;
-                callGeoPixelButton.classList.add('enabled-button-start');
-                callGeoPixelButton.classList.remove('disabled-button');
+                this.set_btn_enabled(callGeoPixelButton, "start")
                 console.log('Call GeoPixel button ENABLED (cached):', {
                     disabled: callGeoPixelButton.disabled,
                     className: callGeoPixelButton.className
@@ -413,20 +382,14 @@ class RunPodManager {
                         this.endpointAvailable = true;
                         this.shouldCheckEndpointHealth = false; // Stop checking once available
                         console.log('Endpoint available - enabling Call GeoPixel button and stopping health checks');
-                        callGeoPixelButton.disabled = false;
-                        callGeoPixelButton.classList.add('enabled-button-start');
-                        callGeoPixelButton.classList.remove('disabled-button');
-                        callGeoPixelButton.classList.remove('cadenza-disabled');
+                        this.set_btn_enabled(callGeoPixelButton, "start")
                         console.log('Call GeoPixel button ENABLED:', {
                             disabled: callGeoPixelButton.disabled,
                             className: callGeoPixelButton.className
                         });
                     } else {
                         console.log('Endpoint not yet available - keeping Call GeoPixel button disabled');
-                        callGeoPixelButton.disabled = true;
-                        callGeoPixelButton.classList.remove('enabled-button-start');
-                        callGeoPixelButton.classList.remove('cadenza-disabled');
-                        callGeoPixelButton.classList.add('disabled-button');
+                        this.set_btn_disabled(callGeoPixelButton)
                         console.log('Call GeoPixel button DISABLED:', {
                             disabled: callGeoPixelButton.disabled,
                             className: callGeoPixelButton.className
@@ -434,19 +397,13 @@ class RunPodManager {
                     }
                 }).catch(error => {
                     console.error('Error in updateCallGeoPixelButtonState endpoint check:', error);
-                    callGeoPixelButton.disabled = true;
-                    callGeoPixelButton.classList.remove('enabled-button-start');
-                    callGeoPixelButton.classList.remove('cadenza-disabled');
-                    callGeoPixelButton.classList.add('disabled-button');
+                    this.set_btn_disabled(callGeoPixelButton)
                 });
             } else {
                 // Pod is running but we haven't checked endpoint yet - assume available for existing pods
                 console.log('Pod running (existing pod assumed available) - enabling Call GeoPixel button');
                 this.endpointAvailable = true; // Assume existing running pods are available
-                callGeoPixelButton.disabled = false;
-                callGeoPixelButton.classList.add('enabled-button-start');
-                callGeoPixelButton.classList.remove('disabled-button');
-                callGeoPixelButton.classList.remove('cadenza-disabled');
+                this.set_btn_enabled(callGeoPixelButton, "start")
                 console.log('Call GeoPixel button ENABLED (assumed available):', {
                     disabled: callGeoPixelButton.disabled,
                     className: callGeoPixelButton.className
@@ -455,10 +412,7 @@ class RunPodManager {
         } else {
             // No pod running - disable Call GeoPixel button
             console.log(`No pod running (status: "${statusText}") - disabling Call GeoPixel button`);
-            callGeoPixelButton.disabled = true;
-            callGeoPixelButton.classList.remove('enabled-button-start');
-            callGeoPixelButton.classList.remove('cadenza-disabled');
-            callGeoPixelButton.classList.add('disabled-button');
+            this.set_btn_disabled(callGeoPixelButton)
 
             // Extra logging for debugging
             console.log('Call GeoPixel button FORCED to disabled state:', {
@@ -538,9 +492,7 @@ class RunPodManager {
 
                             if (initializationComplete && isOpenLayersMode) {
                                 console.log('IMMEDIATE BUTTON UPDATE: Enabling Call GeoPixel button - health check OK');
-                                callGeoPixelBtn.disabled = false;
-                                callGeoPixelBtn.classList.add('enabled-button-start');
-                                callGeoPixelBtn.classList.remove('disabled-button');
+                                this.set_btn_enabled(callGeoPixelBtn, "start")
                                 console.log('✅ CALL GEOPIXEL BUTTON ENABLED - Health check successful!');
                                 console.log('Button state after health check passed:', {
                                     disabled: callGeoPixelBtn.disabled,
@@ -755,17 +707,12 @@ class RunPodManager {
                 console.log('Credentials missing but initialization flag set to true');
 
                 // Explicitly disable Call GeoPixel button when credentials are missing
-                callGeoPixelBtn.disabled = true;
-                callGeoPixelBtn.classList.remove('enabled-button-start');
-                callGeoPixelBtn.classList.remove('cadenza-disabled');
-                callGeoPixelBtn.classList.add('disabled-button');
+                this.set_btn_disabled(callGeoPixelBtn)
 
                 // Also ensure Stop Pod button is disabled when no credentials
                 const stopBtn = document.getElementById('runpod-stop');
                 if (stopBtn) {
-                    stopBtn.disabled = true;
-                    stopBtn.classList.remove('enabled', 'enabled-button-stop');
-                    stopBtn.classList.add('disabled-button');
+                    this.set_btn_disabled(stopBtn)
                     console.log('Credentials missing - STOP button DISABLED');
                 }
             }
@@ -863,9 +810,7 @@ class RunPodManager {
             // Immediately disable the start button when clicked
             const startBtn = document.getElementById('runpod-start');
             if (startBtn) {
-                startBtn.disabled = true;
-                startBtn.classList.add('disabled-button');
-                startBtn.classList.remove('enabled-button-start');
+                this.set_btn_disabled(startBtn)
             }
 
             // Validate required fields
@@ -953,10 +898,7 @@ class RunPodManager {
             // Re-enable the start button if there was an error
             const startBtn = document.getElementById('runpod-start');
             if (startBtn) {
-                startBtn.disabled = false;
-                startBtn.classList.remove('disabled-button');
-                startBtn.style.opacity = '';
-                startBtn.style.cursor = '';
+                this.set_btn_enabled(startBtn, "start")
             }
         }
     }
@@ -973,9 +915,8 @@ class RunPodManager {
 
             // Immediately disable the stop button when clicked
             if (stopBtn) {
+                this.set_btn_disabled(stopBtn)
                 stopBtn.disabled = true;
-                stopBtn.classList.add('disabled-button');
-                stopBtn.classList.remove('enabled-button-stop');
             }
 
             this.updateStatus('Stopping...', 'Terminating pod instance');
@@ -1004,16 +945,10 @@ class RunPodManager {
 
             // Clear any manual styling from RunPod buttons after stopping
             if (startBtn) {
-                startBtn.classList.remove('disabled-button');
-                startBtn.classList.add('enabled-button-start');
-                startBtn.style.opacity = '';
-                startBtn.style.cursor = '';
+                this.set_btn_enabled(startBtn, "start")
             }
             if (stopBtn) {
-                stopBtn.classList.remove('enabled', 'enabled-button-stop');
-                stopBtn.classList.add('disabled-button');
-                stopBtn.style.opacity = '';
-                stopBtn.style.cursor = '';
+                this.set_btn_disabled(stopBtn)
             }
 
         } catch (error) {
@@ -1022,16 +957,10 @@ class RunPodManager {
 
             // Clear any manual styling from RunPod buttons on error too
             if (startBtn) {
-                startBtn.classList.remove('disabled-button');
-                startBtn.classList.add('enabled-button-start');
-                startBtn.style.opacity = '';
-                startBtn.style.cursor = '';
+                this.set_btn_enabled(startBtn, "start")
             }
             if (stopBtn) {
-                stopBtn.classList.remove('enabled', 'enabled-button-stop');
-                stopBtn.classList.add('disabled-button');
-                stopBtn.style.opacity = '';
-                stopBtn.style.cursor = '';
+                this.set_btn_disabled(stopBtn)
             }
         }
     }
@@ -1163,6 +1092,25 @@ class RunPodManager {
             this.statusCheckInterval = null;
         }
     }
+
+    set_btn_disabled(bttn) {
+        bttn.disabled = true;
+        bttn.classList.add('disabled-button');
+        bttn.classList.remove('enabled-button-start', 'enabled-button-stop');
+    }
+
+    set_btn_loading(bttn) {
+        bttn.disabled = true;
+        bttn.classList.add('loading-button');
+        bttn.classList.remove('enabled-button-start', 'enabled-button-stop', 'disabled-button');
+    }
+
+    set_btn_enabled(bttn, target) {
+        bttn.disabled = false;
+        (target=="start")? bttn.classList.add('enabled-button-start') : bttn.classList.add('enabled-button-stop');
+        bttn.classList.remove('disabled-button', 'loading-button');
+    }
+
 }
 
 // Initialize RunPod manager when DOM is loaded
@@ -1193,7 +1141,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             if (callGeoPixelBtn) {
                                 callGeoPixelBtn.disabled = true;
                                 callGeoPixelBtn.classList.remove('enabled-button-start');
-                                callGeoPixelBtn.classList.remove('cadenza-disabled');
                                 callGeoPixelBtn.classList.add('disabled-button');
                             }
                         }
