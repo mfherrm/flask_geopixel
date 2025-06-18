@@ -209,6 +209,13 @@ $(document).ready(function () {
             // Toggle Cadenza iframe
             $('#cadenza-iframe').toggle(value === 2 && this.checked);
             
+            // Update the layer stats table based on current view
+            if (window.updateStatsTableForView) {
+                const isOpenLayersMode = value === 1 && this.checked;
+                const isCadenzaMode = value === 2 && this.checked;
+                window.updateStatsTableForView(isOpenLayersMode, isCadenzaMode);
+            }
+            
             // Let RunPod manager handle button state based on view + pod availability
             // No direct button manipulation here - RunPod manager will handle it
         });

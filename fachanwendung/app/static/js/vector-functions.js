@@ -109,12 +109,102 @@ const formatLayerName = (layerName) => {
     .trim();
 };
 
+// Function to get Cadenza layers (placeholder implementation)
+const getCadenzaLayerStatistics = () => {
+  // This is a placeholder implementation for Cadenza layers
+  // In a real implementation, this would query the Cadenza client for active layers
+  const cadenzaStats = {
+    total: 0,
+    layers: []
+  };
+  
+  // Try to get Cadenza layers if client is available
+  if (window.cadenzaClient) {
+    try {
+      // Placeholder for Cadenza layer information
+      // This would need to be implemented based on Cadenza API
+      console.log('Getting Cadenza layers...');
+      
+      // For now, return some mock data if Cadenza is active
+      cadenzaStats.layers = [
+        { name: 'Cadenza Base Layer', category: 'Base', count: 1 },
+        { name: 'Cadenza Features', category: 'Features', count: 0 }
+      ];
+      cadenzaStats.total = cadenzaStats.layers.reduce((sum, layer) => sum + layer.count, 0);
+    } catch (error) {
+      console.warn('Error getting Cadenza layers:', error);
+    }
+  }
+  
+  return cadenzaStats;
+};
+
 // Function to generate HTML for statistics table
-export const generateStatsTableHTML = () => {
+export const generateStatsTableHTML = (viewMode = 'openlayers') => {
+  if (viewMode === 'cadenza') {
+    // Get Cadenza layer statistics
+    const cadenzaStats = getCadenzaLayerStatistics();
+    
+    if (cadenzaStats.total === 0 && cadenzaStats.layers.length === 0) {
+      return `<div class="stats-empty-state">
+        <h4>Cadenza View</h4>
+        <p>No Cadenza layers available.</p>
+        <p>Make sure Cadenza is running and connected!</p>
+      </div>`;
+    }
+    
+    // Format Cadenza layers for display
+    const allLayers = cadenzaStats.layers.map((layer, index) => ({
+      layerName: layer.name,
+      count: layer.count,
+      category: layer.category,
+      displayName: layer.name,
+      isCadenza: true
+    }));
+    
+    let html = `
+      <div class="stats-summary-compact">
+        <div class="view-indicator cadenza-view">Cadenza View</div>
+        <div class="total-count">Total: ${cadenzaStats.total} objects</div>
+        <div class="layer-count">Layers: ${allLayers.length}</div>
+      </div>
+      <table class="layer-stats-table">
+      <thead>
+        <tr>
+          <th style="width: 20px;"></th>
+          <th style="width: 30px;">#</th>
+          <th>Layer Name</th>
+          <th style="width: 80px;">Category</th>
+          <th style="width: 60px;">Count</th>
+        </tr>
+      </thead>
+      <tbody id="layer-stats-tbody">`;
+    
+    // Generate rows for Cadenza layers (not draggable)
+    allLayers.forEach((layer, index) => {
+      html += `<tr class="layer-row cadenza-layer" data-layer-name="${layer.layerName}">
+        <td class="layer-drag-handle">🗺️</td>
+        <td class="layer-order-cell">
+          <span class="layer-order-indicator">${index + 1}</span>
+        </td>
+        <td class="layer-name-cell">${layer.displayName}</td>
+        <td class="layer-category-cell">${layer.category}</td>
+        <td class="layer-count-cell">
+          <span class="layer-count-badge">${layer.count}</span>
+        </td>
+      </tr>`;
+    });
+    
+    html += `</tbody></table>`;
+    return html;
+  }
+  
+  // OpenLayers mode (existing functionality)
   const stats = getLayerStatistics();
   
   if (stats.total === 0) {
     return `<div class="stats-empty-state">
+      <h4>OpenLayers View</h4>
       <p>No objects found in any layer.</p>
       <p>Draw some features to see statistics!</p>
     </div>`;
@@ -160,6 +250,7 @@ export const generateStatsTableHTML = () => {
 
   let html = `
     <div class="stats-summary-compact">
+      <div class="view-indicator openlayers-view">OpenLayers View</div>
       <div class="total-count">Total: ${stats.total} objects</div>
       <div class="layer-count">Layers: ${allLayers.length}</div>
     </div>
@@ -278,11 +369,35 @@ export const hideLayerStatsModal = () => {
 // ===========================================
 
 // Function to update the stats table
-export const updateStatsTable = () => {
+export const updateStatsTable = (viewMode = 'openlayers') => {
   const container = document.getElementById('layer-stats-table-container');
   if (container) {
-    container.innerHTML = generateStatsTableHTML();
-    setupDragAndDrop();
+    container.innerHTML = generateStatsTableHTML(viewMode);
+    
+    // Only setup drag and drop for OpenLayers view
+    if (viewMode === 'openlayers') {
+      setupDragAndDrop();
+    }
+  }
+};
+
+// Global variable to track current view mode
+let currentViewMode = 'openlayers';
+
+// Function to update stats table based on current view mode
+export const updateStatsTableForView = (isOpenLayersMode, isCadenzaMode) => {
+  console.log('Updating stats table for view:', { isOpenLayersMode, isCadenzaMode });
+  
+  if (isOpenLayersMode) {
+    currentViewMode = 'openlayers';
+    updateStatsTable('openlayers');
+  } else if (isCadenzaMode) {
+    currentViewMode = 'cadenza';
+    updateStatsTable('cadenza');
+  } else {
+    // Default to OpenLayers if no clear mode
+    currentViewMode = 'openlayers';
+    updateStatsTable('openlayers');
   }
 };
 
@@ -477,7 +592,7 @@ export const initializeStatsPanel = () => {
     return;
   }
   
-  updateStatsTable();
+  updateStatsTable(currentViewMode);
   
   // Setup overlap analysis button
   const overlapBtn = document.getElementById('layer-overlap-btn');
@@ -498,7 +613,7 @@ export const initializeStatsPanel = () => {
           source.on('addfeature', () => {
             setTimeout(() => {
               try {
-                updateStatsTable();
+                updateStatsTable(currentViewMode);
               } catch (error) {
                 console.warn('Error updating stats table on addfeature:', error);
               }
@@ -508,7 +623,7 @@ export const initializeStatsPanel = () => {
           source.on('removefeature', () => {
             setTimeout(() => {
               try {
-                updateStatsTable();
+                updateStatsTable(currentViewMode);
               } catch (error) {
                 console.warn('Error updating stats table on removefeature:', error);
               }
@@ -518,7 +633,7 @@ export const initializeStatsPanel = () => {
           source.on('clear', () => {
             setTimeout(() => {
               try {
-                updateStatsTable();
+                updateStatsTable(currentViewMode);
               } catch (error) {
                 console.warn('Error updating stats table on clear:', error);
               }
@@ -537,8 +652,11 @@ export const initializeStatsPanel = () => {
 
 // Function to refresh stats table (public API)
 export const refreshStatsTable = () => {
-  updateStatsTable();
+  updateStatsTable(currentViewMode);
 };
+
+// Expose function to window for radio button handler
+window.updateStatsTableForView = updateStatsTableForView;
 
 // ===========================================
 // LAYER OVERLAP ANALYSIS FUNCTIONALITY
@@ -1113,7 +1231,7 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
     
     // Refresh the stats table to show new geometries
     setTimeout(() => {
-        updateStatsTable();
+        updateStatsTable(currentViewMode);
     }, 200);
     
     console.log("Tiled processing with mask combining complete!");

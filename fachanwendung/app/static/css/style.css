@@ -1084,6 +1084,29 @@ html {
     color: #ecf0f1;
     font-size: 14px;
     font-weight: 600;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.view-indicator {
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.view-indicator.openlayers-view {
+    background-color: #007bff;
+    color: white;
+    box-shadow: 0 1px 3px rgba(0, 123, 255, 0.3);
+}
+
+.view-indicator.cadenza-view {
+    background-color: #28a745;
+    color: white;
+    box-shadow: 0 1px 3px rgba(40, 167, 69, 0.3);
 }
 
 .total-count {
@@ -1135,6 +1158,21 @@ html {
 .layer-stats-table tbody tr.drag-over {
     background-color: rgba(0, 123, 255, 0.2);
     border-top: 2px solid #007bff;
+}
+
+/* Cadenza layer styling */
+.layer-stats-table tbody tr.cadenza-layer {
+    cursor: default;
+    border-left: 3px solid #28a745;
+}
+
+.layer-stats-table tbody tr.cadenza-layer:hover {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.layer-stats-table tbody tr.cadenza-layer .layer-drag-handle {
+    color: #28a745;
+    cursor: default;
 }
 
 .layer-stats-table td {
