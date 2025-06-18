@@ -115,8 +115,8 @@ export const generateStatsHTML = () => {
   
   let html = `<div class="stats-summary">
     <h3>Total Objects: ${stats.total}</h3>
-    <div class="stats-actions">
-      <button id="layer-overlap-analysis-btn" class="stats-action-btn">Layer Overlap Analysis</button>
+    <div class="stats-actions" style="display: flex; justify-content: center;">
+      <button id="layer-overlap-analysis-btn" class="menu-button">Layer Overlap Analysis</button>
     </div>
   </div>`;
 
@@ -247,8 +247,8 @@ export const generateLayerSelectionHTML = () => {
     </div>
     
     <div class="overlap-controls">
-      <button id="calculate-overlap-btn" class="overlap-btn" disabled>Calculate Overlap</button>
-      <button id="back-to-stats-btn" class="overlap-btn secondary">Back to Layer Stats</button>
+      <button id="calculate-overlap-btn" class="menu-button" disabled>Calculate Overlap</button>
+      <button id="back-to-stats-btn" class="disabled-button" style="cursor: pointer !important;" onmouseover="this.style.backgroundColor='#6c757d'; this.style.transform='translateY(-1px)'" onmouseout="this.style.backgroundColor='#979da3'; this.style.transform='translateY(0)'">Back to Layer Stats</button>
     </div>
     
     <div id="overlap-results" class="overlap-results" style="display: none;"></div>
@@ -348,8 +348,8 @@ export const generateOverlapResultsHTML = (overlapData, layer1Name, layer2Name) 
   html += `</div>
     
     <div class="overlap-actions">
-      <button id="new-overlap-analysis-btn" class="overlap-btn">Analyze Different Layers</button>
-      <button id="back-to-stats-from-results-btn" class="overlap-btn secondary">Back to Layer Stats</button>
+      <button id="new-overlap-analysis-btn" class="menu-button">Analyze Different Layers</button>
+      <button id="back-to-stats-from-results-btn" class="disabled-button" style="cursor: pointer !important;" onmouseover="this.style.backgroundColor='#6c757d'; this.style.transform='translateY(-1px)'" onmouseout="this.style.backgroundColor='#979da3'; this.style.transform='translateY(0)'">Back to Layer Stats</button>
     </div>
   </div>`;
   

@@ -156,7 +156,11 @@ html {
     width: 6px;
 }
 
-.modal-body::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track {
+    background: #2c3e50;
+    border-radius: 4px;
+}
+
 .menu-button-content::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 4px;
@@ -168,7 +172,11 @@ html {
     border-radius: 3px;
 }
 
-.modal-body::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb {
+    background: #34495e;
+    border-radius: 4px;
+}
+
 .menu-button-content::-webkit-scrollbar-thumb {
     background: #c1c1c1;
     border-radius: 4px;
@@ -184,9 +192,12 @@ html {
     background: #a1a1a1;
 }
 
-.subcategory-menu::-webkit-scrollbar-thumb:hover,
-.layer-switcher-content::-webkit-scrollbar-thumb:hover,
 .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #4a6741;
+}
+
+.subcategory-menu::-webkit-scrollbar-thumb:hover,
+.layer-switcher-content::-webkit-scrollbar-thumb:hover {
     background: #adb5bd;
 }
 
@@ -202,6 +213,27 @@ html {
 /* Change color of dropup links on hover */
 .menu-button-content a:hover {
     background-color: #ddd;
+}
+
+/* Deselect option styling (No color) */
+.menu-button-content a.deselect-option {
+    font-style: italic;
+    color: #6c757d;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.menu-button-content a.deselect-option:hover {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+/* Dropdown divider */
+.dropdown-divider {
+    height: 1px;
+    margin: 0;
+    background-color: #e9ecef;
+    border: none;
 }
 
 /* RunPod Panel Styles */
@@ -580,15 +612,16 @@ html {
 
 /* Modal content container */
 .modal-content {
-    background-color: #fff;
+    background-color: #2c3e50;
     margin: 5% auto;
     border-radius: 8px;
     width: 90%;
     max-width: 600px;
     max-height: 80vh;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     position: relative;
     overflow: hidden;
+    color: #ecf0f1;
 }
 
 
@@ -639,24 +672,26 @@ html {
     max-height: 60vh;
     overflow-y: auto;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #2c3e50;
+    color: #ecf0f1;
 }
 
 /* Statistics summary */
 .stats-summary {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
     padding: 20px;
     border-radius: 8px;
     margin-bottom: 24px;
     text-align: center;
-    border: 1px solid #dee2e6;
+    border: 1px solid #34495e;
 }
 
 .stats-summary h3 {
     margin: 0;
     font-size: 28px;
     font-weight: 700;
-    color: #28a745;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    color: #1abc9c;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Stats action buttons */
@@ -666,7 +701,7 @@ html {
 
 .stats-action-btn,
 #layer-overlap-analysis-btn {
-    background: #007bff;
+    background: #3498db;
     color: white;
     border: none;
     padding: 10px 16px;
@@ -679,23 +714,23 @@ html {
 
 .stats-action-btn:hover,
 #layer-overlap-analysis-btn:hover {
-    background: #0056b3;
+    background: #2980b9;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* Category sections */
 .stats-category {
     margin-bottom: 24px;
-    background: #fff;
-    border: 1px solid #e9ecef;
+    background: #34495e;
+    border: 1px solid #2c3e50;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .stats-category h4 {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     color: white;
     margin: 0;
     padding: 16px 20px;
@@ -707,6 +742,7 @@ html {
 /* Layer rows */
 .stats-layers {
     padding: 16px 20px;
+    background-color: #34495e;
 }
 
 .stats-layer {
@@ -714,7 +750,7 @@ html {
     justify-content: space-between;
     align-items: center;
     padding: 12px 0;
-    border-bottom: 1px solid #f8f9fa;
+    border-bottom: 1px solid #2c3e50;
     transition: all 0.2s ease;
 }
 
@@ -722,21 +758,14 @@ html {
     border-bottom: none;
 }
 
-.stats-layer:hover {
-    background-color: #f8f9fa;
-    margin: 12px -20px;
-    padding: 12px 20px;
-    border-radius: 4px;
-}
-
 .layer-name {
     font-weight: 500;
-    color: #495057;
+    color: #ecf0f1;
     font-size: 14px;
 }
 
 .layer-count {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
     color: white;
     padding: 6px 12px;
     border-radius: 20px;
@@ -744,14 +773,15 @@ html {
     font-size: 13px;
     min-width: 40px;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+    box-shadow: 0 2px 4px rgba(26, 188, 156, 0.3);
 }
 
 /* Empty state */
 .stats-empty {
     text-align: center;
     padding: 40px 20px;
-    color: #6c757d;
+    color: #95a5a6;
+    background-color: #34495e;
 }
 
 .stats-empty p {
@@ -820,38 +850,6 @@ html {
     gap: 12px;
     margin: 20px 0;
     flex-wrap: wrap;
-}
-
-.overlap-btn {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.overlap-btn:hover:not(:disabled) {
-    background: #0056b3;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.overlap-btn:disabled {
-    background: #6c757d;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.overlap-btn.secondary {
-    background: #6c757d;
-}
-
-.overlap-btn.secondary:hover:not(:disabled) {
-    background: #5a6268;
 }
 
 /* Overlap results */
