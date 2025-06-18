@@ -109,7 +109,92 @@ const formatLayerName = (layerName) => {
     .trim();
 };
 
-// Function to generate HTML for statistics display
+// Function to generate HTML for statistics table
+export const generateStatsTableHTML = () => {
+  const stats = getLayerStatistics();
+  
+  if (stats.total === 0) {
+    return `<div class="stats-empty-state">
+      <p>No objects found in any layer.</p>
+      <p>Draw some features to see statistics!</p>
+    </div>`;
+  }
+
+  const categories = [
+    { key: 'transportation', name: 'Transportation', data: stats.transportation },
+    { key: 'infrastructure', name: 'Infrastructure', data: stats.infrastructure },
+    { key: 'naturalFeatures', name: 'Natural Features', data: stats.naturalFeatures },
+    { key: 'vegetation', name: 'Vegetation', data: stats.vegetation },
+    { key: 'urbanFeatures', name: 'Urban Features', data: stats.urbanFeatures },
+    { key: 'geological', name: 'Geological', data: stats.geological },
+    { key: 'environmental', name: 'Environmental', data: stats.environmental },
+    { key: 'agriculture', name: 'Agriculture', data: stats.agriculture }
+  ];
+
+  // Collect all layers with counts in a flat list for cross-category reordering
+  const allLayers = [];
+  categories.forEach(category => {
+    Object.entries(category.data).forEach(([layerName, count]) => {
+      if (count > 0) {
+        allLayers.push({
+          layerName,
+          count,
+          category: category.name,
+          displayName: formatLayerName(layerName)
+        });
+      }
+    });
+  });
+
+  // Sort layers by current map layer order for initial display
+  if (window.map) {
+    const mapLayers = window.map.getLayers().getArray();
+    allLayers.sort((a, b) => {
+      const layerA = allVectorLayers[a.layerName];
+      const layerB = allVectorLayers[b.layerName];
+      const indexA = mapLayers.indexOf(layerA);
+      const indexB = mapLayers.indexOf(layerB);
+      return indexB - indexA; // Reverse order (top layers first)
+    });
+  }
+
+  let html = `
+    <div class="stats-summary-compact">
+      <div class="total-count">Total: ${stats.total} objects</div>
+      <div class="layer-count">Layers: ${allLayers.length}</div>
+    </div>
+    <table class="layer-stats-table">
+    <thead>
+      <tr>
+        <th style="width: 20px;"></th>
+        <th style="width: 30px;">#</th>
+        <th>Layer Name</th>
+        <th style="width: 80px;">Category</th>
+        <th style="width: 60px;">Count</th>
+      </tr>
+    </thead>
+    <tbody id="layer-stats-tbody">`;
+
+  // Generate flat list of all layers for cross-category reordering
+  allLayers.forEach((layer, index) => {
+    html += `<tr class="layer-row" data-layer-name="${layer.layerName}" draggable="true">
+      <td class="layer-drag-handle">⋮⋮</td>
+      <td class="layer-order-cell">
+        <span class="layer-order-indicator">${index + 1}</span>
+      </td>
+      <td class="layer-name-cell">${layer.displayName}</td>
+      <td class="layer-category-cell">${layer.category}</td>
+      <td class="layer-count-cell">
+        <span class="layer-count-badge">${layer.count}</span>
+      </td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  return html;
+};
+
+// Function to generate HTML for statistics display (legacy modal support)
 export const generateStatsHTML = () => {
   const stats = getLayerStatistics();
   
@@ -189,6 +274,273 @@ export const hideLayerStatsModal = () => {
 };
 
 // ===========================================
+// LAYER STATISTICS TABLE FUNCTIONALITY
+// ===========================================
+
+// Function to update the stats table
+export const updateStatsTable = () => {
+  const container = document.getElementById('layer-stats-table-container');
+  if (container) {
+    container.innerHTML = generateStatsTableHTML();
+    setupDragAndDrop();
+  }
+};
+
+// Function to setup drag and drop functionality
+const setupDragAndDrop = () => {
+  const tbody = document.getElementById('layer-stats-tbody');
+  if (!tbody) return;
+
+  const layerRows = tbody.querySelectorAll('.layer-row');
+  
+  layerRows.forEach(row => {
+    row.addEventListener('dragstart', handleDragStart);
+    row.addEventListener('dragover', handleDragOver);
+    row.addEventListener('drop', handleDrop);
+    row.addEventListener('dragend', handleDragEnd);
+    row.addEventListener('dragenter', handleDragEnter);
+    row.addEventListener('dragleave', handleDragLeave);
+  });
+};
+
+// Drag and drop event handlers
+let draggedElement = null;
+
+// Helper function to find the closest layer row
+const findLayerRow = (element) => {
+  while (element && !element.classList.contains('layer-row')) {
+    element = element.parentElement;
+  }
+  return element;
+};
+
+const handleDragStart = (e) => {
+  const row = findLayerRow(e.target);
+  if (row) {
+    draggedElement = row;
+    row.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', row.outerHTML);
+    console.log('Drag started for:', row.dataset.layerName);
+  }
+};
+
+const handleDragOver = (e) => {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+};
+
+const handleDragEnter = (e) => {
+  const row = findLayerRow(e.target);
+  if (row && row !== draggedElement) {
+    row.classList.add('drag-over');
+  }
+};
+
+const handleDragLeave = (e) => {
+  const row = findLayerRow(e.target);
+  if (row) {
+    row.classList.remove('drag-over');
+  }
+};
+
+const handleDrop = (e) => {
+  e.preventDefault();
+  const targetRow = findLayerRow(e.target);
+  
+  if (targetRow) {
+    targetRow.classList.remove('drag-over');
+  }
+  
+  if (targetRow && draggedElement && targetRow !== draggedElement) {
+    const tbody = targetRow.parentNode;
+    const draggedIndex = Array.from(tbody.children).indexOf(draggedElement);
+    const targetIndex = Array.from(tbody.children).indexOf(targetRow);
+    
+    console.log(`Dropping ${draggedElement.dataset.layerName} onto ${targetRow.dataset.layerName}`);
+    
+    // Reorder the layers in the map
+    reorderMapLayers(draggedElement.dataset.layerName, targetRow.dataset.layerName, draggedIndex < targetIndex);
+    
+    // Move the DOM element
+    if (draggedIndex < targetIndex) {
+      tbody.insertBefore(draggedElement, targetRow.nextSibling);
+    } else {
+      tbody.insertBefore(draggedElement, targetRow);
+    }
+    
+    // Update order indicators
+    updateOrderIndicators();
+    
+    console.log('Layer reordering completed');
+  }
+};
+
+const handleDragEnd = (e) => {
+  const row = findLayerRow(e.target);
+  if (row) {
+    row.classList.remove('dragging');
+  }
+  
+  // Remove drag-over class from all rows
+  const tbody = document.getElementById('layer-stats-tbody');
+  if (tbody) {
+    tbody.querySelectorAll('.layer-row').forEach(row => {
+      row.classList.remove('drag-over');
+    });
+  }
+  draggedElement = null;
+  console.log('Drag ended');
+};
+
+// Function to reorder layers in the map (only vector layers)
+const reorderMapLayers = (draggedLayerName, targetLayerName, moveAfter) => {
+  const draggedLayer = allVectorLayers[draggedLayerName];
+  const targetLayer = allVectorLayers[targetLayerName];
+  
+  if (!draggedLayer || !targetLayer) return;
+  
+  const mapLayers = window.map.getLayers();
+  const layersArray = mapLayers.getArray();
+  
+  // Get only vector layers from the map (exclude base layers and GeoJSON layers)
+  const vectorLayers = layersArray.filter(layer => {
+    const layerName = layer.get('name');
+    return Object.values(allVectorLayers).includes(layer);
+  });
+  
+  // Find the indices within vector layers only
+  const draggedVectorIndex = vectorLayers.indexOf(draggedLayer);
+  const targetVectorIndex = vectorLayers.indexOf(targetLayer);
+  
+  if (draggedVectorIndex === -1 || targetVectorIndex === -1) return;
+  
+  // Find the actual map indices
+  const draggedMapIndex = layersArray.indexOf(draggedLayer);
+  const targetMapIndex = layersArray.indexOf(targetLayer);
+  
+  if (draggedMapIndex === -1 || targetMapIndex === -1) return;
+  
+  // Remove the dragged layer
+  mapLayers.removeAt(draggedMapIndex);
+  
+  // Calculate new position relative to target layer
+  let newMapIndex = targetMapIndex;
+  if (draggedMapIndex < targetMapIndex) {
+    newMapIndex = moveAfter ? targetMapIndex : targetMapIndex - 1;
+  } else {
+    newMapIndex = moveAfter ? targetMapIndex + 1 : targetMapIndex;
+  }
+  
+  // Ensure we don't move vector layers before base layers
+  // Base layers should always stay at the bottom of the layer stack
+  const baseLayerCount = layersArray.filter(layer => {
+    const layerName = layer.get('name');
+    return layerName && (layerName.includes('Google') || layerName.includes('201') || layerName.includes('202'));
+  }).length;
+  
+  // Ensure vector layers stay above base layers + GeoJSON layer
+  const minVectorIndex = baseLayerCount + 1; // +1 for GeoJSON layer
+  newMapIndex = Math.max(newMapIndex, minVectorIndex);
+  
+  // Insert at new position
+  mapLayers.insertAt(newMapIndex, draggedLayer);
+  
+  console.log(`Moved vector layer ${draggedLayerName} to position ${newMapIndex} (above base layers)`);
+};
+
+// Function to update order indicators
+const updateOrderIndicators = () => {
+  const tbody = document.getElementById('layer-stats-tbody');
+  if (!tbody) return;
+  
+  const layerRows = tbody.querySelectorAll('.layer-row');
+  let orderIndex = 1;
+  
+  layerRows.forEach(row => {
+    const indicator = row.querySelector('.layer-order-indicator');
+    if (indicator) {
+      indicator.textContent = orderIndex++;
+    }
+  });
+};
+
+// Function to initialize the stats panel
+export const initializeStatsPanel = () => {
+  console.log('Initializing stats panel...');
+  
+  // Ensure we have the container before proceeding
+  const container = document.getElementById('layer-stats-table-container');
+  if (!container) {
+    console.warn('Stats table container not found, retrying...');
+    setTimeout(initializeStatsPanel, 500);
+    return;
+  }
+  
+  updateStatsTable();
+  
+  // Setup overlap analysis button
+  const overlapBtn = document.getElementById('layer-overlap-btn');
+  if (overlapBtn) {
+    overlapBtn.addEventListener('click', () => {
+      showLayerOverlapAnalysis();
+    });
+  }
+  
+  // Setup auto-refresh when vector layers change (not base layers)
+  if (window.map && allVectorLayers) {
+    try {
+      // Only listen to vector layer changes, ignore base layers
+      Object.entries(allVectorLayers).forEach(([layerName, layer]) => {
+        const source = layer.getSource();
+        if (source && typeof source.on === 'function') {
+          // Add feature listeners with error handling
+          source.on('addfeature', () => {
+            setTimeout(() => {
+              try {
+                updateStatsTable();
+              } catch (error) {
+                console.warn('Error updating stats table on addfeature:', error);
+              }
+            }, 100);
+          });
+          
+          source.on('removefeature', () => {
+            setTimeout(() => {
+              try {
+                updateStatsTable();
+              } catch (error) {
+                console.warn('Error updating stats table on removefeature:', error);
+              }
+            }, 100);
+          });
+          
+          source.on('clear', () => {
+            setTimeout(() => {
+              try {
+                updateStatsTable();
+              } catch (error) {
+                console.warn('Error updating stats table on clear:', error);
+              }
+            }, 100);
+          });
+        }
+      });
+      console.log('Stats panel initialized successfully');
+    } catch (error) {
+      console.error('Error setting up vector layer listeners:', error);
+    }
+  } else {
+    console.warn('Map or vector layers not available for stats panel initialization');
+  }
+};
+
+// Function to refresh stats table (public API)
+export const refreshStatsTable = () => {
+  updateStatsTable();
+};
+
+// ===========================================
 // LAYER OVERLAP ANALYSIS FUNCTIONALITY
 // ===========================================
 
@@ -248,10 +600,7 @@ export const generateLayerSelectionHTML = () => {
     
     <div class="overlap-controls">
       <button id="calculate-overlap-btn" class="menu-button" disabled>Calculate Overlap</button>
-      <button id="back-to-stats-btn" class="disabled-button" style="cursor: pointer !important;" onmouseover="this.style.backgroundColor='#6c757d'; this.style.transform='translateY(-1px)'" onmouseout="this.style.backgroundColor='#979da3'; this.style.transform='translateY(0)'">Back to Layer Stats</button>
     </div>
-    
-    <div id="overlap-results" class="overlap-results" style="display: none;"></div>
   </div>`;
 };
 
@@ -349,9 +698,7 @@ export const generateOverlapResultsHTML = (overlapData, layer1Name, layer2Name) 
     
     <div class="overlap-actions">
       <button id="new-overlap-analysis-btn" class="menu-button">Analyze Different Layers</button>
-      <button id="back-to-stats-from-results-btn" class="disabled-button" style="cursor: pointer !important;" onmouseover="this.style.backgroundColor='#6c757d'; this.style.transform='translateY(-1px)'" onmouseout="this.style.backgroundColor='#979da3'; this.style.transform='translateY(0)'">Back to Layer Stats</button>
-    </div>
-  </div>`;
+    </div>`;
   
   return html;
 };
@@ -431,20 +778,19 @@ const setupOverlapAnalysisEventListeners = () => {
           const overlapData = performOverlapAnalysis(layer1Name, layer2Name);
           
           if (overlapData) {
-            // Show results
-            const resultsDiv = document.getElementById('overlap-results');
-            if (resultsDiv) {
-              resultsDiv.innerHTML = generateOverlapResultsHTML(overlapData, layer1Name, layer2Name);
-              resultsDiv.style.display = 'block';
+            // Replace modal content entirely with results
+            const modalContent = document.getElementById('layer-stats-content');
+            if (modalContent) {
+              modalContent.innerHTML = generateOverlapResultsHTML(overlapData, layer1Name, layer2Name);
               
               // Setup event listeners for result actions
               setupOverlapResultsEventListeners();
             }
+          } else {
+            // Reset button state if analysis failed
+            calculateBtn.textContent = 'Calculate Overlap';
+            calculateBtn.disabled = false;
           }
-          
-          // Reset button state
-          calculateBtn.textContent = 'Calculate Overlap';
-          calculateBtn.disabled = false;
         }, 100); // Small delay to show loading state
       }
     });
@@ -465,7 +811,12 @@ const setupOverlapResultsEventListeners = () => {
   
   if (newAnalysisBtn) {
     newAnalysisBtn.addEventListener('click', () => {
-      showLayerOverlapAnalysis();
+      // Reset back to layer selection interface
+      const modalContent = document.getElementById('layer-stats-content');
+      if (modalContent) {
+        modalContent.innerHTML = generateLayerSelectionHTML();
+        setupOverlapAnalysisEventListeners();
+      }
     });
   }
   
@@ -759,6 +1110,11 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
     layer.changed();
     map.render();
     map.renderSync();
+    
+    // Refresh the stats table to show new geometries
+    setTimeout(() => {
+        updateStatsTable();
+    }, 200);
     
     console.log("Tiled processing with mask combining complete!");
     

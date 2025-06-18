@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isCurrentlyVisible) {
                 runpodPanel.style.display = 'none';
                 document.getElementById('cadenza-container').classList.remove('runpod-panel-visible');
-                document.getElementById('layer-stats-btn').style.display = 'block';
             } else {
                 // Position the panel to align borders with the button
                 const buttonRect = runpodButton.getBoundingClientRect();
@@ -35,7 +34,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 runpodPanel.style.display = 'block';
                 runpodPanel.style.marginLeft = leftOffset+15 + 'px';
                 document.getElementById('cadenza-container').classList.add('runpod-panel-visible');
-                document.getElementById('layer-stats-btn').style.display = 'block';
                 
                 // Scroll to the RunPod Control Panel smoothly
                 setTimeout(() => {

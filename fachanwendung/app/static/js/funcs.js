@@ -16,6 +16,7 @@ window.updateTileConfig = updateTileConfigWrapper;
  */
 function setButtonLoadingState(isLoading) {
     const button = document.getElementById('screenMap');
+    const cadenzaRadio = document.getElementById('cdzbtn');
     const originalText = 'Call GeoPixel';
     
     if (isLoading) {
@@ -25,6 +26,12 @@ function setButtonLoadingState(isLoading) {
         button.classList.remove('enabled-button-start')
         button.innerHTML = '<span class="loading-spinner"></span>Processing...';
         button.setAttribute('data-original-text', originalText);
+        
+        // Disable Cadenza radio button during processing
+        if (cadenzaRadio) {
+            cadenzaRadio.disabled = true;
+            cadenzaRadio.setAttribute('data-was-disabled-by-processing', 'true');
+        }
     } else {
         // Re-enable button and restore original state
         button.disabled = false;
@@ -34,6 +41,11 @@ function setButtonLoadingState(isLoading) {
         button.classList.remove('loading-button');
         button.innerHTML = savedText;
         
+        // Re-enable Cadenza radio button after processing
+        if (cadenzaRadio && cadenzaRadio.getAttribute('data-was-disabled-by-processing')) {
+            cadenzaRadio.disabled = false;
+            cadenzaRadio.removeAttribute('data-was-disabled-by-processing');
+        }
     }
 }
 
@@ -196,6 +208,9 @@ $(document).ready(function () {
 
             // Toggle Cadenza iframe
             $('#cadenza-iframe').toggle(value === 2 && this.checked);
+            
+            // Let RunPod manager handle button state based on view + pod availability
+            // No direct button manipulation here - RunPod manager will handle it
         });
 
         // Manually trigger the change event on the checked radio button

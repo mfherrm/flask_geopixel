@@ -23,15 +23,32 @@
 <body data-cadenza-uri="{{ cadenza_uri }}" data-cadenza-repository-name="{{ config.CADENZA_REPOSITORY_NAME }}"
     data-cadenza-external-link-id="{{ config.CADENZA_EXTERNAL_LINK_ID }}">
     <div id="cadenza-container">
-        <!-- Both elements visible initially to allow proper initialization -->
-
-        <div id="OL-map" class="olmap" style="width: 95%; height: 95vh; display: block; position: relative;">
-            <!-- Base Layer Switcher Control -->
-            {% include 'base_layer_switcher.html' %}
+        <!-- Main content area with map and stats table -->
+        <div id="main-content">
+            <!-- Map container -->
+            <div id="map-container">
+                <div id="OL-map" class="olmap">
+                    <!-- Base Layer Switcher Control -->
+                    {% include 'base_layer_switcher.html' %}
+                </div>
+                <iframe id="cadenza-iframe"></iframe>
+            </div>
+            
+            <!-- Layer statistics table -->
+            <div id="layer-stats-panel">
+                <div class="stats-panel-header">
+                    <h3>Layer Statistics</h3>
+                    <button id="layer-overlap-btn" class="stats-action-btn">Overlap Analysis</button>
+                </div>
+                <div class="stats-panel-content">
+                    <div id="layer-stats-table-container">
+                        <!-- Table will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
         </div>
-        <iframe id="cadenza-iframe" style="height: 95vh; width: 95%; display: block;"></iframe>
         
-        <!-- Control buttons positioned right below the map -->
+        <!-- Control buttons positioned below the main content -->
         <div id="button-container">
             <button id="screenMap" class="disabled-button" disabled>Call GeoPixel</button>
             <!-- Dropup Controls -->
@@ -55,15 +72,12 @@
 
             <!-- RunPod Control Button only -->
             <button id="runpod-toggle-btn" class="menu-button">RunPod Control</button>
-            
-            <!-- Layer Statistics Button -->
-            <button id="layer-stats-btn" class="enabled-button-start" style = "visibility: visible !important; display: block !important">Layer Stats</button>
         </div>
 
         <!-- RunPod Control Panel (positioned below buttons) -->
         {% include 'runpod_control_panel.html' %}
 
-        <!-- Layer Statistics Modal -->
+        <!-- Layer Statistics Modal (kept for overlap analysis) -->
         {% include 'layer_stats_modal.html' %}
     </div>
 
@@ -77,6 +91,7 @@
     <!-- OpenLayers bundled version -->
     <script src="{{ url_for('static', filename='js/ol/dist/ol.js') }}"></script>
  
+    <!-- Load main application module -->
     <script defer src="{{ url_for('static', filename='js/main.js') }}" type="module"></script>
 
 </body>

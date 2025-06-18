@@ -94,11 +94,14 @@ class RunPodManager {
     isInitializationComplete() {
         // Initialization is complete when we're not in the initial checking/verifying states
         return this.status !== 'Checking...' &&
-               this.status !== 'Verifying...' &&
-               !this.status.toLowerCase().includes('checking for saved credentials');
+            this.status !== 'Verifying...' &&
+            !this.status.toLowerCase().includes('checking for saved credentials');
     }
 
     updateButtonStates() {
+        // Update current view mode
+        this.isOpenLayersMode = document.getElementById('olbtn') && document.getElementById('olbtn').checked;
+        
         // Centralized button state management based on internal pod status
         // New status pipeline: checking, stopping, starting, endpoint initialized, else
         if (this.status === 'Checking...' || this.status === 'Verifying...' || this.status.toLowerCase().includes('checking')) {
@@ -109,6 +112,10 @@ class RunPodManager {
             } else if (this.startBtn && this.startBtn.classList.contains('loading-button')) {
                 this.set_btn_disabled(this.stopBtn)
             }
+            // Always disable CallGeoPixel during checking
+            if (this.callGeoPixelBtn) {
+                this.set_btn_disabled(this.callGeoPixelBtn)
+            }
         } else if (this.status === 'Stopping...' || this.status.toLowerCase().includes('stopping')) {
             if (this.startBtn) {
                 this.set_btn_enabled(this.startBtn, "start")
@@ -116,7 +123,7 @@ class RunPodManager {
             if (this.stopBtn) {
                 this.set_btn_disabled(this.stopBtn)
             }
-            if(this.callGeoPixelBtn) {
+            if (this.callGeoPixelBtn) {
                 this.set_btn_disabled(this.callGeoPixelBtn)
             }
         } else if (this.status === 'Starting' || this.status === 'Starting...' || this.status === 'STARTING' || this.status.toLowerCase().includes('starting')) {
@@ -127,6 +134,10 @@ class RunPodManager {
             if (this.stopBtn) {
                 this.set_btn_enabled(this.stopBtn, "stop")
             }
+            // Disable CallGeoPixel during starting
+            if (this.callGeoPixelBtn) {
+                this.set_btn_disabled(this.callGeoPixelBtn)
+            }
         } else if (this.status === 'Endpoint Initialized') {
             // Endpoint initialized state: Pod is running and endpoint is available - DISABLE start, ENABLE stop
             if (this.startBtn) {
@@ -135,14 +146,18 @@ class RunPodManager {
             if (this.stopBtn) {
                 this.set_btn_enabled(this.stopBtn, "stop")
             }
-            if (this.callGeoPixelBtn && this.isOpenLayersMode) {
-                if (this.startBtn.classList.contains('loading-button')) {
-                    return;
+            // Enable CallGeoPixel ONLY if in OpenLayers mode AND pod is available
+            if (this.callGeoPixelBtn) {
+                if (this.isOpenLayersMode && !this.startBtn.classList.contains('loading-button')) {
+                    this.set_btn_enabled(this.callGeoPixelBtn, "start")
+                } else {
+                    this.set_btn_disabled(this.callGeoPixelBtn)
                 }
-                this.set_btn_enabled(this.callGeoPixelBtn, "start")
             }
+            console.log("Initialization successful, clearing console")
+            console.clear()
         } else {
-            // All other states: Preserve loading state during transitions or enable start for inactive states
+            // All other states: No pod available - disable CallGeoPixel
             if (this.startBtn && this.startBtn.classList.contains('loading-button')) {
                 // Keep stop button disabled during startup
                 if (this.stopBtn) {
@@ -156,9 +171,10 @@ class RunPodManager {
                 if (this.stopBtn) {
                     this.set_btn_disabled(this.stopBtn)
                 }
-                if (this.callGeoPixelBtn) {
-                    this.set_btn_disabled(this.callGeoPixelBtn)
-                }
+            }
+            // Always disable CallGeoPixel when no pod is available
+            if (this.callGeoPixelBtn) {
+                this.set_btn_disabled(this.callGeoPixelBtn)
             }
         }
     }
