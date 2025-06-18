@@ -16,6 +16,7 @@ class RunPodManager {
         this.startBtn = document.getElementById('runpod-start')
         this.stopBtn = document.getElementById('runpod-stop')
         this.callGeoPixelBtn = document.getElementById('screenMap')
+        this.isOpenLayersMode = document.getElementById('olbtn') && document.getElementById('olbtn').checked;
         this.initializeEventListeners();
         this.clearStaleData();
         this.loadSavedCredentials();
@@ -123,28 +124,22 @@ class RunPodManager {
                 console.log('Pod checking - START button already in LOADING state, preserving it');
                 this.set_btn_disabled(this.stopBtn)
             }
-            if (this.stopBtn) {
-                this.set_btn_disabled(this.stopBtn)
-                console.log('Pod checking - STOP button DISABLED');
-            }
         } else if (this.status === 'Stopping...' || this.status.toLowerCase().includes('stopping')) {
-            // Stopping state: DISABLE both buttons
             if (this.startBtn) {
                 this.set_btn_enabled(this.startBtn, "start")
-                console.log('Pod stopping - START button DISABLED');
             }
             if (this.stopBtn) {
                 this.set_btn_disabled(this.stopBtn)
-                console.log('Pod stopping - STOP button DISABLED');
+            }
+            if(this.callGeoPixelBtn) {
+                this.set_btn_disabled(this.callGeoPixelBtn)
             }
         } else if (this.status === 'Starting' || this.status === 'Starting...' || this.status === 'STARTING' || this.status.toLowerCase().includes('starting')) {
             // Starting state: Preserve loading state if button is already in loading mode
             if (this.startBtn && !this.startBtn.classList.contains('loading-button')) {
                 this.set_btn_loading(this.startBtn)
                 console.log('Pod starting - START button set to LOADING');
-            } else if (this.startBtn && this.startBtn.classList.contains('loading-button')) {
-                console.log('Pod starting - START button already in LOADING state, preserving it');
-            }
+            } 
             if (this.stopBtn) {
                 this.set_btn_enabled(this.stopBtn, "stop")
                 console.log('Pod starting - STOP button ENABLED');
@@ -159,14 +154,20 @@ class RunPodManager {
                 this.set_btn_enabled(this.stopBtn, "stop")
                 console.log('Endpoint initialized - STOP button ENABLED (red)');
             }
+            if (this.callGeoPixelBtn && this.isOpenLayersMode) {
+                if (this.startBtn.classList.contains('loading-button')) {
+                    console.log('Button is in loading state - skipping update to preserve loading state');
+                    return;
+                } 
+                this.set_btn_enabled(this.callGeoPixelBtn, "start")
+            }
         } else {
             // All other states: Preserve loading state during transitions or enable start for inactive states
             if (this.startBtn && this.startBtn.classList.contains('loading-button')) {
                 console.log(`Status "${this.status}" - START button already in LOADING state, preserving it`);
                 // Keep stop button disabled during startup
                 if (this.stopBtn) {
-                    this.set_btn_disabled(this.stopBtn)
-                    console.log(`Status "${this.status}" - STOP button DISABLED (preserving loading state)`);
+                    this.set_btn_enabled(this.stopBtn)
                 }
             } else {
                 // For other states (Error, Stopped, Not Connected, Not Running, etc.): ENABLE start, DISABLE stop
@@ -178,6 +179,9 @@ class RunPodManager {
                     this.set_btn_disabled(this.stopBtn)
                     console.log(`Status "${this.status}" - STOP button DISABLED`);
                 }
+                if (this.callGeoPixelBtn) {
+                    this.set_btn_disabled(this.callGeoPixelBtn)
+                }
             }
         }
     }
@@ -185,7 +189,7 @@ class RunPodManager {
     updateStatus(status, details = '', error = '', updateButtons = true) {
         // Update internal status tracking
         this.status = status;
-        
+
         document.getElementById('runpod-status-text').textContent = status;
         document.getElementById('runpod-details').textContent = details;
         document.getElementById('runpod-error').textContent = error;
@@ -208,11 +212,7 @@ class RunPodManager {
             this.updateButtonStates();
         }
 
-        // Only update Call GeoPixel button state if buttons should be updated
-        if (updateButtons) {
-            console.log('Updating Call GeoPixel button state after status update...');
-            this.updateCallGeoPixelButtonState();
-        }
+        // Note: Call GeoPixel button state is now handled by updateButtonStates()
     }
 
     async checkInitialPodStatus() {
@@ -296,7 +296,6 @@ class RunPodManager {
                 this.startHealthCheckPolling(); // Start health checks to verify endpoint
 
                 console.log('Page load: Starting health checks to verify endpoint availability for existing pod');
-                this.updateCallGeoPixelButtonState();
 
                 console.log(`Found running pod with template ${templateId}: ${data.pod_id}`);
             } else if (data.success && !data.pod_running) {
@@ -329,127 +328,6 @@ class RunPodManager {
         }
     }
 
-    updateCallGeoPixelButtonState() {
-        console.log('Updating Call GeoPixel button state...');
-
-        const statusText = document.getElementById('runpod-status-text').textContent;
-
-        // Check if initialization is complete
-        const initializationComplete = this.callGeoPixelBtn?.getAttribute('data-initialization-complete') === 'true';
-
-        // Check if OpenLayers is currently visible (not Cadenza)
-        const openLayersRadio = document.getElementById('olbtn');
-        const isOpenLayersMode = openLayersRadio && openLayersRadio.checked;
-
-        console.log('Button state check:', {
-            statusText: statusText,
-            isOpenLayersMode: isOpenLayersMode,
-            callGeoPixelButton: !!this.callGeoPixelBtn,
-            initializationComplete: initializationComplete
-        });
-
-        if (!this.callGeoPixelBtn) {
-            console.error('Call GeoPixel button not found!');
-            return;
-        }
-
-        // CRITICAL: Don't override button state if it's currently in loading mode
-        if (this.startBtn.classList.contains('loading-button')) {
-            console.log('Button is in loading state - skipping update to preserve loading state');
-            return;
-        }
-
-        // If initialization is not complete, keep button disabled regardless of other conditions
-        if (!initializationComplete) {
-            console.log('Initialization not complete - keeping Call GeoPixel button disabled');
-            return;
-        }
-
-        console.log('Before update:', {
-            disabled: this.callGeoPixelBtn.disabled,
-            className: this.callGeoPixelBtn.className,
-            style: this.callGeoPixelBtn.style.cssText
-        });
-
-        if (!isOpenLayersMode) {
-            // Cadenza is visible - disable button with RunPod-style appearance
-            console.log('Cadenza mode - disabling Call GeoPixel button with RunPod styling');
-            this.set_btn_disabled(this.callGeoPixelBtn)
-            return;
-        }
-
-        // OpenLayers is visible - check pod status AND endpoint availability
-        if (statusText === 'RUNNING' || statusText.toLowerCase().includes('running')) {
-            // Pod is running - check if we should verify endpoint availability
-            if (this.endpointAvailable) {
-                // Endpoint is confirmed available - enable button immediately
-                console.log('Pod running and endpoint confirmed available - enabling Call GeoPixel button');
-                this.set_btn_enabled(this.callGeoPixelBtn, "start")
-                console.log('Call GeoPixel button ENABLED (cached):', {
-                    disabled: this.callGeoPixelBtn.disabled,
-                    className: this.callGeoPixelBtn.className
-                });
-            } else if (this.shouldCheckEndpointHealth) {
-                // Need to check endpoint availability
-                console.log('Pod running - checking endpoint availability...');
-                this.checkEndpointAvailabilityWithFallback().then(isAvailable => {
-                    console.log(`updateCallGeoPixelButtonState: Endpoint availability result: ${isAvailable}`);
-                    if (isAvailable) {
-                        this.endpointAvailable = true;
-                        this.shouldCheckEndpointHealth = false; // Stop checking once available
-                        console.log('Endpoint available - enabling Call GeoPixel button and stopping health checks');
-                        this.set_btn_enabled(this.callGeoPixelBtn, "start")
-                        
-                        // FIXED: Enable the stop button when endpoint is available
-                        if (this.stopBtn) {
-                            this.set_btn_enabled(this.stopBtn, "stop")
-                            console.log('FIXED: Stop button ENABLED when endpoint is available');
-                        }
-                        
-                        console.log('Call GeoPixel button ENABLED:', {
-                            disabled: this.callGeoPixelBtn.disabled,
-                            className: this.callGeoPixelBtn.className
-                        });
-                    } else {
-                        console.log('Endpoint not yet available - keeping Call GeoPixel button disabled');
-                        this.set_btn_disabled(this.callGeoPixelBtn)
-                        console.log('Call GeoPixel button DISABLED:', {
-                            disabled: this.callGeoPixelBtn.disabled,
-                            className: this.callGeoPixelBtn.className
-                        });
-                    }
-                }).catch(error => {
-                    console.error('Error in updateCallGeoPixelButtonState endpoint check:', error);
-                    this.set_btn_disabled(this.callGeoPixelBtn)
-                });
-            } else {
-                // Pod is running but endpoint hasn't been verified yet - need to check
-                console.log('Pod running but endpoint not yet verified - keeping Call GeoPixel button disabled until confirmed');
-                this.set_btn_disabled(this.callGeoPixelBtn)
-                console.log('Call GeoPixel button DISABLED (endpoint not yet verified):', {
-                    disabled: this.callGeoPixelBtn.disabled,
-                    className: this.callGeoPixelBtn.className
-                });
-            }
-        } else {
-            // No pod running - disable Call GeoPixel button
-            console.log(`No pod running (status: "${statusText}") - disabling Call GeoPixel button`);
-            this.set_btn_disabled(this.callGeoPixelBtn)
-
-            // Extra logging for debugging
-            console.log('Call GeoPixel button FORCED to disabled state:', {
-                disabled: this.callGeoPixelBtn.disabled,
-                className: this.callGeoPixelBtn.className,
-                statusText: statusText
-            });
-        }
-
-        console.log('After update:', {
-            disabled: this.callGeoPixelBtn.disabled,
-            className: this.callGeoPixelBtn.className,
-            style: this.callGeoPixelBtn.style.cssText
-        });
-    }
 
     async checkEndpointAvailability() {
         // Check if the RunPod endpoint is actually available and responding with status "ok"
@@ -515,13 +393,13 @@ class RunPodManager {
                             if (initializationComplete && isOpenLayersMode) {
                                 console.log('IMMEDIATE BUTTON UPDATE: Enabling Call GeoPixel button - health check OK');
                                 this.set_btn_enabled(this.callGeoPixelBtn, "start")
-                                
+
                                 // FIXED: Enable stop button when endpoint is available, not disable it
                                 if (this.stopBtn) {
                                     this.set_btn_enabled(this.stopBtn, "stop")
                                     console.log('✅ STOP BUTTON ENABLED - Health check successful!');
                                 }
-                                
+
                                 console.log('✅ CALL GEOPIXEL BUTTON ENABLED - Health check successful!');
                                 console.log('Button state after health check passed:', {
                                     disabled: this.callGeoPixelBtn.disabled,
@@ -698,7 +576,7 @@ class RunPodManager {
                 // Set internal status when health check passes
                 this.status = 'Endpoint Initialized';
                 // Force immediate button state update
-                this.updateCallGeoPixelButtonState();
+                this.updateButtonStates();
             } else {
                 console.log('❌ Health check failed - continuing polling in 5 seconds');
                 // Show current status in the UI
@@ -796,7 +674,7 @@ class RunPodManager {
     }
 
     async testConnection() {
-        if (this.status === 'Checking...' || this.status === 'Verifying...' || this.status === 'Stopping...' || this.status === 'Starting' || this.status === 'Starting...' ||this.status === 'Endpoint Initialized') {
+        if (this.status === 'Checking...' || this.status === 'Verifying...' || this.status === 'Stopping...' || this.status === 'Starting' || this.status === 'Starting...' || this.status === 'Endpoint Initialized') {
             return
         }
         try {
@@ -1068,7 +946,7 @@ class RunPodManager {
                                     this.shouldCheckEndpointHealth = false; // Stop checking once available
                                     console.log('Periodic check: Endpoint available - stopping health checks and updating button');
                                     this.updateStatus(status, details + '\nEndpoint: Available');
-                                    this.updateCallGeoPixelButtonState();
+                                    this.updateButtonStates();
                                 } else {
                                     this.updateStatus(status, details + '\nEndpoint: Starting...');
                                 }
@@ -1110,14 +988,14 @@ class RunPodManager {
         this.statusCheckInterval = setInterval(() => {
             // Check if we should stop status checking to avoid interference
             const isButtonEnabled = this.callGeoPixelBtn && !this.callGeoPixelBtn.disabled && this.callGeoPixelBtn.classList.contains('enabled-button-start');
-            
+
             // Stop status checking ONLY when Call GeoPixel button is enabled (endpoint is confirmed reachable)
             if (isButtonEnabled) {
                 console.log('🛑 Stopping status checking - endpoint is confirmed reachable and Call GeoPixel button is enabled');
                 this.stopStatusChecking();
                 return;
             }
-            
+
             this.checkPodStatus();
         }, 10000); // Check every 10 seconds
     }
@@ -1143,7 +1021,7 @@ class RunPodManager {
 
     set_btn_enabled(bttn, target) {
         bttn.disabled = false;
-        (target=="start")? bttn.classList.add('enabled-button-start') : bttn.classList.add('enabled-button-stop');
+        (target == "start") ? bttn.classList.add('enabled-button-start') : bttn.classList.add('enabled-button-stop');
         bttn.classList.remove('disabled-button', 'loading-button');
     }
 
@@ -1169,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         if (initializationComplete) {
                             console.log('Initialization complete, updating button state based on radio selection');
-                            window.runPodManager.updateCallGeoPixelButtonState();
+                            window.runPodManager.updateButtonStates();
                         } else {
                             console.log('Initialization not complete, keeping button disabled');
                             // Ensure button stays disabled
