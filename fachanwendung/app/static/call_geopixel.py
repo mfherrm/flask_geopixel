@@ -305,7 +305,18 @@ def get_object_outlines(api_base_url, image_path, query):
     log_debug("Processing image with CUDA OOM protection...")
     try:
         # First resize image if needed to prevent initial OOM
-        processed_image_path = resize_image_if_needed(image_path)  # Uses config default
+        # processed_image_path = resize_image_if_needed(image_path)  # Uses config default
+
+        
+        with Image.open(image_path) as img:
+            width, height = img.size
+            print("Original image size: ", width, "x", height)
+            
+            processed_image = img.resize((width*2, height*2), Image.Resampling.LANCZOS)
+            base_name, ext = os.path.splitext(image_path)
+            processed_image_path = f"{base_name}_resized{ext}"
+            processed_image.save(processed_image_path, quality=CUDA_MEMORY_LIMITS['resize_quality'])
+        
         response = process_image_with_retry(processed_image_path, query, api_process_url)
         
         # Clean up resized image if created
@@ -363,6 +374,8 @@ def get_object_outlines(api_base_url, image_path, query):
             # Process the mask for contour detection
             print("Processing mask for improved contour detection...")
             mask_uint8 = pred_masks.astype(np.uint8).squeeze()
+
+            mask_uint8 = cv2.resize(mask_uint8, (width, height), interpolation=cv2.INTER_AREA)
             
             # Debug: Check mask content
             unique_values = np.unique(mask_uint8)
