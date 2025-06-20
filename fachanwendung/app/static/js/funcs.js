@@ -10,6 +10,28 @@ import {
 // Add tile configuration update to window so it can be called from HTML
 window.updateTileConfig = updateTileConfigWrapper;
 
+// Upscaling configuration
+let upscalingConfig = {
+    scale: 1, // Default to x1 (no upscaling)
+    label: 'x1 (Original)'
+};
+
+/**
+ * Update upscaling configuration
+ * @param {number} scale - The upscaling factor (1, 2, 4, 8)
+ */
+function updateUpscalingConfigWrapper(scale) {
+    upscalingConfig.scale = scale;
+    upscalingConfig.label = `x${scale}`;
+    console.log(`Upscaling configuration updated: ${upscalingConfig.label}`);
+}
+
+// Add upscaling configuration update to window so it can be called from HTML
+window.updateUpscalingConfig = updateUpscalingConfigWrapper;
+
+// Export upscaling configuration for other modules
+export { upscalingConfig };
+
 /**
  * Manages the loading state of the Call GeoPixel button
  * @param {boolean} isLoading - Whether to show loading state
@@ -75,8 +97,8 @@ function handleSuccessfulCapture(blob, mapBounds, setButtonLoadingState) {
     console.log("Selection", selection);
 
     // Process image in tiles using selected configuration
-    console.log(`Processing image with ${tileConfig.label}`);
-    processTiledImage(blob, selection, mapBounds, object, tileConfig, setButtonLoadingState);
+    console.log(`Processing image with ${tileConfig.label} and upscaling ${upscalingConfig.label}`);
+    processTiledImage(blob, selection, mapBounds, object, tileConfig, setButtonLoadingState, upscalingConfig);
 }
 
 document.getElementById('screenMap').addEventListener('click', async (event) => {

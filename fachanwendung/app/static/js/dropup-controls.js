@@ -85,6 +85,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    document.querySelectorAll('.upscaling-option').forEach(option => {
+        option.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const scaleValue = parseInt(this.dataset.scale);
+            document.getElementById('upscalingbttn').textContent = `Upscaling: x${scaleValue}`;
+            const dropupContent = this.closest('.menu-button-content');
+            dropupContent.classList.remove('show');
+            dropupContent.style.display = 'none';
+            
+            // Update upscaling configuration if function is available
+            if (window.updateUpscalingConfig) {
+                window.updateUpscalingConfig(scaleValue);
+            }
+        });
+    });
+    
     // Handle category interactions - with bounds checking
     document.querySelectorAll('.category-header').forEach(header => {
         header.addEventListener('click', function(e) {

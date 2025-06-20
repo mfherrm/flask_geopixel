@@ -78,6 +78,15 @@ def receive_image():
         tile_info = json.loads(request.form['tileInfo'])
         print(f"Processing tile {tile_info['index']} with dimensions {tile_info['tileDims']}")
     
+    # Get upscaling configuration from request
+    upscaling_config = None
+    if 'upscalingConfig' in request.form:
+        upscaling_config = json.loads(request.form['upscalingConfig'])
+        print(f"Using upscaling configuration: {upscaling_config['label']}")
+    else:
+        # Default to x1 (no upscaling)
+        upscaling_config = {'scale': 1, 'label': 'x1'}
+    
     # Check if imageData is in the request
     img = None
     try:
@@ -125,7 +134,7 @@ def receive_image():
         else:
             print(f"Using dynamic RunPod API URL: {api_url}")
         
-        response = get_object_outlines(api_url, image_filepath, query)
+        response = get_object_outlines(api_url, image_filepath, query, upscaling_config)
         
         # Handle the case when get_object_outlines returns None
         if response is None:

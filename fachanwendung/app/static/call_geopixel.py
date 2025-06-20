@@ -285,7 +285,18 @@ def process_image(image_path, query, api_url):
         log_debug(f"Error sending request: {error_message}")
         raise e
 
-def get_object_outlines(api_base_url, image_path, query):
+def get_object_outlines(api_base_url, image_path, query, upscaling_config=None):
+    # Set default upscaling configuration if not provided
+    if upscaling_config is None:
+        upscaling_config = {'scale': 1, 'label': 'x1'}
+    
+    # Define upscaling fallback chain: x8 -> x4 -> x2 -> x1
+    upscaling_fallback_chain = [8, 4, 2, 1]
+    requested_scale = upscaling_config.get('scale', 1)
+    
+    # Start fallback chain from requested scale or lower
+    fallback_scales = [scale for scale in upscaling_fallback_chain if scale <= requested_scale]
+    
     api_process_url = f"{api_base_url}/process"
     
     print(f"GeoPixel API Client")
@@ -293,6 +304,8 @@ def get_object_outlines(api_base_url, image_path, query):
     print(f"API URL: {api_base_url}")
     print(f"Image: {image_path}")
     print(f"Query: {query}")
+    print(f"Requested Upscaling: {upscaling_config.get('label', 'x1')}")
+    print(f"Fallback chain: {fallback_scales}")
     print(f"==================\n")
        
     # Check API health first
@@ -301,32 +314,78 @@ def get_object_outlines(api_base_url, image_path, query):
         # In web application context, don't prompt user - just proceed with a warning
         print("Proceeding anyway...")
     
-    # Process the image with retry logic for CUDA OOM errors
-    log_debug("Processing image with CUDA OOM protection...")
-    try:
-        # First resize image if needed to prevent initial OOM
-        # processed_image_path = resize_image_if_needed(image_path)  # Uses config default
-
-        
-        with Image.open(image_path) as img:
-            width, height = img.size
-            print("Original image size: ", width, "x", height)
+    # Process the image with fallback upscaling and CUDA OOM protection
+    log_debug("Processing image with CUDA OOM protection and upscaling fallback...")
+    
+    # Get original image dimensions first
+    with Image.open(image_path) as img:
+        width, height = img.size
+        print("Original image size: ", width, "x", height)
+    
+    response = None
+    processed_image_path = None
+    
+    # Try each scale factor in the fallback chain
+    for scale_factor in fallback_scales:
+        try:
+            print(f"\n--- Trying upscaling factor: x{scale_factor} ---")
             
-            processed_image = img.resize((width*2, height*2), Image.Resampling.LANCZOS)
-            base_name, ext = os.path.splitext(image_path)
-            processed_image_path = f"{base_name}_resized{ext}"
-            processed_image.save(processed_image_path, quality=CUDA_MEMORY_LIMITS['resize_quality'])
-        
-        response = process_image_with_retry(processed_image_path, query, api_process_url)
-        
-        # Clean up resized image if created
-        if processed_image_path != image_path:
-            try:
-                os.remove(processed_image_path)
-                print(f"Cleaned up preprocessed image: {processed_image_path}")
-            except:
-                pass
-        
+            with Image.open(image_path) as img:
+                # Apply dynamic upscaling based on current scale factor
+                new_width = width * scale_factor
+                new_height = height * scale_factor
+                print(f"Upscaling image to: {new_width}x{new_height} (scale factor: {scale_factor})")
+                
+                processed_image = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                base_name, ext = os.path.splitext(image_path)
+                processed_image_path = f"{base_name}_upscaled_x{scale_factor}{ext}"
+                processed_image.save(processed_image_path, quality=CUDA_MEMORY_LIMITS['resize_quality'])
+            
+            # Try processing with current scale factor
+            response = process_image_with_retry(processed_image_path, query, api_process_url)
+            
+            # Clean up upscaled image if created
+            if processed_image_path and processed_image_path != image_path:
+                try:
+                    os.remove(processed_image_path)
+                    print(f"Cleaned up upscaled image: {processed_image_path}")
+                except:
+                    pass
+            
+            # If successful, break out of fallback loop
+            if response is not None:
+                print(f"✓ Successfully processed with upscaling factor x{scale_factor}")
+                break
+                
+        except Exception as e:
+            error_message = str(e)
+            
+            # Clean up upscaled image on error
+            if processed_image_path and processed_image_path != image_path:
+                try:
+                    os.remove(processed_image_path)
+                    print(f"Cleaned up upscaled image after error: {processed_image_path}")
+                except:
+                    pass
+            
+            # Check if this is a CUDA OOM error
+            if is_oom_error(error_message):
+                print(f"✗ CUDA OOM error with upscaling factor x{scale_factor}: {error_message}")
+                
+                # If this was the last scale factor in the chain, give up
+                if scale_factor == fallback_scales[-1]:
+                    print("✗ All upscaling fallback options exhausted. Processing failed.")
+                    return None
+                else:
+                    print(f"→ Falling back to next lower upscaling factor...")
+                    continue
+            else:
+                # For non-OOM errors, don't continue fallback chain
+                print(f"✗ Non-OOM error occurred: {error_message}")
+                return None
+    
+    # Handle the final result after trying all fallback options
+    try:
         # Check if response is valid
         if response is None:
             print("No response received from API")
@@ -375,7 +434,11 @@ def get_object_outlines(api_base_url, image_path, query):
             print("Processing mask for improved contour detection...")
             mask_uint8 = pred_masks.astype(np.uint8).squeeze()
 
-            mask_uint8 = cv2.resize(mask_uint8, (width, height), interpolation=cv2.INTER_AREA)
+            # Apply inverse scaling to match original image dimensions
+            original_width = width
+            original_height = height
+            mask_uint8 = cv2.resize(mask_uint8, (original_width, original_height), interpolation=cv2.INTER_AREA)
+            print(f"Mask resized back to original dimensions: {original_width}x{original_height}")
             
             # Debug: Check mask content
             unique_values = np.unique(mask_uint8)
@@ -420,4 +483,4 @@ def get_object_outlines(api_base_url, image_path, query):
         return None
 
 if __name__ == "__main__":
-    get_object_outlines("https://bpds0xic8d0b7g-5000.proxy.runpod.net/", "GeoPixel/images/example1.png","Please give me a segmentation mask for grey car with different colors for each.")
+    get_object_outlines("https://bpds0xic8d0b7g-5000.proxy.runpod.net/", "GeoPixel/images/example1.png","Please give me a segmentation mask for grey car with different colors for each.", {'scale': 2, 'label': 'x2'})

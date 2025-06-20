@@ -62,8 +62,9 @@ export function updateTileConfig(tileCount) {
  * @param {string} object - The object type being processed
  * @param {Object} tileConfig - The tile configuration object
  * @param {Function} setButtonLoadingState - Function to manage button loading state
+ * @param {Object} upscalingConfig - The upscaling configuration object
  */
-export async function processTiledImage(imageBlob, selection, mapBounds, object, tileConfig, setButtonLoadingState) {
+export async function processTiledImage(imageBlob, selection, mapBounds, object, tileConfig, setButtonLoadingState, upscalingConfig = {scale: 1, label: 'x1'}) {
     console.log(`Starting tiled image processing with ${tileConfig.label}...`);
     
     // Create image element to get dimensions
@@ -134,7 +135,7 @@ export async function processTiledImage(imageBlob, selection, mapBounds, object,
                     
                     // Convert tile to blob and process
                     canvas.toBlob(function(tileBlob) {
-                        processSingleTile(tileBlob, selection, tile.tileBounds, [tile.actualTileHeight, tile.actualTileWidth], tile.tileIndex)
+                        processSingleTile(tileBlob, selection, tile.tileBounds, [tile.actualTileHeight, tile.actualTileWidth], tile.tileIndex, upscalingConfig)
                             .then(resolve)
                             .catch(error => {
                                 console.error(`Error processing tile ${tile.tileIndex}:`, error);
@@ -194,9 +195,10 @@ export function calculateTileBounds(globalMapBounds, startX, startY, endX, endY,
  * @param {Array} tileBounds - The geographic bounds of the tile
  * @param {Array} tileDims - The tile dimensions [height, width]
  * @param {number} tileIndex - The index of the tile
+ * @param {Object} upscalingConfig - The upscaling configuration object
  * @returns {Promise} Promise resolving to tile processing result
  */
-export async function processSingleTile(tileBlob, selection, tileBounds, tileDims, tileIndex) {
+export async function processSingleTile(tileBlob, selection, tileBounds, tileDims, tileIndex, upscalingConfig = {scale: 1, label: 'x1'}) {
     console.log(`Sending tile ${tileIndex} to backend...`);
     
     const formData = new FormData();
@@ -207,6 +209,9 @@ export async function processSingleTile(tileBlob, selection, tileBounds, tileDim
         index: tileIndex,
         tileDims: tileDims
     }));
+    
+    // Add upscaling configuration
+    formData.append('upscalingConfig', JSON.stringify(upscalingConfig));
     
     // Get RunPod API key from the interface and include it in the request
     const runpodApiKey = document.getElementById('runpod-api-key')?.value?.trim();
