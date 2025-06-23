@@ -285,65 +285,20 @@ export const generateStatsTableHTML = (viewMode = 'openlayers') => {
   return html;
 };
 
-// Function to generate HTML for statistics display (legacy modal support)
-export const generateStatsHTML = () => {
-  const stats = getLayerStatistics();
-  
-  let html = `<div class="stats-summary">
-    <h3>Total Objects: ${stats.total}</h3>
-    <div class="stats-actions" style="display: flex; justify-content: center;">
-      <button id="layer-overlap-analysis-btn" class="menu-button">Layer Overlap Analysis</button>
-    </div>
-  </div>`;
 
-  const categories = [
-    { key: 'transportation', name: 'Transportation', data: stats.transportation },
-    { key: 'infrastructure', name: 'Infrastructure', data: stats.infrastructure },
-    { key: 'naturalFeatures', name: 'Natural Features', data: stats.naturalFeatures },
-    { key: 'vegetation', name: 'Vegetation', data: stats.vegetation },
-    { key: 'urbanFeatures', name: 'Urban Features', data: stats.urbanFeatures },
-    { key: 'geological', name: 'Geological', data: stats.geological },
-    { key: 'environmental', name: 'Environmental', data: stats.environmental },
-    { key: 'agriculture', name: 'Agriculture', data: stats.agriculture }
-  ];
-
-  categories.forEach(category => {
-    const categoryTotal = Object.values(category.data).reduce((sum, count) => sum + count, 0);
-    
-    if (categoryTotal > 0) {
-      html += `<div class="stats-category">
-        <h4>${category.name} (${categoryTotal} objects)</h4>
-        <div class="stats-layers">`;
-      
-      Object.entries(category.data).forEach(([layerName, count]) => {
-        if (count > 0) {
-          html += `<div class="stats-layer">
-            <span class="layer-name">${formatLayerName(layerName)}:</span>
-            <span class="layer-count">${count}</span>
-          </div>`;
-        }
-      });
-      
-      html += `</div></div>`;
-    }
-  });
-
-  if (stats.total === 0) {
-    html += `<div class="stats-empty">
-      <p>No objects found in any layer. Draw some features to see statistics!</p>
-    </div>`;
-  }
-
-  return html;
-};
-
-// Function to show the statistics modal
+// Function to show the statistics modal (used for overlap analysis only)
 export const showLayerStatsModal = () => {
   const modal = document.getElementById('layer-stats-modal');
   const content = document.getElementById('layer-stats-content');
   
   if (modal && content) {
-    content.innerHTML = generateStatsHTML();
+    // Modal is now used primarily for overlap analysis
+    content.innerHTML = `<div class="stats-summary">
+      <h3>Layer Statistics</h3>
+      <div class="stats-actions" style="display: flex; justify-content: center;">
+        <button id="layer-overlap-analysis-btn" class="menu-button">Layer Overlap Analysis</button>
+      </div>
+    </div>`;
     modal.style.display = 'block';
     
     // Add event listener for overlap analysis button
@@ -650,7 +605,8 @@ export const initializeStatsPanel = () => {
   }
 };
 
-// Function to refresh stats table (public API)
+
+// Function to refresh stats table using current view mode
 export const refreshStatsTable = () => {
   updateStatsTable(currentViewMode);
 };

@@ -20,6 +20,7 @@ import './modal-controls.js';            // Modal dialogs
 // Import required functions from vector-functions module
 import {
   initializeStatsPanel,
+  updateStatsTable,
   refreshStatsTable,
   showLayerStatsModal,
   hideLayerStatsModal,
@@ -150,7 +151,7 @@ function setupModalEventListeners() {
 function setupPeriodicRefresh() {
   // Refresh stats table every 2 seconds to catch any changes
   setInterval(() => {
-    refreshStatsTable();
+    refreshStatsTable(); // Uses current view mode
   }, 2000);
 }
 

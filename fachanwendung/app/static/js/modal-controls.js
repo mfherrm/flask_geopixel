@@ -11,14 +11,6 @@ import {
 
 // Initialize modal functionality when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-  // Stats button event listener
-  const statsButton = document.getElementById('layer-stats-btn');
-  if (statsButton) {
-    statsButton.addEventListener('click', function() {
-      showLayerStatsModal();
-    });
-  }
-
   // Modal close button event listener
   const closeButton = document.getElementById('stats-modal-close');
   if (closeButton) {
