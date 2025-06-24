@@ -14,12 +14,3 @@ class Config:
     # GeoPixel API configuration
     GEOPIXEL_API_URL = env.get('GEOPIXEL_API_URL')
     RUNPOD_API_KEY = env.get('RUNPOD_API_KEY')
-
-    # Email configuration
-    #MAIL_SERVER = 'smtp.disy.net'
-    #MAIL_PORT = 25
-    #MAIL_USE_TLS = True
-    #MAIL_USERNAME = ''
-    #MAIL_PASSWORD = ''
-    #MAIL_DEFAULT_SENDER = 'fa@disy.net'
-
