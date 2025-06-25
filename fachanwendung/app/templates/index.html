@@ -38,7 +38,10 @@
             <div id="layer-stats-panel">
                 <div class="stats-panel-header">
                     <h3>Layer Statistics</h3>
-                    <button id="layer-overlap-btn" class="enabled-button-start">Overlap Analysis</button>
+                    <button id="layer-overlap-btn" class="enabled-button-start">
+                        <span class="btn-text-full">Overlap Analysis</span>
+                        <span class="btn-text-short">Overlap</span>
+                    </button>
                 </div>
                 <div class="stats-panel-content">
                     <div id="layer-stats-table-container">
@@ -50,7 +53,10 @@
         
         <!-- Control buttons positioned below the main content -->
         <div id="button-container">
-            <button id="screenMap" class="disabled-button" disabled>Call GeoPixel</button>
+            <button id="screenMap" class="disabled-button" disabled>
+                <span class="btn-text-full">Call GeoPixel</span>
+                <span class="btn-text-short">GeoPixel</span>
+            </button>
             <!-- Dropup Controls -->
             {% include 'color_dropup.html' %}
             {% include 'object_dropup.html' %}
@@ -58,21 +64,26 @@
             {% include 'upscaling_dropup.html' %}
 
             <!-- Radio buttons next to tiles button -->
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="vis" id="olbtn" value="1" checked>
-                <label class="form-check-label" for="olbtn">
-                    OpenLayers
-                </label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="vis" id="cdzbtn" value="2">
-                <label class="form-check-label" for="cdzbtn">
-                    Cadenza
-                </label>
+            <div class="radio-button-group">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="vis" id="olbtn" value="1" checked>
+                    <label class="form-check-label" for="olbtn">
+                        OpenLayers
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="vis" id="cdzbtn" value="2">
+                    <label class="form-check-label" for="cdzbtn">
+                        Cadenza
+                    </label>
+                </div>
             </div>
 
             <!-- RunPod Control Button only -->
-            <button id="runpod-toggle-btn" class="menu-button">RunPod Control</button>
+            <button id="runpod-toggle-btn" class="menu-button">
+                <span class="btn-text-full">RunPod Control</span>
+                <span class="btn-text-short">RunPod</span>
+            </button>
         </div>
 
         <!-- RunPod Control Panel (positioned below buttons) -->

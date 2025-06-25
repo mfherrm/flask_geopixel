@@ -128,12 +128,18 @@ html {
 
 
 #button-container {
+    /* Responsive width: aligns with smallest window and ends at half max window */
+    width: clamp(480px, calc(100vw - 40px), 1030px);
+    max-width: 1030px;
     margin-left: var(--container-gap);
-    /* Add some space between the map and the button */
+    margin-right: auto;
     display: flex;
     align-items: center;
-    gap: var(--container-gap);
+    gap: clamp(4px, 0.5vw, 8px);
     position: relative;
+    flex-wrap: nowrap;
+    box-sizing: border-box;
+    overflow-x: auto;
 }
 
 /* Dropup container */
@@ -150,12 +156,77 @@ html {
 .loading-button,
 .menu-button {
     color: #ffffff;
-    padding: var(--button-padding);
-    font-size: var(--button-font-size);
+    padding: clamp(6px, 0.6vw, 10px) clamp(8px, 0.8vw, 12px);
+    font-size: clamp(12px, 1.1vw, 16px);
     border: none;
     cursor: pointer;
     border-radius: var(--button-border-radius);
     display: block !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Radio button container for responsive layout */
+.radio-button-group {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Form elements in button container - make them compact */
+#button-container .form-check {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+#button-container .form-check-input {
+    margin: 0 4px 0 0;
+    flex-shrink: 0;
+}
+
+#button-container .form-check-label {
+    font-size: clamp(11px, 1vw, 14px);
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+/* Button text responsive display */
+.btn-text-short {
+    display: none;
+}
+
+.btn-text-full {
+    display: inline;
+}
+
+/* Responsive radio buttons and button text for small screens */
+@media (max-width: 768px) {
+    .radio-button-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+    
+    #button-container .form-check-label {
+        font-size: 12px;
+    }
+    
+    /* Switch to short button text on small screens */
+    .btn-text-short {
+        display: inline;
+    }
+    
+    .btn-text-full {
+        display: none;
+    }
 }
 
 /* Dropup content (Hidden by Default) */
@@ -1017,7 +1088,7 @@ html {
 
 /* Map container (left side) */
 #map-container {
-    flex: 1;
+    flex: 83;
     position: relative;
     min-width: 600px;
     box-sizing: border-box;
@@ -1040,7 +1111,7 @@ html {
 
 /* Layer statistics panel (right side) */
 #layer-stats-panel {
-    width: 350px;
+    flex: 17;
     min-width: 300px;
     max-width: 400px;
     background: var(--gradient-dark);
@@ -1063,6 +1134,7 @@ html {
     align-items: center;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     min-height: 60px;
+    gap: var(--spacing-md);
 }
 
 .stats-panel-header h3 {
@@ -1071,15 +1143,18 @@ html {
     font-weight: 600;
     letter-spacing: 0.5px;
     flex: 1;
+    min-width: 0;
 }
 
 /* Style the button to blend better with the green header */
 .stats-panel-header .enabled-button-start {
-    margin-left: var(--spacing-md);
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.2) !important;
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: white;
+    white-space: nowrap;
+    min-width: fit-content;
+    margin: 0;
 }
 
 .stats-panel-header .enabled-button-start:hover {
@@ -1279,104 +1354,20 @@ html {
     font-style: italic;
 }
 
-/* Responsive adjustments - Keep side-by-side layout and prevent overlap through better sizing */
-@media (max-width: 1200px) {
-    #layer-stats-panel {
-        width: 280px;
-        min-width: 250px;
-    }
-    
-    #map-container {
-        min-width: 400px;
-    }
-}
-
-@media (max-width: 1100px) {
-    #layer-stats-panel {
-        width: 260px;
-        min-width: 230px;
-    }
-    
-    #map-container {
-        min-width: 350px;
-    }
-}
-
 @media (max-width: 1000px) {
     #main-content {
         gap: 8px;
     }
     
     #layer-stats-panel {
-        width: 240px;
-        min-width: 220px;
+        flex: 15;
+        min-width: 200px;
+        max-width: 240px;
     }
     
     #map-container {
-        min-width: 320px;
-    }
-}
-
-/* Only switch to column layout on very small screens */
-@media (max-width: 900px) {
-    #main-content {
-        flex-direction: column !important;
-        height: 100vh;
-        gap: 8px;
-        overflow: hidden;
-    }
-    
-    #map-container {
-        height: 60vh !important;
-        min-width: auto !important;
-        width: 100% !important;
-        order: 1;
-        flex-shrink: 0;
-    }
-    
-    #layer-stats-panel {
-        width: 100% !important;
-        max-width: none !important;
-        height: 35vh !important;
-        min-height: 200px;
-        order: 2;
-        position: relative;
-        z-index: 1;
-        flex-shrink: 0;
-    }
-}
-
-@media (max-width: 768px) {
-    #main-content {
-        gap: 6px;
-        margin-bottom: 8px;
-    }
-    
-    #map-container {
-        height: 50vh;
-        min-height: 300px;
-    }
-    
-    #layer-stats-panel {
-        height: 45vh;
-        min-height: 250px;
-    }
-    
-    .stats-panel-header {
-        padding: 12px 16px;
-    }
-    
-    .stats-panel-header h3 {
-        font-size: 16px;
-    }
-    
-    .layer-stats-table th,
-    .layer-stats-table td {
-        padding: 6px 4px;
-    }
-    
-    .layer-stats-table {
-        font-size: 12px;
+        flex: 85;
+        min-width: 300px;
     }
 }
 
@@ -1385,21 +1376,55 @@ html {
         gap: 4px;
     }
     
-    #map-container {
-        height: 45vh;
-        min-height: 280px;
+    #layer-stats-panel {
+        flex: 12;
+        min-width: 180px;
+        max-width: 200px;
     }
     
-    #layer-stats-panel {
-        height: 50vh;
-        min-height: 200px;
+    #map-container {
+        flex: 88;
+        min-width: 280px;
     }
     
     .stats-panel-header {
-        padding: 10px 12px;
+        padding: var(--spacing-sm) var(--spacing-md);
+        min-height: 50px;
+    }
+    
+    .stats-panel-header h3 {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 520px) {
+    #main-content {
+        gap: 2px;
+    }
+    
+    #layer-stats-panel {
+        flex: 10;
+        min-width: 160px;
+        max-width: 180px;
+    }
+    
+    #map-container {
+        flex: 90;
+        min-width: 260px;
+    }
+    
+    .stats-panel-header {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        min-height: 45px;
+        gap: var(--spacing-xs);
     }
     
     .stats-panel-header h3 {
         font-size: 14px;
+    }
+    
+    .stats-panel-header .enabled-button-start {
+        padding: 4px 6px;
+        font-size: 10px;
     }
 }
