@@ -249,6 +249,84 @@ html {
     border: 1px solid #ccc;
 }
 
+/* CRITICAL: Show dropup when active - proper dropup positioning */
+.menu-button-content[style*="display: block"],
+.menu-button-content.show {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 99999 !important;
+    position: absolute !important;
+    bottom: 100% !important; /* Position above the button */
+    left: 50% !important;
+    transform: translateX(-50%) !important; /* Center horizontally */
+    margin-bottom: 5px !important;
+    background-color: #f1f1f1 !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+    min-width: 180px !important;
+    max-width: 250px !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
+    white-space: nowrap !important;
+    padding: 0 !important;
+    pointer-events: auto !important; /* Ensure it's clickable */
+}
+
+/* Ensure parent container doesn't hide children */
+.dropup {
+    position: relative !important;
+    display: inline-block !important;
+    z-index: 1000 !important;
+    overflow: visible !important;
+}
+
+/* Fix button container overflow issues that clip dropups */
+#button-container {
+    overflow: visible !important; /* Override overflow-x: auto for dropups */
+}
+
+/* Responsive dropup positioning fixes */
+@media (max-width: 768px) {
+    .menu-button-content[style*="display: block"],
+    .menu-button-content.show {
+        position: absolute !important; /* Keep absolute positioning */
+        bottom: 100% !important; /* Position above button */
+        top: auto !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        max-width: calc(100vw - 40px) !important; /* Responsive width */
+        margin-bottom: 5px !important;
+        z-index: 999999 !important; /* Ensure it's above everything */
+    }
+    
+    /* Ensure button container allows overflow on mobile */
+    #button-container {
+        overflow: visible !important;
+        position: relative !important;
+    }
+    
+    /* Ensure dropup containers have proper stacking */
+    .dropup {
+        position: relative !important;
+        z-index: 1000 !important;
+        overflow: visible !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .menu-button-content[style*="display: block"],
+    .menu-button-content.show {
+        position: absolute !important;
+        bottom: 100% !important;
+        top: auto !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        margin-bottom: 5px !important;
+    }
+}
+
 .menu-button-content.object-categories {
     white-space: normal;
 }
