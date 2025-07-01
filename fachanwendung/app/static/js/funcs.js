@@ -1,4 +1,4 @@
-import './cadenza3.0.4.js';
+import './cadenza.js';
 
 // Import tile processing functions from dedicated module
 import {
@@ -246,4 +246,72 @@ $(document).ready(function () {
         // This ensures the correct element is shown based on the initial selection
         $('input[name="vis"]:checked').trigger('change');
     }, 1000); // 1 second delay to ensure Cadenza is fully initialized
+});
+
+// Add event listener for the new "Get Cadenza Data" button
+document.addEventListener('DOMContentLoaded', function() {
+    const getCadenzaDataBtn = document.getElementById('getCadenzaData');
+    if (getCadenzaDataBtn) {
+        getCadenzaDataBtn.addEventListener('click', async (event) => {
+            try {
+                console.log('Getting Cadenza data...');
+                
+                // Check if Cadenza client is available
+                if (!window.cadenzaClient) {
+                    throw new Error('Cadenza client is not initialized');
+                }
+                
+                // Check if Cadenza mode is active
+                const cadenzaRadio = document.getElementById('cdzbtn');
+                if (!cadenzaRadio || !cadenzaRadio.checked) {
+                    alert('Please switch to Cadenza mode first');
+                    return;
+                }
+                
+                // Disable button during processing
+                getCadenzaDataBtn.disabled = true;
+                getCadenzaDataBtn.textContent = 'Getting Data...';
+                console.log("Retrieving Cadenza data")
+                var imgblob = await window.cadenzaClient.getData('png');
+                console.log('Cadenza data retrieved:', imgblob);
+                
+                if (imgblob && imgblob instanceof Blob) {
+                    // Send image data to server to save in images folder
+                    const formData = new FormData();
+                    formData.append('imageData', imgblob, 'cadenza-image.png');
+                    
+                    try {
+                        const response = await fetch('/save_cadenza_image', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (response.ok) {
+                            console.log('Image saved successfully to:', result.filepath);
+                            alert(`Image saved successfully to: ${result.filepath}`);
+                        } else {
+                            console.error('Server error:', result.error);
+                            alert(`Error saving image: ${result.error}`);
+                        }
+                    } catch (fetchError) {
+                        console.error('Network error:', fetchError);
+                        alert(`Network error saving image: ${fetchError.message}`);
+                    }
+                } else {
+                    console.warn('No valid image data received from Cadenza client');
+                    alert('No valid image data received from Cadenza client');
+                }
+                
+            } catch (error) {
+                console.error('Error getting Cadenza data:', error);
+                alert('Error getting Cadenza data: ' + error.message);
+            } finally {
+                // Re-enable button
+                getCadenzaDataBtn.disabled = false;
+                getCadenzaDataBtn.innerHTML = '<span class="btn-text-full">Get Cadenza Data</span><span class="btn-text-short">Get Data</span>';
+            }
+        });
+    }
 });

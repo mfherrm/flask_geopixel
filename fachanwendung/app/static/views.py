@@ -36,7 +36,7 @@ if not os.path.exists(IMAGE_FOLDER):
 def add_cors_headers(response):
     cadenza_uri = current_app.config.get('CADENZA_URI', '')
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.google.com https://*.arcgis.com https://*.arcgisonline.com https://wayback.maptiles.arcgis.com https://*.maptiles.arcgis.com; frame-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000 https://api.runpod.ai https://api.runpod.io https://*.proxy.runpod.net https://*.arcgis.com https://*.arcgisonline.com https://wayback.maptiles.arcgis.com https://*.maptiles.arcgis.com; frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/;"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.google.com https://*.arcgis.com https://*.arcgisonline.com https://wayback.maptiles.arcgis.com https://*.maptiles.arcgis.com https://api.maptiler.com https://gis.sinica.edu.tw; frame-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000 https://api.runpod.ai https://api.runpod.io https://*.proxy.runpod.net https://*.arcgis.com https://*.arcgisonline.com https://wayback.maptiles.arcgis.com https://*.maptiles.arcgis.com https://api.maptiler.com https://gis.sinica.edu.tw; frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/;"
     return response
 
 @bp.route('/')
@@ -234,3 +234,33 @@ def health_check():
         'service': 'GeoPixel Flask Backend',
         'timestamp': str(os.path.getmtime(__file__) if os.path.exists(__file__) else 'unknown')
     }), 200
+
+@bp.route('/save_cadenza_image', methods=['POST'])
+def save_cadenza_image():
+    """Save Cadenza image data to the images folder"""
+    try:
+        if 'imageData' not in request.files:
+            return jsonify({'error': 'No image data provided'}), 400
+        
+        image_file = request.files['imageData']
+        
+        # Generate filename with timestamp
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        filename = f'cadenza-data-{timestamp}.png'
+        
+        # Save to the images folder
+        filepath = os.path.join(IMAGE_FOLDER, filename)
+        image_file.save(filepath)
+        
+        print(f"Saved Cadenza image to: {filepath}")
+        
+        return jsonify({
+            'message': 'Image saved successfully',
+            'filename': filename,
+            'filepath': filepath
+        }), 200
+        
+    except Exception as e:
+        print(f"Error saving Cadenza image: {str(e)}")
+        return jsonify({'error': f'Failed to save image: {str(e)}'}), 500

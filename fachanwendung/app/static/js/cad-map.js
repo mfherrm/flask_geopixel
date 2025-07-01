@@ -9,7 +9,7 @@ window.addEventListener('DOMContentLoaded', () => {
       debug: true,
       webApplication: {
         repositoryName: "Pc8YJDtHybIR3hDILuOJ",
-        externalLinkId: "aDnoKxgW86U3nWUqn4ms"
+        externalLinkId: "PqxAWkK1CLmiBkkjWAEI"
       },
     });
 
@@ -17,13 +17,13 @@ window.addEventListener('DOMContentLoaded', () => {
       useMapSrs: true,
       // extent is minx, miny, maxx, maxy
       mapExtent: [
-        852513.341856, 6511017.966314, 916327.095083, 7336950.728974
-      ],
+        [852513.341856, 6511017.966314, 916327.095083, 7336950.728974]
+      ]
 
     });
 
     window.cadenzaClient.on('change:extent', (event) => {
-        console.log(event)
+      console.log(event)
     });
   }
 });
