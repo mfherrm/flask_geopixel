@@ -99,8 +99,10 @@ class RunPodManager {
     }
 
     updateButtonStates() {
-        // Update current view mode
+        // Update current view mode every time this is called
         this.isOpenLayersMode = document.getElementById('olbtn') && document.getElementById('olbtn').checked;
+        
+        console.log(`Updating button states - Status: ${this.status}, OpenLayers Mode: ${this.isOpenLayersMode}`);
         
         // Centralized button state management based on internal pod status
         // New status pipeline: checking, stopping, starting, endpoint initialized, else
@@ -134,7 +136,19 @@ class RunPodManager {
             if (this.stopBtn) {
                 this.set_btn_enabled(this.stopBtn, "stop")
             }
-            // Disable CallGeoPixel during starting
+            // Disable CallGeoPixel during starting (endpoint not yet available)
+            if (this.callGeoPixelBtn) {
+                this.set_btn_disabled(this.callGeoPixelBtn)
+            }
+        } else if (this.status === 'RUNNING') {
+            // RUNNING state: Pod is running but endpoint availability needs to be verified
+            if (this.startBtn) {
+                this.set_btn_disabled(this.startBtn)
+            }
+            if (this.stopBtn) {
+                this.set_btn_enabled(this.stopBtn, "stop")
+            }
+            // Keep CallGeoPixel disabled until endpoint is confirmed available
             if (this.callGeoPixelBtn) {
                 this.set_btn_disabled(this.callGeoPixelBtn)
             }
@@ -146,11 +160,13 @@ class RunPodManager {
             if (this.stopBtn) {
                 this.set_btn_enabled(this.stopBtn, "stop")
             }
-            // Enable CallGeoPixel ONLY if in OpenLayers mode AND pod is available
+            // Enable CallGeoPixel ONLY when endpoint is confirmed available (regardless of OpenLayers/Cadenza mode)
             if (this.callGeoPixelBtn) {
-                if (this.isOpenLayersMode && !this.startBtn.classList.contains('loading-button')) {
+                if (this.endpointAvailable && !this.startBtn.classList.contains('loading-button')) {
+                    console.log("Enabling Call GeoPixel button - endpoint confirmed available");
                     this.set_btn_enabled(this.callGeoPixelBtn, "start")
                 } else {
+                    console.log(`Disabling Call GeoPixel button - Endpoint Available: ${this.endpointAvailable}, Loading: ${this.startBtn?.classList.contains('loading-button')}`);
                     this.set_btn_disabled(this.callGeoPixelBtn)
                 }
             }
@@ -318,11 +334,9 @@ class RunPodManager {
 
                         // IMMEDIATE button state update
                         if (this.callGeoPixelBtn) {
-                            const openLayersRadio = document.getElementById('olbtn');
-                            const isOpenLayersMode = openLayersRadio && openLayersRadio.checked;
                             const initializationComplete = this.isInitializationComplete();
 
-                            if (initializationComplete && isOpenLayersMode) {
+                            if (initializationComplete) {
                                 this.set_btn_enabled(this.callGeoPixelBtn, "start")
 
                                 // Enable stop button when endpoint is available
@@ -844,7 +858,8 @@ class RunPodManager {
                                 if (isAvailable) {
                                     this.endpointAvailable = true;
                                     this.shouldCheckEndpointHealth = false; // Stop checking once available
-                                    this.updateStatus(status, details + '\nEndpoint: Available');
+                                    this.status = 'Endpoint Initialized'; // Set internal status for button management
+                                    this.updateStatus('Endpoint Initialized', details + '\nEndpoint: Available');
                                     this.updateButtonStates();
                                 } else {
                                     this.updateStatus(status, details + '\nEndpoint: Starting...');
@@ -854,11 +869,13 @@ class RunPodManager {
                                 this.updateStatus(status, details + '\nEndpoint: Check failed');
                             });
                         } else if (this.endpointAvailable) {
-                            // Endpoint already confirmed available
-                            this.updateStatus(status, details + '\nEndpoint: Available (cached)');
+                            // Endpoint already confirmed available - set to Endpoint Initialized
+                            this.status = 'Endpoint Initialized';
+                            this.updateStatus('Endpoint Initialized', details + '\nEndpoint: Available (cached)');
                         } else {
-                            // Not checking endpoint health
-                            this.updateStatus(status, details + '\nEndpoint: Assumed available');
+                            // Not checking endpoint health - assume available for running pods
+                            this.status = 'Endpoint Initialized';
+                            this.updateStatus('Endpoint Initialized', details + '\nEndpoint: Assumed available');
                         }
                     } else {
                         this.updateStatus(status, details);

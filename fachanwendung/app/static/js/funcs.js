@@ -111,6 +111,87 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
     // Disable button and show loading state
     setButtonLoadingState(true);
     
+    // Check which source is active (OpenLayers or Cadenza)
+    const cadenzaRadio = document.getElementById('cdzbtn');
+    const isUsingCadenza = cadenzaRadio && cadenzaRadio.checked;
+    
+    if (isUsingCadenza) {
+        // Handle Cadenza source
+        await handleCadenzaCapture();
+    } else {
+        // Handle OpenLayers source (existing functionality)
+        await handleOpenLayersCapture();
+    }
+});
+
+/**
+ * Handle screenshot and extent capture for Cadenza source
+ */
+async function handleCadenzaCapture() {
+    try {
+        console.log('Using Cadenza source for screenshot and extent...');
+        
+        // Check if Cadenza client is available
+        if (!window.cadenzaClient) {
+            throw new Error('Cadenza client is not initialized');
+        }
+        
+        // Store the current extent before taking screenshot
+        const currentExtent = window.cadenzaCurrentExtent || [
+            852513.341856, 6511017.966314, 916327.095083, 7336950.728974
+        ];
+        
+        console.log("Current extent before screenshot:", currentExtent);
+        
+        // Try to preserve the current extent by setting it explicitly before screenshot
+        // Use a static extent strategy to maintain the current view
+        try {
+            await window.cadenzaClient.showMap('messstellenkarte', {
+                useMapSrs: true,
+                extentStrategy: {
+                    type: 'static',
+                    extent: currentExtent
+                }
+            });
+            console.log("Set extent before screenshot to:", currentExtent);
+        } catch (extentError) {
+            console.warn("Could not set extent before screenshot:", extentError);
+            // Continue with screenshot anyway
+        }
+        
+        // Small delay to ensure extent is applied
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Get screenshot from Cadenza using getData('png')
+        console.log("Getting Cadenza screenshot data...");
+        const imgBlob = await window.cadenzaClient.getData('png');
+        
+        if (!imgBlob || !(imgBlob instanceof Blob)) {
+            throw new Error('Failed to get valid image data from Cadenza');
+        }
+        
+        console.log('Cadenza screenshot retrieved:', imgBlob);
+        
+        // Convert extent to mapBounds format [[NW], [SE]]
+        const mapBounds = [[currentExtent[0], currentExtent[3]], [currentExtent[2], currentExtent[1]]];
+        
+        console.log("Cadenza map bounds (extent): [minX, minY, maxX, maxY] = ", currentExtent);
+        console.log("Map bounds as NW/SE:", mapBounds);
+        
+        // Process the captured image
+        handleSuccessfulCapture(imgBlob, mapBounds, setButtonLoadingState);
+        
+    } catch (error) {
+        console.error('Error capturing from Cadenza:', error);
+        alert('Error capturing from Cadenza: ' + error.message);
+        setButtonLoadingState(false);
+    }
+}
+
+/**
+ * Handle screenshot and extent capture for OpenLayers source (existing functionality)
+ */
+async function handleOpenLayersCapture() {
     let mbs = map.getView().calculateExtent()
 
     console.log("Map bounds (extent): [minX, minY, maxX, maxY] = ", mbs)
@@ -213,8 +294,7 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
         }, 100);
     });
     map.renderSync();
-
-});
+}
 
 
 // Wait for Cadenza to initialize before setting up the toggle functionality
@@ -246,72 +326,4 @@ $(document).ready(function () {
         // This ensures the correct element is shown based on the initial selection
         $('input[name="vis"]:checked').trigger('change');
     }, 1000); // 1 second delay to ensure Cadenza is fully initialized
-});
-
-// Add event listener for the new "Get Cadenza Data" button
-document.addEventListener('DOMContentLoaded', function() {
-    const getCadenzaDataBtn = document.getElementById('getCadenzaData');
-    if (getCadenzaDataBtn) {
-        getCadenzaDataBtn.addEventListener('click', async (event) => {
-            try {
-                console.log('Getting Cadenza data...');
-                
-                // Check if Cadenza client is available
-                if (!window.cadenzaClient) {
-                    throw new Error('Cadenza client is not initialized');
-                }
-                
-                // Check if Cadenza mode is active
-                const cadenzaRadio = document.getElementById('cdzbtn');
-                if (!cadenzaRadio || !cadenzaRadio.checked) {
-                    alert('Please switch to Cadenza mode first');
-                    return;
-                }
-                
-                // Disable button during processing
-                getCadenzaDataBtn.disabled = true;
-                getCadenzaDataBtn.textContent = 'Getting Data...';
-                console.log("Retrieving Cadenza data")
-                var imgblob = await window.cadenzaClient.getData('png');
-                console.log('Cadenza data retrieved:', imgblob);
-                
-                if (imgblob && imgblob instanceof Blob) {
-                    // Send image data to server to save in images folder
-                    const formData = new FormData();
-                    formData.append('imageData', imgblob, 'cadenza-image.png');
-                    
-                    try {
-                        const response = await fetch('/save_cadenza_image', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        const result = await response.json();
-                        
-                        if (response.ok) {
-                            console.log('Image saved successfully to:', result.filepath);
-                            alert(`Image saved successfully to: ${result.filepath}`);
-                        } else {
-                            console.error('Server error:', result.error);
-                            alert(`Error saving image: ${result.error}`);
-                        }
-                    } catch (fetchError) {
-                        console.error('Network error:', fetchError);
-                        alert(`Network error saving image: ${fetchError.message}`);
-                    }
-                } else {
-                    console.warn('No valid image data received from Cadenza client');
-                    alert('No valid image data received from Cadenza client');
-                }
-                
-            } catch (error) {
-                console.error('Error getting Cadenza data:', error);
-                alert('Error getting Cadenza data: ' + error.message);
-            } finally {
-                // Re-enable button
-                getCadenzaDataBtn.disabled = false;
-                getCadenzaDataBtn.innerHTML = '<span class="btn-text-full">Get Cadenza Data</span><span class="btn-text-short">Get Data</span>';
-            }
-        });
-    }
 });

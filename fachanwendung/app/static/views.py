@@ -234,33 +234,3 @@ def health_check():
         'service': 'GeoPixel Flask Backend',
         'timestamp': str(os.path.getmtime(__file__) if os.path.exists(__file__) else 'unknown')
     }), 200
-
-@bp.route('/save_cadenza_image', methods=['POST'])
-def save_cadenza_image():
-    """Save Cadenza image data to the images folder"""
-    try:
-        if 'imageData' not in request.files:
-            return jsonify({'error': 'No image data provided'}), 400
-        
-        image_file = request.files['imageData']
-        
-        # Generate filename with timestamp
-        from datetime import datetime
-        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        filename = f'cadenza-data-{timestamp}.png'
-        
-        # Save to the images folder
-        filepath = os.path.join(IMAGE_FOLDER, filename)
-        image_file.save(filepath)
-        
-        print(f"Saved Cadenza image to: {filepath}")
-        
-        return jsonify({
-            'message': 'Image saved successfully',
-            'filename': filename,
-            'filepath': filepath
-        }), 200
-        
-    except Exception as e:
-        print(f"Error saving Cadenza image: {str(e)}")
-        return jsonify({'error': f'Failed to save image: {str(e)}'}), 500
