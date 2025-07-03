@@ -1,4 +1,10 @@
 import './cadenza.js';
+import {
+    retryWithBackoff,
+    isRecoverableNetworkError,
+    showNetworkErrorMessage,
+    networkMonitor
+} from './network-utils.js';
 
 // Import tile processing functions from dedicated module
 import {
@@ -39,6 +45,7 @@ export { upscalingConfig };
 function setButtonLoadingState(isLoading) {
     const button = document.getElementById('screenMap');
     const cadenzaRadio = document.getElementById('cdzbtn');
+    const openLayersRadio = document.getElementById('olbtn');
     const originalText = 'Call GeoPixel';
     
     if (isLoading) {
@@ -49,10 +56,14 @@ function setButtonLoadingState(isLoading) {
         button.innerHTML = '<span class="loading-spinner"></span>Processing...';
         button.setAttribute('data-original-text', originalText);
         
-        // Disable Cadenza radio button during processing
+        // Disable both radio buttons during processing to prevent view switching
         if (cadenzaRadio) {
             cadenzaRadio.disabled = true;
             cadenzaRadio.setAttribute('data-was-disabled-by-processing', 'true');
+        }
+        if (openLayersRadio) {
+            openLayersRadio.disabled = true;
+            openLayersRadio.setAttribute('data-was-disabled-by-processing', 'true');
         }
     } else {
         // Re-enable button and restore original state
@@ -63,10 +74,14 @@ function setButtonLoadingState(isLoading) {
         button.classList.remove('loading-button');
         button.innerHTML = savedText;
         
-        // Re-enable Cadenza radio button after processing
+        // Re-enable both radio buttons after processing
         if (cadenzaRadio && cadenzaRadio.getAttribute('data-was-disabled-by-processing')) {
             cadenzaRadio.disabled = false;
             cadenzaRadio.removeAttribute('data-was-disabled-by-processing');
+        }
+        if (openLayersRadio && openLayersRadio.getAttribute('data-was-disabled-by-processing')) {
+            openLayersRadio.disabled = false;
+            openLayersRadio.removeAttribute('data-was-disabled-by-processing');
         }
     }
 }
@@ -137,32 +152,50 @@ async function handleCadenzaCapture() {
         }
         
         // Store the current extent before taking screenshot
-        const currentExtent = window.cadenzaCurrentExtent;
+        let currentExtent = window.cadenzaCurrentExtent;
+        
+        // Check if extent is valid (not empty array and has valid coordinates)
+        if (!currentExtent || !Array.isArray(currentExtent) || currentExtent.length !== 4 ||
+            currentExtent.some(coord => coord === undefined || coord === null || isNaN(coord))) {
+            console.warn('Invalid or missing Cadenza extent, using default extent');
+            // Use a default extent that covers a reasonable area (example: Germany)
+            currentExtent = [5.866, 47.270, 15.042, 55.058]; // [minX, minY, maxX, maxY] for Germany
+        }
         
         console.log("Current extent before screenshot:", currentExtent);
         
-        // Try to preserve the current extent by setting it explicitly before screenshot
-        // Use a static extent strategy to maintain the current view
-        try {
-            await window.cadenzaClient.showMap('satellitenkarte', {
-                useMapSrs: true,
-                extentStrategy: {
-                    type: 'static',
-                    extent: currentExtent
-                }
-            });
-            console.log("Set extent before screenshot to:", currentExtent);
-        } catch (extentError) {
-            console.warn("Could not set extent before screenshot:", extentError);
-            // Continue with screenshot anyway
-        }
+        // Add a small delay to ensure Cadenza is ready
+        await new Promise(resolve => setTimeout(resolve, 200));
         
-        // Small delay to ensure extent is applied
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Get screenshot from Cadenza using getData('png')
+        // Get screenshot from Cadenza using getData('png') without changing the extent
         console.log("Getting Cadenza screenshot data...");
-        const imgBlob = await window.cadenzaClient.getData('png');
+        let imgBlob;
+        
+        try {
+            // Check network status before attempting screenshot
+            if (!networkMonitor.getStatus()) {
+                throw new Error('Network is offline. Please check your internet connection.');
+            }
+
+            // Use retry with backoff for screenshot capture
+            imgBlob = await retryWithBackoff(async () => {
+                return await window.cadenzaClient.getData('png');
+            }, 3, 2000, 10000);
+            
+            console.log('Cadenza screenshot captured successfully');
+        } catch (cadenzaError) {
+            console.error('Cadenza getData error:', cadenzaError);
+            
+            // Use network utilities to determine error type and show appropriate message
+            if (isRecoverableNetworkError(cadenzaError)) {
+                showNetworkErrorMessage(cadenzaError, 'screenshot capture');
+                throw new Error('Network error: Unable to capture screenshot. Please try again.');
+            } else if (cadenzaError.message && cadenzaError.message.includes('expected type')) {
+                throw new Error('Cadenza is not ready for screenshot capture. Please wait a moment and try again.');
+            } else {
+                throw new Error('Failed to capture screenshot from Cadenza: ' + cadenzaError.message);
+            }
+        }
         
         if (!imgBlob || !(imgBlob instanceof Blob)) {
             throw new Error('Failed to get valid image data from Cadenza');
@@ -302,17 +335,27 @@ $(document).ready(function () {
         $('input[name="vis"]').on('change', function () {
             console.log("toggled visibility");
             const value = +this.value;
+            const isOpenLayersMode = value === 1 && this.checked;
+            const isCadenzaMode = value === 2 && this.checked;
 
-            // Toggle OpenLayers map
-            $('#OL-map').toggle(value === 1 && this.checked);
-
-            // Toggle Cadenza iframe
-            $('#cadenza-iframe').toggle(value === 2 && this.checked);
+            // Handle extent synchronization when switching views
+            if (isOpenLayersMode) {
+                // Switching to OpenLayers - sync extent from Cadenza to OL
+                syncExtentFromCadenzaToOL();
+                $('#OL-map').show();
+                $('#cadenza-iframe').hide();
+            } else if (isCadenzaMode) {
+                // Switching to Cadenza - show iframe first, then sync extent
+                $('#OL-map').hide();
+                $('#cadenza-iframe').show();
+                // Wait a bit for iframe to become visible before syncing extent
+                setTimeout(() => {
+                    syncExtentFromOLToCadenza();
+                }, 100);
+            }
             
             // Update the layer stats table based on current view
             if (window.updateStatsTableForView) {
-                const isOpenLayersMode = value === 1 && this.checked;
-                const isCadenzaMode = value === 2 && this.checked;
                 window.updateStatsTableForView(isOpenLayersMode, isCadenzaMode);
             }
             
@@ -325,3 +368,88 @@ $(document).ready(function () {
         $('input[name="vis"]:checked').trigger('change');
     }, 1000); // 1 second delay to ensure Cadenza is fully initialized
 });
+
+/**
+ * Sync extent from Cadenza to OpenLayers when switching to OL view
+ */
+function syncExtentFromCadenzaToOL() {
+    try {
+        console.log('Syncing extent from Cadenza to OpenLayers...');
+        
+        // Get current Cadenza extent
+        let cadenzaExtent = window.cadenzaCurrentExtent;
+        
+        // Check if we have a valid Cadenza extent
+        if (!cadenzaExtent || !Array.isArray(cadenzaExtent) || cadenzaExtent.length !== 4 ||
+            cadenzaExtent.some(coord => coord === undefined || coord === null || isNaN(coord))) {
+            console.log('No valid Cadenza extent available, keeping current OL extent');
+            return;
+        }
+        
+        // Just store the Cadenza extent for reference, don't change the OpenLayers view
+        console.log('Cadenza extent available for reference:', cadenzaExtent);
+        
+    } catch (error) {
+        console.error('Error syncing extent from Cadenza to OpenLayers:', error);
+    }
+}
+
+/**
+ * Sync extent from OpenLayers to Cadenza when switching to Cadenza view
+ */
+function syncExtentFromOLToCadenza() {
+    try {
+        console.log('Syncing extent from OpenLayers to Cadenza...');
+        
+        // Get current OpenLayers extent
+        if (!window.map || !window.map.getView()) {
+            console.log('OpenLayers map not available');
+            return;
+        }
+        
+        const olExtent = window.map.getView().calculateExtent();
+        console.log('OpenLayers extent:', olExtent);
+        
+        // Check if Cadenza client and iframe are available and visible
+        if (!window.cadenzaClient) {
+            console.log('Cadenza client not available');
+            return;
+        }
+        
+        // Check if iframe is visible before attempting to sync
+        const cadenzaIframe = document.getElementById('cadenza-iframe');
+        if (!cadenzaIframe || cadenzaIframe.style.display === 'none') {
+            console.log('Cadenza iframe not visible, skipping extent sync');
+            return;
+        }
+        
+        // Check iframe dimensions
+        const rect = cadenzaIframe.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) {
+            console.log('Cadenza iframe not properly sized, skipping extent sync');
+            return;
+        }
+        
+        // Set the Cadenza map extent
+        window.cadenzaClient.showMap('satellitenkarte', {
+            useMapSrs: true,
+            extentStrategy: {
+                type: 'static',
+                extent: olExtent
+            }
+        }).then(() => {
+            console.log('Successfully set Cadenza extent to:', olExtent);
+            // Update the stored Cadenza extent
+            window.cadenzaCurrentExtent = olExtent;
+        }).catch((error) => {
+            console.error('Error setting Cadenza extent:', error);
+            // If it's an iframe visibility error, we can ignore it as the user will see the default view
+            if (error.message && error.message.includes('Iframe must be visible')) {
+                console.log('Iframe visibility error - this is expected during view switching');
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error syncing extent from OpenLayers to Cadenza:', error);
+    }
+}
