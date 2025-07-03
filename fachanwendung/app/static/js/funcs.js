@@ -137,16 +137,14 @@ async function handleCadenzaCapture() {
         }
         
         // Store the current extent before taking screenshot
-        const currentExtent = window.cadenzaCurrentExtent || [
-            852513.341856, 6511017.966314, 916327.095083, 7336950.728974
-        ];
+        const currentExtent = window.cadenzaCurrentExtent;
         
         console.log("Current extent before screenshot:", currentExtent);
         
         // Try to preserve the current extent by setting it explicitly before screenshot
         // Use a static extent strategy to maintain the current view
         try {
-            await window.cadenzaClient.showMap('messstellenkarte', {
+            await window.cadenzaClient.showMap('satellitenkarte', {
                 useMapSrs: true,
                 extentStrategy: {
                     type: 'static',

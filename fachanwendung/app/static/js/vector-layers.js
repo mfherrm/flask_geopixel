@@ -572,6 +572,15 @@ export const smokeLayer = new ol.layer.Vector({
   })
 });
 
+const shadowSource = new ol.source.Vector({});
+export const shadowLayer = new ol.layer.Vector({
+  source: shadowSource,
+  style: new ol.style.Style({
+    fill: new ol.style.Fill({ color: 'rgba(0, 0, 0, 0.3)' }),
+    stroke: new ol.style.Stroke({ color: '#000000', width: 2 })
+  })
+});
+
 
 // ===========================================
 // AGRICULTURE LAYERS
@@ -613,6 +622,22 @@ export const livestockLayer = new ol.layer.Vector({
     stroke: new ol.style.Stroke({ color: '#D2B48C', width: 2 })
   })
 });
+
+// ===========================================
+// CADENZA GEOMETRY TRACKING LAYER
+// ===========================================
+
+// Special layer for tracking all newly added Cadenza geometries
+const cadenzaTrackingSource = new ol.source.Vector({});
+export const cadenzaTrackingLayer = new ol.layer.Vector({
+  source: cadenzaTrackingSource,
+  style: new ol.style.Style({
+    fill: new ol.style.Fill({ color: 'rgba(255, 215, 0, 0.3)' }), // Gold with transparency
+    stroke: new ol.style.Stroke({ color: '#FFD700', width: 2, lineDash: [5, 5] }) // Dashed gold border
+  }),
+  name: 'Cadenza Tracking Layer'
+});
+
 
 // ===========================================
 // LAYER COLLECTIONS AND UTILITIES
@@ -694,7 +719,8 @@ export const environmentalLayers = {
   floodLayer,
   snowLayer,
   iceLayer,
-  smokeLayer
+  smokeLayer,
+  shadowLayer
 };
 
 export const agricultureLayers = {
@@ -702,6 +728,11 @@ export const agricultureLayers = {
   barnLayer,
   siloLayer,
   livestockLayer
+};
+
+// Special tracking layers collection
+export const trackingLayers = {
+  cadenzaTrackingLayer
 };
 
 // Export all layers as a single collection
@@ -713,11 +744,146 @@ export const allVectorLayers = {
   ...urbanFeaturesLayers,
   ...geologicalLayers,
   ...environmentalLayers,
-  ...agricultureLayers
+  ...agricultureLayers,
+  ...trackingLayers
 };
 
 // Get all layers as array for easy map addition
 export const getAllVectorLayersArray = () => {
   return Object.values(allVectorLayers);
+};
+
+// ===========================================
+// TRACKING LAYER UTILITIES
+// ===========================================
+
+/**
+ * Get the count of geometries in the Cadenza tracking layer
+ * @returns {number} Number of geometries in the tracking layer
+ */
+export const getCadenzaTrackingCount = () => {
+  const source = cadenzaTrackingLayer.getSource();
+  const features = source.getFeatures();
+  
+  let totalGeometries = 0;
+  features.forEach(feature => {
+    const geometry = feature.getGeometry();
+    if (geometry) {
+      const geometryType = geometry.getType();
+      
+      // Count individual geometries within MultiPolygon and MultiLineString
+      if (geometryType === 'MultiPolygon') {
+        const polygons = geometry.getPolygons();
+        totalGeometries += polygons.length;
+      } else {
+        // Single geometry types (Polygon, LineString, Point, etc.)
+        totalGeometries += 1;
+      }
+    }
+  });
+  
+  return totalGeometries;
+};
+
+/**
+ * Clear all geometries from the tracking layer
+ */
+export const clearTrackingLayers = () => {
+  cadenzaTrackingLayer.getSource().clear();
+  console.log('Tracking layer cleared');
+};
+
+/**
+ * Add a geometry to the Cadenza tracking layer
+ * @param {ol.geom.Geometry} geometry - The geometry to add
+ * @param {Object} properties - Optional properties for the feature
+ */
+export const addToTrackingLayer = (geometry, properties = {}) => {
+  const feature = new ol.Feature({
+    geometry: geometry,
+    ...properties,
+    addedAt: new Date().toISOString(),
+    source: 'cadenza'
+  });
+  
+  cadenzaTrackingLayer.getSource().addFeature(feature);
+  
+  console.log(`Added geometry to tracking layer. Total count: ${getCadenzaTrackingCount()}`);
+};
+
+/**
+ * Toggle visibility of the Cadenza tracking layer
+ * @param {boolean} visible - Whether the layer should be visible
+ */
+export const toggleTrackingLayerVisibility = (visible) => {
+  cadenzaTrackingLayer.setVisible(visible);
+  console.log(`Cadenza tracking layer visibility: ${visible}`);
+};
+
+/**
+ * Get detailed information about the tracking layer
+ * @returns {Object} Detailed tracking layer information
+ */
+export const getTrackingLayerInfo = () => {
+  const cadenzaCount = getCadenzaTrackingCount();
+  const isVisible = cadenzaTrackingLayer.getVisible();
+  
+  const info = {
+    cadenzaTrackingCount: cadenzaCount,
+    isVisible: isVisible,
+    layerName: cadenzaTrackingLayer.get('name'),
+    features: cadenzaTrackingLayer.getSource().getFeatures().map(feature => ({
+      id: feature.getId(),
+      properties: feature.getProperties(),
+      geometryType: feature.getGeometry().getType()
+    }))
+  };
+  
+  console.log('📊 Cadenza Tracking Layer Info:', info);
+  console.log(`🎯 Total tracked geometries: ${cadenzaCount}`);
+  console.log(`👁️ Layer visible: ${isVisible}`);
+  
+  return info;
+};
+
+/**
+ * Console helper functions for easy tracking layer management
+ */
+export const trackingLayerHelpers = {
+  // Get current count
+  count: () => {
+    const count = getCadenzaTrackingCount();
+    console.log(`🎯 Current Cadenza tracking count: ${count}`);
+    return count;
+  },
+  
+  // Show tracking layer
+  show: () => {
+    toggleTrackingLayerVisibility(true);
+    console.log('👁️ Cadenza tracking layer is now visible');
+  },
+  
+  // Hide tracking layer
+  hide: () => {
+    toggleTrackingLayerVisibility(false);
+    console.log('🙈 Cadenza tracking layer is now hidden');
+  },
+  
+  // Clear all tracked geometries
+  clear: () => {
+    const countBefore = getCadenzaTrackingCount();
+    clearTrackingLayers();
+    console.log(`🧹 Cleared ${countBefore} geometries from tracking layers`);
+  },
+  
+  // Get detailed info
+  info: () => getTrackingLayerInfo(),
+  
+  // Toggle visibility
+  toggle: () => {
+    const currentVisibility = cadenzaTrackingLayer.getVisible();
+    toggleTrackingLayerVisibility(!currentVisibility);
+    console.log(`🔄 Toggled tracking layer visibility to: ${!currentVisibility}`);
+  }
 };
 

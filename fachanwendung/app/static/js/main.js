@@ -6,6 +6,18 @@
  * - Module loading and coordination
  * - Stats panel setup
  * - Event listeners for UI components
+ * - Cadenza geometry tracking layer
+ *
+ * CADENZA TRACKING LAYER:
+ * When using Cadenza mode, all newly added geometries are automatically
+ * tracked in a single dedicated layer. Use these console commands:
+ *
+ * - cadenzaTracking.count()  // Get number of tracked objects
+ * - cadenzaTracking.show()   // Show tracking layer
+ * - cadenzaTracking.hide()   // Hide tracking layer
+ * - cadenzaTracking.clear()  // Clear all tracked objects
+ * - cadenzaTracking.info()   // Get detailed information
+ * - cadenzaTracking.toggle() // Toggle layer visibility
  */
 
 // Import core modules in dependency order
@@ -177,8 +189,18 @@ if (typeof window !== 'undefined') {
     showModal: showLayerStatsModal,
     hideModal: hideLayerStatsModal,
     showOverlap: showLayerOverlapAnalysis,
-    version: '2.0.0'
+    version: '2.0.0',
+    // Cadenza tracking helpers
+    tracking: {
+      count: () => window.cadenzaTracking?.count(),
+      show: () => window.cadenzaTracking?.show(),
+      hide: () => window.cadenzaTracking?.hide(),
+      clear: () => window.cadenzaTracking?.clear(),
+      info: () => window.cadenzaTracking?.info(),
+      toggle: () => window.cadenzaTracking?.toggle()
+    }
   };
   
   console.log('Debug helpers available at window.geoPixelDebug');
+  console.log('Cadenza tracking helpers available at window.cadenzaTracking');
 }

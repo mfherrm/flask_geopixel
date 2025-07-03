@@ -25,7 +25,13 @@ import {
   urbanFeaturesLayers,
   geologicalLayers,
   environmentalLayers,
-  agricultureLayers
+  agricultureLayers,
+  trackingLayers,
+  cadenzaTrackingLayer,
+  getCadenzaTrackingCount,
+  clearTrackingLayers,
+  addToTrackingLayer,
+  toggleTrackingLayerVisibility
 } from './vector-layers.js';
 
 // ===========================================
@@ -75,7 +81,7 @@ export const getLayerStatistics = () => {
     total: 0
   };
 
-  // Categories with their corresponding layer objects
+  // Categories with their corresponding layer objects (excluding tracking layers for OpenLayers)
   const categories = {
     transportation: transportationLayers,
     infrastructure: infrastructureLayers,
@@ -177,10 +183,11 @@ const getCadenzaLayerStatistics = () => {
 // Function to generate HTML for statistics table
 export const generateStatsTableHTML = (viewMode = 'openlayers') => {
   if (viewMode === 'cadenza') {
-    // Get Cadenza layer statistics
+    // Get Cadenza layer statistics including tracking layer
     const cadenzaStats = getCadenzaLayerStatistics();
+    const trackingCount = getCadenzaTrackingCount();
     
-    if (cadenzaStats.total === 0 && cadenzaStats.layers.length === 0) {
+    if (cadenzaStats.total === 0 && cadenzaStats.layers.length === 0 && trackingCount === 0) {
       return `<div class="stats-empty-state">
         <h4>Cadenza View</h4>
         <p>No Cadenza layers available.</p>
@@ -198,11 +205,26 @@ export const generateStatsTableHTML = (viewMode = 'openlayers') => {
       isCadenza: true
     }));
     
+    // Add tracking layer if it has geometries
+    if (trackingCount > 0) {
+      allLayers.unshift({
+        layerName: 'cadenzaTrackingLayer',
+        count: trackingCount,
+        category: 'Tracking',
+        displayName: 'New Cadenza Objects',
+        isCadenza: true,
+        isTracking: true
+      });
+    }
+    
+    const totalCount = cadenzaStats.total + trackingCount;
+    
     let html = `
       <div class="stats-summary-compact">
         <div class="view-indicator cadenza-view">Cadenza View</div>
-        <div class="total-count">Total: ${cadenzaStats.total} objects</div>
+        <div class="total-count">Total: ${totalCount} objects</div>
         <div class="layer-count">Active Layers: ${allLayers.length}</div>
+        ${trackingCount > 0 ? `<div class="tracking-indicator">🎯 ${trackingCount} new objects tracked</div>` : ''}
       </div>
       <table class="layer-stats-table">
       <thead>
@@ -218,8 +240,10 @@ export const generateStatsTableHTML = (viewMode = 'openlayers') => {
     
     // Generate rows for Cadenza layers (not draggable)
     allLayers.forEach((layer, index) => {
-      html += `<tr class="layer-row cadenza-layer" data-layer-name="${layer.layerName}">
-        <td class="layer-drag-handle">🗺️</td>
+      const rowClass = layer.isTracking ? 'layer-row cadenza-layer tracking-layer' : 'layer-row cadenza-layer';
+      const icon = layer.isTracking ? '🎯' : '🗺️';
+      html += `<tr class="${rowClass}" data-layer-name="${layer.layerName}">
+        <td class="layer-drag-handle">${icon}</td>
         <td class="layer-order-cell">
           <span class="layer-order-indicator">${index + 1}</span>
         </td>
@@ -234,6 +258,7 @@ export const generateStatsTableHTML = (viewMode = 'openlayers') => {
     html += `</tbody></table>
       <div class="cadenza-stats-note">
         <small>📍 Layer statistics reflect current Cadenza map view</small>
+        ${trackingCount > 0 ? `<br><small>🎯 Tracking layer contains newly added geometries</small>` : ''}
       </div>`;
     return html;
   }
@@ -997,14 +1022,14 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
 }
 
 /**
- * Add geometries to Cadenza map
+ * Add geometries to Cadenza map and tracking layer
  * @param {Array} validResults - Array of valid tile processing results
  * @param {string} object - The object type being processed
  * @param {Object} tileConfig - The tile configuration object
  * @param {Function} setButtonLoadingState - Function to manage button loading state
  */
 function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadingState) {
-    console.log('Adding geometries to Cadenza map...');
+    console.log('Adding geometries to Cadenza map and tracking layer...');
     
     // First pass: collect all geometries with their tile information
     const allGeometries = [];
@@ -1049,8 +1074,8 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
     // Combine neighboring tile masks and merge contained masks within the same layer
     const combinedGeometries = combineAndMergeAllMasks(allGeometries, tileConfig);
     
-    // Add geometries to Cadenza map
-    if (combinedGeometries.length > 0 && window.cadenzaClient) {
+    // Add geometries to both Cadenza map and tracking layer
+    if (combinedGeometries.length > 0) {
         try {
             // Process each combined geometry
             combinedGeometries.forEach((geom, index) => {
@@ -1069,20 +1094,35 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
                     "coordinates": coordinates
                 };
                 
-                console.log(`Adding geometry ${index + 1} to Cadenza:`, polygon);
+                console.log(`Adding geometry ${index + 1} to Cadenza and tracking layer:`, polygon);
+                
+                // Add to Cadenza tracking layer first (for OpenLayers visualization and counting)
+                try {
+                    const olGeometry = new ol.format.GeoJSON().readGeometry(polygon, {
+                        dataProjection: 'EPSG:3857',
+                        featureProjection: 'EPSG:3857'
+                    });
+                    
+                    addToTrackingLayer(olGeometry, {
+                        objectType: object,
+                        tileConfig: tileConfig.label,
+                        processingMethod: 'cadenza',
+                        geometryIndex: index
+                    });
+                } catch (trackingError) {
+                    console.warn('Error adding to tracking layer:', trackingError);
+                }
                 
                 // Add geometry to Cadenza using editGeometry
-                if (polygon) {
+                if (window.cadenzaClient && polygon) {
                     try {
-                        window.cadenzaClient.editGeometry('messstellenkarte', polygon, { useMapSrs: true });
+                        window.cadenzaClient.editGeometry('satellitenkarte', polygon, { useMapSrs: true });
 
                         window.cadenzaClient.on('editGeometry:ok', (event) => {
                             console.log('Geometry editing was completed', event.detail.geometry);
                             // Use current extent instead of initial extent
-                            const currentExtent = window.cadenzaCurrentExtent || [
-                                852513.341856, 6511017.966314, 916327.095083, 7336950.728974
-                            ];
-                            window.cadenzaClient.showMap('messstellenkarte', {
+                            const currentExtent = window.cadenzaCurrentExtent
+                            window.cadenzaClient.showMap('satellitenkarte', {
                                 useMapSrs: true,
                                 mapExtent: currentExtent,
                                 geometry: polygon
@@ -1092,10 +1132,8 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
                         window.cadenzaClient.on('editGeometry:cancel', (event) => {
                             console.log('Geometry editing was cancelled');
                             // Use current extent instead of initial extent
-                            const currentExtent = window.cadenzaCurrentExtent || [
-                                852513.341856, 6511017.966314, 916327.095083, 7336950.728974
-                            ];
-                            window.cadenzaClient.showMap('messstellenkarte', {
+                            const currentExtent = window.cadenzaCurrentExtent
+                            window.cadenzaClient.showMap('satellitenkarte', {
                                 useMapSrs: true,
                                 mapExtent: currentExtent
                             });
@@ -1104,9 +1142,11 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
                         console.log('Error adding geometry to Cadenza:', error);
                     }
                 } else {
-                    console.log("No Polygon to add to Cadenza");
+                    console.log("No Cadenza client or polygon to add to Cadenza");
                     // Fallback: create new geometry
-                    window.cadenzaClient.createGeometry('messstellenkarte', 'Polygon');
+                    if (window.cadenzaClient) {
+                        window.cadenzaClient.createGeometry('satellitenkarte', 'Polygon');
+                    }
                 }
             });
             
@@ -1116,31 +1156,37 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
             }, 0);
             const masksWithHoles = combinedGeometries.filter(geom => geom.holes && geom.holes.length > 0).length;
             
-            console.log(`Added ${combinedGeometries.length} combined geometries to Cadenza`);
+            console.log(`Added ${combinedGeometries.length} combined geometries to Cadenza and tracking layer`);
             console.log(`Processed ${totalOriginalMasks} original masks into ${combinedGeometries.length} final features`);
+            console.log(`Tracking layer now contains ${getCadenzaTrackingCount()} total geometries`);
             if (masksWithHoles > 0) {
                 console.log(`${masksWithHoles} features contain holes from contained masks`);
             }
         } catch (error) {
-            console.error(`Error adding geometries to Cadenza:`, error);
+            console.error(`Error adding geometries to Cadenza and tracking layer:`, error);
         }
     }
     
-    console.log("Tiled processing with Cadenza geometry addition complete!");
+    // Refresh the stats table to show new geometries in tracking layer
+    setTimeout(() => {
+        updateStatsTable(currentViewMode);
+    }, 200);
+    
+    console.log("Tiled processing with Cadenza geometry addition and tracking complete!");
     
     // Re-enable the Call GeoPixel button
     setButtonLoadingState(false);
 }
 
 /**
- * Add geometries to OpenLayers map (existing functionality)
+ * Add geometries to OpenLayers map (existing functionality - unchanged)
  * @param {Array} validResults - Array of valid tile processing results
  * @param {string} object - The object type being processed
  * @param {Object} tileConfig - The tile configuration object
  * @param {Function} setButtonLoadingState - Function to manage button loading state
  */
 function addGeometriesToOpenLayers(validResults, object, tileConfig, setButtonLoadingState) {
-    console.log('Adding geometries to OpenLayers map...');
+    console.log('Adding geometries to OpenLayers map (traditional layer mapping)...');
     
     // Determine target layer based on object type
     let layer = "";

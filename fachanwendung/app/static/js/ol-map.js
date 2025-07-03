@@ -3,7 +3,14 @@
 // Import all vector layers from dedicated module
 import {
   getAllVectorLayersArray,
-  allVectorLayers
+  allVectorLayers,
+  cadenzaTrackingLayer,
+  getCadenzaTrackingCount,
+  clearTrackingLayers,
+  addToTrackingLayer,
+  toggleTrackingLayerVisibility,
+  getTrackingLayerInfo,
+  trackingLayerHelpers
 } from './vector-layers.js';
 import { toggleLayerSwitcher } from './vector-functions.js';
 
@@ -63,7 +70,16 @@ Object.entries(allVectorLayers).forEach(([layerName, layer]) => {
 window.baseLayers = baseLayers;
 window.switchBaseLayer = switchBaseLayer;
 
+// Expose tracking layer utilities to window for easy access
+window.cadenzaTrackingLayer = cadenzaTrackingLayer;
+window.getCadenzaTrackingCount = getCadenzaTrackingCount;
+window.clearTrackingLayers = clearTrackingLayers;
+window.addToTrackingLayer = addToTrackingLayer;
+window.toggleTrackingLayerVisibility = toggleTrackingLayerVisibility;
+window.getTrackingLayerInfo = getTrackingLayerInfo;
 
+// Expose convenient helper functions for console usage
+window.cadenzaTracking = trackingLayerHelpers;
 
 // Expose geometry utilities to window for backward compatibility
 window.addRectangleToLayer = addRectangleToLayer;

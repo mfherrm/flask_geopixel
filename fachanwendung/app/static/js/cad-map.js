@@ -1,7 +1,7 @@
 import './cadenza3.0.4.js';
 
 // Global variable to store current Cadenza extent
-window.cadenzaCurrentExtent = [852513.341856, 6511017.966314, 916327.095083, 7336950.728974];
+window.cadenzaCurrentExtent = [];
 
 window.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('cadenza-iframe')) {
@@ -11,17 +11,14 @@ window.addEventListener('DOMContentLoaded', () => {
       iframe: 'cadenza-iframe',
       debug: true,
       webApplication: {
-        repositoryName: "Pc8YJDtHybIR3hDILuOJ",
-        externalLinkId: "PqxAWkK1CLmiBkkjWAEI"
+        repositoryName: "_DS4kjgAp5On-lHnEgIi",
+        externalLinkId: "mgsctVdrerBV8101oFtX"
       },
     });
 
-    window.cadenzaClient.showMap('messstellenkarte', {
+    window.cadenzaClient.showMap('satellitenkarte', {
       useMapSrs: true,
       // extent is minx, miny, maxx, maxy
-      mapExtent: [
-        852513.341856, 6511017.966314, 916327.095083, 7336950.728974
-      ]
     });
 
     // Listen for extent changes and store the current extent
