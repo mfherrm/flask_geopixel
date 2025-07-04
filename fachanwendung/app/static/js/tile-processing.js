@@ -221,7 +221,7 @@ export async function processSingleTile(tileBlob, selection, tileBounds, tileDim
     } else {
         console.log('No RunPod API key found in interface');
     }
-    
+        console.log(formData)
     try {
         const response = await fetch('http://127.0.0.1:5000/receive', {
             method: 'POST',

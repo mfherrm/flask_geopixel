@@ -38,7 +38,6 @@ export { upscalingConfig };
  */
 function setButtonLoadingState(isLoading) {
     const button = document.getElementById('screenMap');
-    const cadenzaRadio = document.getElementById('cdzbtn');
     const originalText = 'Call GeoPixel';
     
     if (isLoading) {
@@ -50,9 +49,9 @@ function setButtonLoadingState(isLoading) {
         button.setAttribute('data-original-text', originalText);
         
         // Disable Cadenza radio button during processing
-        if (cadenzaRadio) {
-            cadenzaRadio.disabled = true;
-            cadenzaRadio.setAttribute('data-was-disabled-by-processing', 'true');
+        if (window.cadenzaRadio) {
+            window.cadenzaRadio.disabled = true;
+            window.cadenzaRadio.setAttribute('data-was-disabled-by-processing', 'true');
         }
     } else {
         // Re-enable button and restore original state
@@ -64,9 +63,9 @@ function setButtonLoadingState(isLoading) {
         button.innerHTML = savedText;
         
         // Re-enable Cadenza radio button after processing
-        if (cadenzaRadio && cadenzaRadio.getAttribute('data-was-disabled-by-processing')) {
-            cadenzaRadio.disabled = false;
-            cadenzaRadio.removeAttribute('data-was-disabled-by-processing');
+        if (window.cadenzaRadio && window.cadenzaRadio.getAttribute('data-was-disabled-by-processing')) {
+            window.cadenzaRadio.disabled = false;
+            window.cadenzaRadio.removeAttribute('data-was-disabled-by-processing');
         }
     }
 }
@@ -112,10 +111,14 @@ document.getElementById('screenMap').addEventListener('click', async (event) => 
     setButtonLoadingState(true);
     
     // Check which source is active (OpenLayers or Cadenza)
-    const cadenzaRadio = document.getElementById('cdzbtn');
-    const isUsingCadenza = cadenzaRadio && cadenzaRadio.checked;
+    window.window.cadenzaRadio = document.getElementById('cdzbtn');
+    const isUsingCadenza = window.cadenzaRadio && window.cadenzaRadio.checked;
     
     if (isUsingCadenza) {
+        // Trigger Cadenza layer statistics refresh when Call GeoPixel is pressed
+        if (window.onCadenzaActionTriggered) {
+            window.onCadenzaActionTriggered();
+        }
         // Handle Cadenza source
         await handleCadenzaCapture();
     } else {
@@ -136,25 +139,75 @@ async function handleCadenzaCapture() {
             throw new Error('Cadenza client is not initialized');
         }
         
-        // Store the current extent before taking screenshot
-        const currentExtent = window.cadenzaCurrentExtent;
+        // Get the current extent from the shared variable
+        let currentExtent = null;
+        if (window.currentExtent) {
+            // Prefer the actual OpenLayers extent if available
+            if (window.currentExtent.extent) {
+                currentExtent = window.currentExtent.extent;
+                console.log('Using actual OpenLayers extent for Cadenza capture:', currentExtent);
+            } else if (window.currentExtent.center) {
+                // Fallback to calculated extent
+                const center = window.currentExtent.center;
+                const zoom = window.currentExtent.zoom || 15;
+                
+                const resolution = 156543.03392804097 / Math.pow(2, zoom);
+                const halfWidth = resolution * 1024 / 2;
+                const halfHeight = resolution * 1024 / 2;
+                
+                currentExtent = [
+                    center[0] - halfWidth,
+                    center[1] - halfHeight,
+                    center[0] + halfWidth,
+                    center[1] + halfHeight
+                ];
+                
+                console.log('Using calculated extent for Cadenza capture:', {
+                    center: center,
+                    zoom: zoom,
+                    resolution: resolution,
+                    extent: currentExtent
+                });
+            }
+            
+            // Fine-tune the extent to achieve target scale of 21000
+            if (currentExtent) {
+                const buffer = 0.06; // 6% reduction to get closer to 21000 scale
+                const width = currentExtent[2] - currentExtent[0];
+                const height = currentExtent[3] - currentExtent[1];
+                const bufferedExtent = [
+                    currentExtent[0] + (width * buffer),  // Shrink from left
+                    currentExtent[1] + (height * buffer), // Shrink from bottom
+                    currentExtent[2] - (width * buffer),  // Shrink from right
+                    currentExtent[3] - (height * buffer)  // Shrink from top
+                ];
+                
+                console.log('Applying buffer to extent for Cadenza capture:', {
+                    original: currentExtent,
+                    buffered: bufferedExtent
+                });
+                
+                currentExtent = bufferedExtent;
+            }
+        }
         
         console.log("Current extent before screenshot:", currentExtent);
         
         // Try to preserve the current extent by setting it explicitly before screenshot
-        // Use a static extent strategy to maintain the current view
-        try {
-            await window.cadenzaClient.showMap('satellitenkarte', {
-                useMapSrs: true,
-                extentStrategy: {
-                    type: 'static',
-                    extent: currentExtent
-                }
-            });
-            console.log("Set extent before screenshot to:", currentExtent);
-        } catch (extentError) {
-            console.warn("Could not set extent before screenshot:", extentError);
-            // Continue with screenshot anyway
+        if (currentExtent) {
+            try {
+                await window.cadenzaClient.showMap('satellitenkarte', {
+                    useMapSrs: true,
+                    extentStrategy: {
+                        type: 'static',
+                        extent: currentExtent
+                    }
+                });
+                console.log("Set extent before screenshot to:", currentExtent);
+            } catch (extentError) {
+                console.warn("Could not set extent before screenshot:", extentError);
+                // Continue with screenshot anyway
+            }
         }
         
         // Small delay to ensure extent is applied
@@ -309,11 +362,40 @@ $(document).ready(function () {
             // Toggle Cadenza iframe
             $('#cadenza-iframe').toggle(value === 2 && this.checked);
             
+            // Synchronize extents when switching between views
+            if (value === 1 && this.checked) {
+                // Switching to OpenLayers - update from window.currentExtent
+                console.log("Switching to OpenLayers - updating view from window.currentExtent");
+                if (window.updateOpenLayersFromCurrentExtent) {
+                    window.updateOpenLayersFromCurrentExtent();
+                }
+            } else if (value === 2 && this.checked) {
+                // Switching to Cadenza - update from window.currentExtent
+                console.log("Switching to Cadenza - updating view from window.currentExtent");
+                if (window.updateCadenzaFromCurrentExtent) {
+                    window.updateCadenzaFromCurrentExtent();
+                }
+            }
+            
             // Update the layer stats table based on current view
             if (window.updateStatsTableForView) {
                 const isOpenLayersMode = value === 1 && this.checked;
                 const isCadenzaMode = value === 2 && this.checked;
-                window.updateStatsTableForView(isOpenLayersMode, isCadenzaMode);
+                
+                // Trigger Cadenza layer statistics refresh when switching to Cadenza mode
+                if (isCadenzaMode && window.setCurrentViewMode) {
+                    console.log("Switching to Cadenza mode - triggering stats refresh");
+                    window.setCurrentViewMode('cadenza');
+                    document.getElementById('layer-overlap-btn').disabled = true;
+                    document.getElementById('layer-overlap-btn').style.cursor = 'not-allowed';
+                } else if (isOpenLayersMode && window.setCurrentViewMode) {
+                    window.setCurrentViewMode('openlayers');
+                    document.getElementById('layer-overlap-btn').disabled = false;
+                    document.getElementById('layer-overlap-btn').style.cursor = 'pointer';
+                } else {
+                    // Fallback to existing method
+                    window.updateStatsTableForView(isOpenLayersMode, isCadenzaMode);
+                }
             }
             
             // Let RunPod manager handle button state based on view + pod availability
