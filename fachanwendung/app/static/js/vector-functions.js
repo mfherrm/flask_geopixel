@@ -78,10 +78,11 @@ export const getLayerStatistics = () => {
     geological: {},
     environmental: {},
     agriculture: {},
+    tracking: {},
     total: 0
   };
 
-  // Categories with their corresponding layer objects (excluding tracking layers for OpenLayers)
+  // Categories with their corresponding layer objects (including tracking layers)
   const categories = {
     transportation: transportationLayers,
     infrastructure: infrastructureLayers,
@@ -90,10 +91,11 @@ export const getLayerStatistics = () => {
     urbanFeatures: urbanFeaturesLayers,
     geological: geologicalLayers,
     environmental: environmentalLayers,
-    agriculture: agricultureLayers
+    agriculture: agricultureLayers,
+    tracking: trackingLayers
   };
 
-  // Iterate through each category using a for loop
+  // Iterate through each category
   for (const [categoryKey, layers] of Object.entries(categories)) {
     Object.entries(layers).forEach(([layerName, layer]) => {
       const count = getLayerFeatureCount(layer);
@@ -112,7 +114,14 @@ const formatLayerName = (layerName) => {
     .replace(/Layer$/, '')
     .replace(/([A-Z])/g, ' $1')
     .replace(/^./, str => str.toUpperCase())
-    .trim();
+    .trim()
+    // Handle special cases for better readability
+    .replace(/U R L/g, 'URL')
+    .replace(/I D/g, 'ID')
+    .replace(/G P S/g, 'GPS')
+    .replace(/C A D/g, 'CAD')
+    .replace(/Tracking Layer/g, 'Tracking')
+    .replace(/Cadenza Tracking/g, 'Cadenza Tracking');
 };
 
 // Function to get Cadenza layers from the actual Cadenza interface
@@ -137,7 +146,7 @@ const getCadenzaLayerStatistics = () => {
           if (layerElements.length > 0) {
             layerElements.forEach((element, index) => {
               const layerName = element.textContent?.trim() || element.getAttribute('data-layer') || `Layer ${index + 1}`;
-              if (layerName && layerName.length > 0) {
+              if (layerName && layerName.length > 0 && layerName !== 'undefined') {
                 cadenzaStats.layers.push({
                   name: layerName,
                   category: 'Cadenza',
@@ -151,30 +160,37 @@ const getCadenzaLayerStatistics = () => {
         }
       }
       
-      // If we couldn't get layers from iframe, use known Cadenza layers based on the interface
+      // If we couldn't get layers from iframe, use default Cadenza layer structure
       if (cadenzaStats.layers.length === 0) {
-        // Based on the screenshot, these are the visible layers in Cadenza
-        // Only include layers that are actually visible/active
+        // Default Cadenza layers based on typical Cadenza setup
         cadenzaStats.layers = [
-          { name: 'Messungen', category: 'Data', count: 450 }, // Based on visible measurement points
-          { name: 'Gewässer', category: 'Water', count: 25 }, // Water bodies visible
-          { name: 'Landkreise', category: 'Administrative', count: 12 }, // Administrative boundaries
-          { name: 'Hintergrundkarte', category: 'Base', count: 1 }, // Background map
-          { name: 'OSM Disy Lite (Graustufen Kartenstil)', category: 'Base', count: 1 } // Active base layer
+          { name: 'Satellitenkarte', category: 'Base', count: 1 }, // Main satellite base layer
+          { name: 'Measurement Points', category: 'Data', count: 0 }, // Measurement data if available
+          { name: 'Administrative Boundaries', category: 'Administrative', count: 0 }, // Boundaries if loaded
+          { name: 'Kreise (2024)', category: 'Administrative', count: 1 }, // German administrative districts for 2024
+          { name: 'Background Map', category: 'Base', count: 1 } // Background layer
         ];
       }
       
+      // Filter out layers with 0 count for cleaner display
+      cadenzaStats.layers = cadenzaStats.layers.filter(layer => layer.count > 0);
       cadenzaStats.total = cadenzaStats.layers.reduce((sum, layer) => sum + layer.count, 0);
       console.log('Found Cadenza layers:', cadenzaStats.layers);
     } catch (error) {
       console.warn('Error getting Cadenza layers:', error);
       
-      // Fallback to basic layer information
+      // Fallback to minimal layer information
       cadenzaStats.layers = [
-        { name: 'Cadenza Map View', category: 'Base', count: 1 }
+        { name: 'Cadenza Map', category: 'Base', count: 1 }
       ];
       cadenzaStats.total = 1;
     }
+  } else {
+    // If no Cadenza client, show placeholder
+    cadenzaStats.layers = [
+      { name: 'Cadenza Not Connected', category: 'Status', count: 0 }
+    ];
+    cadenzaStats.total = 0;
   }
   
   return cadenzaStats;
@@ -187,11 +203,12 @@ export const generateStatsTableHTML = (viewMode = 'openlayers') => {
     const cadenzaStats = getCadenzaLayerStatistics();
     const trackingCount = getCadenzaTrackingCount();
     
-    if (cadenzaStats.total === 0 && cadenzaStats.layers.length === 0 && trackingCount === 0) {
+    if (cadenzaStats.total === 0 && trackingCount === 0) {
       return `<div class="stats-empty-state">
         <h4>Cadenza View</h4>
-        <p>No Cadenza layers available.</p>
+        <p>No Cadenza layers or tracked objects available.</p>
         <p>Make sure Cadenza is running and connected!</p>
+        <p>Add geometries to see them tracked in the stats.</p>
       </div>`;
     }
     
@@ -282,7 +299,8 @@ export const generateStatsTableHTML = (viewMode = 'openlayers') => {
     { key: 'urbanFeatures', name: 'Urban Features', data: stats.urbanFeatures },
     { key: 'geological', name: 'Geological', data: stats.geological },
     { key: 'environmental', name: 'Environmental', data: stats.environmental },
-    { key: 'agriculture', name: 'Agriculture', data: stats.agriculture }
+    { key: 'agriculture', name: 'Agriculture', data: stats.agriculture },
+    { key: 'tracking', name: 'Tracking', data: stats.tracking }
   ];
 
   // Collect all layers with counts in a flat list for cross-category reordering
@@ -407,16 +425,41 @@ let currentViewMode = 'openlayers';
 export const updateStatsTableForView = (isOpenLayersMode, isCadenzaMode) => {
   console.log('Updating stats table for view:', { isOpenLayersMode, isCadenzaMode });
   
-  if (isOpenLayersMode) {
-    currentViewMode = 'openlayers';
-    updateStatsTable('openlayers');
-  } else if (isCadenzaMode) {
+  if (isCadenzaMode && !isOpenLayersMode) {
     currentViewMode = 'cadenza';
     updateStatsTable('cadenza');
-  } else {
-    // Default to OpenLayers if no clear mode
+  } else if (isOpenLayersMode && !isCadenzaMode) {
     currentViewMode = 'openlayers';
     updateStatsTable('openlayers');
+  } else {
+    // Auto-detect mode based on what's visible/active
+    const cadenzaIframe = document.getElementById('cadenza-iframe');
+    const olMap = document.getElementById('OL-map');
+    
+    if (cadenzaIframe && cadenzaIframe.style.display !== 'none') {
+      currentViewMode = 'cadenza';
+      updateStatsTable('cadenza');
+    } else if (olMap && olMap.style.display !== 'none') {
+      currentViewMode = 'openlayers';
+      updateStatsTable('openlayers');
+    } else {
+      // Default to OpenLayers if no clear indication
+      currentViewMode = 'openlayers';
+      updateStatsTable('openlayers');
+    }
+  }
+};
+
+// Function to get current view mode
+export const getCurrentViewMode = () => {
+  return currentViewMode;
+};
+
+// Function to set current view mode manually
+export const setCurrentViewMode = (mode) => {
+  if (mode === 'cadenza' || mode === 'openlayers') {
+    currentViewMode = mode;
+    updateStatsTable(mode);
   }
 };
 
@@ -675,8 +718,68 @@ export const refreshStatsTable = () => {
   updateStatsTable(currentViewMode);
 };
 
-// Expose function to window for radio button handler
+// Function to debug missing layers
+export const debugLayerCoverage = () => {
+  console.log('=== LAYER COVERAGE DEBUG ===');
+  
+  // Get all layers from allVectorLayers
+  const allLayerNames = Object.keys(allVectorLayers);
+  console.log('Total layers in allVectorLayers:', allLayerNames.length);
+  console.log('All layer names:', allLayerNames);
+  
+  // Get all layers from categories
+  const categories = {
+    transportation: transportationLayers,
+    infrastructure: infrastructureLayers,
+    naturalFeatures: naturalFeaturesLayers,
+    vegetation: vegetationLayers,
+    urbanFeatures: urbanFeaturesLayers,
+    geological: geologicalLayers,
+    environmental: environmentalLayers,
+    agriculture: agricultureLayers,
+    tracking: trackingLayers
+  };
+  
+  const categoryLayerNames = [];
+  Object.entries(categories).forEach(([categoryName, layers]) => {
+    const layerNames = Object.keys(layers);
+    console.log(`${categoryName}:`, layerNames.length, 'layers -', layerNames);
+    categoryLayerNames.push(...layerNames);
+  });
+  
+  console.log('Total layers in categories:', categoryLayerNames.length);
+  
+  // Find missing layers
+  const missingFromCategories = allLayerNames.filter(name => !categoryLayerNames.includes(name));
+  const missingFromAll = categoryLayerNames.filter(name => !allLayerNames.includes(name));
+  
+  if (missingFromCategories.length > 0) {
+    console.error('❌ Layers in allVectorLayers but missing from categories:', missingFromCategories);
+  }
+  
+  if (missingFromAll.length > 0) {
+    console.error('❌ Layers in categories but missing from allVectorLayers:', missingFromAll);
+  }
+  
+  if (missingFromCategories.length === 0 && missingFromAll.length === 0) {
+    console.log('✅ All layers properly included in both collections');
+  }
+  
+  console.log('=== END DEBUG ===');
+  
+  return {
+    allLayerNames,
+    categoryLayerNames,
+    missingFromCategories,
+    missingFromAll
+  };
+};
+
+// Expose functions to window for radio button handler and external access
 window.updateStatsTableForView = updateStatsTableForView;
+window.getCurrentViewMode = getCurrentViewMode;
+window.setCurrentViewMode = setCurrentViewMode;
+window.debugLayerCoverage = debugLayerCoverage;
 
 // ===========================================
 // LAYER OVERLAP ANALYSIS FUNCTIONALITY
@@ -1194,6 +1297,8 @@ function addGeometriesToOpenLayers(validResults, object, tileConfig, setButtonLo
     // Transportation layers
     if (object === "Car") {
         layer = allVectorLayers.carLayer;
+    } else if (object === "Truck") {
+        layer = allVectorLayers.truckLayer;
     } else if (object === "Train") {
         layer = allVectorLayers.trainLayer;
     } else if (object === "Aircraft") {
