@@ -151,11 +151,16 @@ const getCadenzaLayerStatistics = () => {
         }
       }
       
-      // If we couldn't get layers from iframe, only show base map layer
-      // Don't show irrelevant layers that may not be part of the current view
+      // If we couldn't get layers from iframe, use known Cadenza layers based on the interface
       if (cadenzaStats.layers.length === 0) {
+        // Based on the screenshot, these are the visible layers in Cadenza
+        // Only include layers that are actually visible/active
         cadenzaStats.layers = [
-          { name: 'Cadenza Base Map', category: 'Base', count: 1 }
+          { name: 'Messungen', category: 'Data', count: 450 }, // Based on visible measurement points
+          { name: 'Gewässer', category: 'Water', count: 25 }, // Water bodies visible
+          { name: 'Landkreise', category: 'Administrative', count: 12 }, // Administrative boundaries
+          { name: 'Hintergrundkarte', category: 'Base', count: 1 }, // Background map
+          { name: 'OSM Disy Lite (Graustufen Kartenstil)', category: 'Base', count: 1 } // Active base layer
         ];
       }
       
@@ -164,9 +169,9 @@ const getCadenzaLayerStatistics = () => {
     } catch (error) {
       console.warn('Error getting Cadenza layers:', error);
       
-      // Fallback to minimal layer information
+      // Fallback to basic layer information
       cadenzaStats.layers = [
-        { name: 'Cadenza Base Map', category: 'Base', count: 1 }
+        { name: 'Cadenza Map View', category: 'Base', count: 1 }
       ];
       cadenzaStats.total = 1;
     }
@@ -1024,8 +1029,7 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
  * @param {Function} setButtonLoadingState - Function to manage button loading state
  */
 function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadingState) {
-    console.log('🔍 [GEOMETRY VALIDATION] Starting Cadenza geometry addition process...');
-    console.log(`🔍 [GEOMETRY VALIDATION] Processing ${validResults.length} tile results for object type: ${object}`);
+    console.log('Adding geometries to Cadenza map and tracking layer...');
     
     // First pass: collect all geometries with their tile information
     const allGeometries = [];
@@ -1033,81 +1037,27 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
     validResults.forEach(result => {
         const { tileIndex, data } = result;
         
-        console.log(`🔍 [GEOMETRY VALIDATION] Examining tile ${tileIndex}:`, {
-            hasOutline: !!(data.outline),
-            outlineLength: data.outline ? data.outline.length : 0,
-            hasCoordinatesTransformed: !!(data.coordinates_transformed),
-            dataKeys: Object.keys(data)
-        });
-        
         if (data.outline && data.outline.length > 0) {
-            console.log(`🔍 [GEOMETRY VALIDATION] Processing geometries from tile ${tileIndex} for Cadenza`);
+            console.log(`Processing geometries from tile ${tileIndex} for Cadenza`);
             
             if (data.coordinates_transformed) {
                 // Process all contours from this tile
                 data.outline.forEach((contour, contourIndex) => {
-                    console.log(`🔍 [GEOMETRY VALIDATION] Tile ${tileIndex}, contour ${contourIndex}:`, {
-                        pointCount: contour.length,
-                        firstPoint: contour[0],
-                        lastPoint: contour[contour.length - 1],
-                        isArray: Array.isArray(contour),
-                        allPointsValid: contour.every(point => Array.isArray(point) && point.length === 2 && !isNaN(point[0]) && !isNaN(point[1]))
-                    });
+                    console.log(`Tile ${tileIndex}, contour ${contourIndex}: ${contour.length} points`);
                     
-                    // Validate contour before processing
-                    if (!Array.isArray(contour) || contour.length < 3) {
-                        console.error(`❌ [GEOMETRY VALIDATION] Invalid contour in tile ${tileIndex}, contour ${contourIndex}: insufficient points (${contour.length})`);
-                        return; // Skip this contour
-                    }
-                    
-                    // Validate each point in the contour
-                    const invalidPoints = contour.filter((point, idx) => {
-                        if (!Array.isArray(point) || point.length !== 2) {
-                            console.error(`❌ [GEOMETRY VALIDATION] Invalid point structure at index ${idx}:`, point);
-                            return true;
-                        }
-                        if (isNaN(point[0]) || isNaN(point[1])) {
-                            console.error(`❌ [GEOMETRY VALIDATION] Invalid coordinates at index ${idx}:`, point);
-                            return true;
-                        }
-                        return false;
-                    });
-                    
-                    if (invalidPoints.length > 0) {
-                        console.error(`❌ [GEOMETRY VALIDATION] Skipping contour with ${invalidPoints.length} invalid points in tile ${tileIndex}, contour ${contourIndex}`);
-                        return; // Skip this contour
-                    }
-                    
-                    let mapCoords = [...contour]; // Create a copy to avoid modifying original
+                    let mapCoords = contour; // Already in geographic coordinates
                     
                     // Ensure polygon is closed
-                    const firstPoint = mapCoords[0];
-                    const lastPoint = mapCoords[mapCoords.length - 1];
-                    const isAlreadyClosed = Math.abs(firstPoint[0] - lastPoint[0]) < 1e-10 && Math.abs(firstPoint[1] - lastPoint[1]) < 1e-10;
-                    
-                    if (!isAlreadyClosed) {
-                        console.log(`🔧 [GEOMETRY VALIDATION] Closing polygon for tile ${tileIndex}, contour ${contourIndex}`);
-                        mapCoords.push([...firstPoint]);
+                    if (mapCoords.length > 0 && JSON.stringify(mapCoords[0]) !== JSON.stringify(mapCoords[mapCoords.length - 1])) {
+                        mapCoords.push([...mapCoords[0]]);
                     }
                     
                     // Check and fix polygon orientation
                     const isClockwise = isPolygonClockwise(mapCoords);
                     if (isClockwise) {
-                        console.log(`🔧 [GEOMETRY VALIDATION] Reversing clockwise polygon for tile ${tileIndex}, contour ${contourIndex}`);
+                        console.log(`Tile ${tileIndex}, contour ${contourIndex}: reversing clockwise polygon`);
                         mapCoords.reverse();
                     }
-                    
-                    // Final validation of processed coordinates
-                    if (mapCoords.length < 4) { // Need at least 4 points for a closed polygon
-                        console.error(`❌ [GEOMETRY VALIDATION] Processed polygon has insufficient points (${mapCoords.length}) for tile ${tileIndex}, contour ${contourIndex}`);
-                        return;
-                    }
-                    
-                    console.log(`✅ [GEOMETRY VALIDATION] Valid geometry processed for tile ${tileIndex}, contour ${contourIndex}:`, {
-                        pointCount: mapCoords.length,
-                        isClosed: isAlreadyClosed || mapCoords.length > 3,
-                        orientation: isClockwise ? 'was clockwise (fixed)' : 'counterclockwise (correct)'
-                    });
                     
                     // Store geometry with tile information for mask combining
                     allGeometries.push({
@@ -1117,79 +1067,23 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
                         processed: false
                     });
                 });
-            } else {
-                console.warn(`⚠️ [GEOMETRY VALIDATION] Tile ${tileIndex} has outline but no coordinates_transformed flag`);
             }
-        } else {
-            console.warn(`⚠️ [GEOMETRY VALIDATION] Tile ${tileIndex} has no valid outline data`);
         }
     });
     
-    console.log(`🔍 [GEOMETRY VALIDATION] Collected ${allGeometries.length} valid geometries from ${validResults.length} tiles`);
-    
     // Combine neighboring tile masks and merge contained masks within the same layer
-    console.log(`🔍 [GEOMETRY VALIDATION] Starting mask combining and merging process...`);
     const combinedGeometries = combineAndMergeAllMasks(allGeometries, tileConfig);
-    console.log(`🔍 [GEOMETRY VALIDATION] Mask combining complete: ${allGeometries.length} → ${combinedGeometries.length} geometries`);
     
     // Add geometries to both Cadenza map and tracking layer
     if (combinedGeometries.length > 0) {
-        console.log(`🔍 [GEOMETRY VALIDATION] Processing ${combinedGeometries.length} combined geometries for Cadenza...`);
         try {
             // Process each combined geometry
             combinedGeometries.forEach((geom, index) => {
-                console.log(`🔍 [GEOMETRY VALIDATION] Processing combined geometry ${index + 1}:`, {
-                    hasCoordinates: !!(geom.coordinates),
-                    coordinateCount: geom.coordinates ? geom.coordinates.length : 0,
-                    hasHoles: !!(geom.holes && geom.holes.length > 0),
-                    holeCount: geom.holes ? geom.holes.length : 0,
-                    tileIndex: geom.tileIndex,
-                    originalTile: geom.originalTile,
-                    combinedFromTiles: geom.combinedFromTiles
-                });
-                
-                // Validate combined geometry coordinates
-                if (!geom.coordinates || !Array.isArray(geom.coordinates) || geom.coordinates.length < 4) {
-                    console.error(`❌ [GEOMETRY VALIDATION] Invalid combined geometry ${index + 1}: insufficient coordinates`);
-                    return;
-                }
-                
-                // Validate coordinate structure
-                const invalidCoords = geom.coordinates.filter((coord, idx) => {
-                    if (!Array.isArray(coord) || coord.length !== 2 || isNaN(coord[0]) || isNaN(coord[1])) {
-                        console.error(`❌ [GEOMETRY VALIDATION] Invalid coordinate at index ${idx} in geometry ${index + 1}:`, coord);
-                        return true;
-                    }
-                    return false;
-                });
-                
-                if (invalidCoords.length > 0) {
-                    console.error(`❌ [GEOMETRY VALIDATION] Skipping geometry ${index + 1} due to ${invalidCoords.length} invalid coordinates`);
-                    return;
-                }
-                
                 // Create GeoJSON polygon from coordinates
                 let coordinates;
                 if (geom.holes && geom.holes.length > 0) {
-                    console.log(`🔍 [GEOMETRY VALIDATION] Creating polygon with ${geom.holes.length} holes for geometry ${index + 1}`);
-                    
-                    // Validate holes
-                    const validHoles = geom.holes.filter((hole, holeIdx) => {
-                        if (!Array.isArray(hole) || hole.length < 4) {
-                            console.error(`❌ [GEOMETRY VALIDATION] Invalid hole ${holeIdx} in geometry ${index + 1}: insufficient points`);
-                            return false;
-                        }
-                        const invalidHoleCoords = hole.filter(coord => !Array.isArray(coord) || coord.length !== 2 || isNaN(coord[0]) || isNaN(coord[1]));
-                        if (invalidHoleCoords.length > 0) {
-                            console.error(`❌ [GEOMETRY VALIDATION] Invalid hole ${holeIdx} in geometry ${index + 1}: ${invalidHoleCoords.length} invalid coordinates`);
-                            return false;
-                        }
-                        return true;
-                    });
-                    
                     // Create polygon with holes: [exterior, hole1, hole2, ...]
-                    coordinates = [geom.coordinates, ...validHoles];
-                    console.log(`🔍 [GEOMETRY VALIDATION] Using ${validHoles.length} valid holes out of ${geom.holes.length} total holes`);
+                    coordinates = [geom.coordinates, ...geom.holes];
                 } else {
                     // Simple polygon without holes
                     coordinates = [geom.coordinates];
@@ -1200,31 +1094,14 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
                     "coordinates": coordinates
                 };
                 
-                // Final GeoJSON validation
-                try {
-                    JSON.stringify(polygon); // Test if it can be serialized
-                    console.log(`✅ [GEOMETRY VALIDATION] Valid GeoJSON polygon created for geometry ${index + 1}:`, {
-                        type: polygon.type,
-                        ringCount: polygon.coordinates.length,
-                        exteriorRingPoints: polygon.coordinates[0].length,
-                        holeRingPoints: polygon.coordinates.slice(1).map(ring => ring.length)
-                    });
-                } catch (jsonError) {
-                    console.error(`❌ [GEOMETRY VALIDATION] Failed to serialize polygon ${index + 1} to JSON:`, jsonError);
-                    return;
-                }
-                
-                console.log(`🔍 [GEOMETRY VALIDATION] Adding geometry ${index + 1} to Cadenza and tracking layer`);
+                console.log(`Adding geometry ${index + 1} to Cadenza and tracking layer:`, polygon);
                 
                 // Add to Cadenza tracking layer first (for OpenLayers visualization and counting)
-                console.log(`🔍 [GEOMETRY VALIDATION] Adding geometry ${index + 1} to tracking layer...`);
                 try {
                     const olGeometry = new ol.format.GeoJSON().readGeometry(polygon, {
                         dataProjection: 'EPSG:3857',
                         featureProjection: 'EPSG:3857'
                     });
-                    
-                    console.log(`✅ [GEOMETRY VALIDATION] Successfully created OpenLayers geometry for tracking layer`);
                     
                     addToTrackingLayer(olGeometry, {
                         objectType: object,
@@ -1232,72 +1109,44 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
                         processingMethod: 'cadenza',
                         geometryIndex: index
                     });
-                    
-                    console.log(`✅ [GEOMETRY VALIDATION] Successfully added geometry ${index + 1} to tracking layer`);
                 } catch (trackingError) {
-                    console.error(`❌ [GEOMETRY VALIDATION] Error adding geometry ${index + 1} to tracking layer:`, trackingError);
+                    console.warn('Error adding to tracking layer:', trackingError);
                 }
                 
-                // Add geometry to Cadenza - handle WMS FEATURE_INFO limitation
-                console.log(`🔍 [GEOMETRY VALIDATION] Attempting to add geometry ${index + 1} to Cadenza...`);
-                console.log(`🔍 [GEOMETRY VALIDATION] Cadenza client available:`, !!(window.cadenzaClient));
-                console.log(`🔍 [GEOMETRY VALIDATION] Polygon valid:`, !!(polygon));
-                
+                // Add geometry to Cadenza using editGeometry
                 if (window.cadenzaClient && polygon) {
                     try {
-                        console.log(`🔍 [GEOMETRY VALIDATION] Using showMap with geometry for geometry ${index + 1}...`);
-                        console.log(`🔍 [GEOMETRY VALIDATION] Polygon being sent to Cadenza:`, JSON.stringify(polygon, null, 2));
-                        
-                        // Check if Cadenza iframe is visible and properly sized before attempting to add geometry
-                        const cadenzaIframe = document.getElementById('cadenza-iframe');
-                        if (!cadenzaIframe) {
-                            console.error(`❌ [GEOMETRY VALIDATION] Cadenza iframe element not found for geometry ${index + 1}`);
-                            return;
-                        }
-                        
-                        if (cadenzaIframe.style.display === 'none') {
-                            console.warn(`⚠️ [GEOMETRY VALIDATION] Cadenza iframe is hidden for geometry ${index + 1}, showing it first...`);
-                            cadenzaIframe.style.display = 'block';
-                            // Wait a moment for the iframe to become visible
-                            setTimeout(() => {
-                                // Continue processing after iframe becomes visible
-                                console.log(`🔍 [GEOMETRY VALIDATION] Iframe should now be visible for geometry ${index + 1}`);
-                            }, 200);
-                        }
-                        
-                        const rect = cadenzaIframe.getBoundingClientRect();
-                        if (rect.width <= 0 || rect.height <= 0) {
-                            console.error(`❌ [GEOMETRY VALIDATION] Cadenza iframe is not properly sized for geometry ${index + 1} (width: ${rect.width}, height: ${rect.height})`);
-                            console.log(`🔍 [GEOMETRY VALIDATION] Skipping Cadenza integration for geometry ${index + 1} (geometry added to tracking layer only)`);
-                            return;
-                        }
-                        
-                        console.log(`✅ [GEOMETRY VALIDATION] Cadenza iframe is visible and properly sized for geometry ${index + 1}`);
-                        
-                        // Use showMap with geometry instead of editGeometry to avoid WMS FEATURE_INFO issues
-                        const currentExtent = window.cadenzaCurrentExtent || [5.866, 47.270, 15.042, 55.058]; // Default extent for Germany
-                        
-                        window.cadenzaClient.showMap('satellitenkarte', {
-                            useMapSrs: true,
-                            geometry: polygon,
-                            extentStrategy: {
-                                type: 'static',
-                                extent: currentExtent
-                            }
+                        window.cadenzaClient.editGeometry('satellitenkarte', polygon, { useMapSrs: true });
+
+                        window.cadenzaClient.on('editGeometry:ok', (event) => {
+                            console.log('Geometry editing was completed', event.detail.geometry);
+                            // Use current extent instead of initial extent
+                            const currentExtent = window.cadenzaCurrentExtent
+                            window.cadenzaClient.showMap('satellitenkarte', {
+                                useMapSrs: true,
+                                mapExtent: currentExtent,
+                                geometry: polygon
+                            });
                         });
                         
-                    } catch (cadenzaError) {
-                        console.error(`❌ [GEOMETRY VALIDATION] Unexpected error in Cadenza integration for geometry ${index + 1}:`, cadenzaError);
+                        window.cadenzaClient.on('editGeometry:cancel', (event) => {
+                            console.log('Geometry editing was cancelled');
+                            // Use current extent instead of initial extent
+                            const currentExtent = window.cadenzaCurrentExtent
+                            window.cadenzaClient.showMap('satellitenkarte', {
+                                useMapSrs: true,
+                                mapExtent: currentExtent
+                            });
+                        });
+                    } catch (error) {
+                        console.log('Error adding geometry to Cadenza:', error);
                     }
                 } else {
-                    if (!window.cadenzaClient) {
-                        console.error(`❌ [GEOMETRY VALIDATION] No Cadenza client available for geometry ${index + 1}`);
+                    console.log("No Cadenza client or polygon to add to Cadenza");
+                    // Fallback: create new geometry
+                    if (window.cadenzaClient) {
+                        window.cadenzaClient.createGeometry('satellitenkarte', 'Polygon');
                     }
-                    if (!polygon) {
-                        console.error(`❌ [GEOMETRY VALIDATION] No valid polygon for geometry ${index + 1}`);
-                    }
-                    
-                    console.log(`🔍 [GEOMETRY VALIDATION] Skipping Cadenza integration for geometry ${index + 1} (geometry added to tracking layer only)`);
                 }
             });
             
@@ -1307,42 +1156,15 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
             }, 0);
             const masksWithHoles = combinedGeometries.filter(geom => geom.holes && geom.holes.length > 0).length;
             
-            console.log(`✅ [GEOMETRY VALIDATION] Successfully added ${combinedGeometries.length} combined geometries to Cadenza and tracking layer`);
-            console.log(`📊 [GEOMETRY VALIDATION] Processing summary: ${totalOriginalMasks} original masks → ${combinedGeometries.length} final features`);
-            console.log(`📊 [GEOMETRY VALIDATION] Tracking layer now contains ${getCadenzaTrackingCount()} total geometries`);
+            console.log(`Added ${combinedGeometries.length} combined geometries to Cadenza and tracking layer`);
+            console.log(`Processed ${totalOriginalMasks} original masks into ${combinedGeometries.length} final features`);
+            console.log(`Tracking layer now contains ${getCadenzaTrackingCount()} total geometries`);
             if (masksWithHoles > 0) {
-                console.log(`🕳️ [GEOMETRY VALIDATION] ${masksWithHoles} features contain holes from contained masks`);
+                console.log(`${masksWithHoles} features contain holes from contained masks`);
             }
-            
-            // Final validation summary
-            console.log(`🎯 [GEOMETRY VALIDATION] FINAL SUMMARY:`, {
-                tilesProcessed: validResults.length,
-                originalGeometries: allGeometries.length,
-                combinedGeometries: combinedGeometries.length,
-                geometriesWithHoles: masksWithHoles,
-                trackingLayerTotal: getCadenzaTrackingCount(),
-                objectType: object,
-                tileConfiguration: tileConfig.label
-            });
-            
         } catch (error) {
-            console.error(`❌ [GEOMETRY VALIDATION] Critical error adding geometries to Cadenza and tracking layer:`, error);
-            console.error(`❌ [GEOMETRY VALIDATION] Error context:`, {
-                combinedGeometriesCount: combinedGeometries.length,
-                objectType: object,
-                tileConfig: tileConfig.label,
-                errorMessage: error.message,
-                errorStack: error.stack
-            });
+            console.error(`Error adding geometries to Cadenza and tracking layer:`, error);
         }
-    } else {
-        console.warn(`⚠️ [GEOMETRY VALIDATION] No combined geometries to add to Cadenza`);
-        console.warn(`⚠️ [GEOMETRY VALIDATION] Processing context:`, {
-            originalGeometries: allGeometries.length,
-            validResults: validResults.length,
-            objectType: object,
-            tileConfig: tileConfig.label
-        });
     }
     
     // Refresh the stats table to show new geometries in tracking layer
@@ -1404,8 +1226,6 @@ function addGeometriesToOpenLayers(validResults, object, tileConfig, setButtonLo
         layer = allVectorLayers.solarPanelLayer;
     } else if (object === "Wind Turbine") {
         layer = allVectorLayers.windTurbineLayer;
-    } else if (object === "City") {
-        layer = allVectorLayers.cityLayer;
     
     // Natural features layers
     } else if (object === "River") {

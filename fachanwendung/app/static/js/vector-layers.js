@@ -182,15 +182,6 @@ export const windTurbineLayer = new ol.layer.Vector({
   })
 });
 
-const citySource = new ol.source.Vector({});
-export const cityLayer = new ol.layer.Vector({
-  source: citySource,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({ color: 'rgba(75, 0, 130, 0.4)' }),
-    stroke: new ol.style.Stroke({ color: '#4B0082', width: 2 })
-  })
-});
-
 // ===========================================
 // NATURAL FEATURES LAYERS
 // ===========================================
@@ -673,8 +664,7 @@ export const infrastructureLayers = {
   runwayLayer,
   parkingLotLayer,
   solarPanelLayer,
-  windTurbineLayer,
-  cityLayer
+  windTurbineLayer
 };
 
 export const naturalFeaturesLayers = {
