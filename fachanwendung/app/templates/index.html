@@ -18,6 +18,46 @@
     <link rel="stylesheet" href="../static/css/style.css?v=2025061001">
     <link rel="stylesheet" href="../static/js/ol/ol.css">
     
+    <style>
+        /* Style for the scale control */
+        .ol-scale-control {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+        
+        .ol-scale-control:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        /* Additional ol-ext scale control styles */
+        .ol-control.ol-scale {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+        
+        .ol-control.ol-scale:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+    </style>
+    
 </head>
 
 <body data-cadenza-uri="{{ cadenza_uri }}" data-cadenza-repository-name="{{ config.CADENZA_REPOSITORY_NAME }}"

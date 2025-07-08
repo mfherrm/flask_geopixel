@@ -170,24 +170,9 @@ async function handleCadenzaCapture() {
                 });
             }
             
-            // Fine-tune the extent to achieve target scale of 21000
+            // Use current extent as-is for Cadenza capture
             if (currentExtent) {
-                const buffer = 0.06; // 6% reduction to get closer to 21000 scale
-                const width = currentExtent[2] - currentExtent[0];
-                const height = currentExtent[3] - currentExtent[1];
-                const bufferedExtent = [
-                    currentExtent[0] + (width * buffer),  // Shrink from left
-                    currentExtent[1] + (height * buffer), // Shrink from bottom
-                    currentExtent[2] - (width * buffer),  // Shrink from right
-                    currentExtent[3] - (height * buffer)  // Shrink from top
-                ];
-                
-                console.log('Applying buffer to extent for Cadenza capture:', {
-                    original: currentExtent,
-                    buffered: bufferedExtent
-                });
-                
-                currentExtent = bufferedExtent;
+                console.log('Using current extent for Cadenza capture:', currentExtent);
             }
         }
         
@@ -381,18 +366,34 @@ $(document).ready(function () {
             // Toggle Cadenza iframe
             $('#cadenza-iframe').toggle(value === 2 && this.checked);
             
-            // Synchronize extents when switching between views
+            // Simple synchronization using center and zoom
             if (value === 1 && this.checked) {
-                // Switching to OpenLayers - update from window.currentExtent
-                console.log("Switching to OpenLayers - updating view from window.currentExtent");
-                if (window.updateOpenLayersFromCurrentExtent) {
-                    window.updateOpenLayersFromCurrentExtent();
+                // Switching to OpenLayers - sync from Cadenza
+                console.log("Switching to OpenLayers");
+                
+                if (window.currentExtent && window.currentExtent.center && window.currentExtent.zoom) {
+                    if (window.updateOpenLayersFromCurrentExtent) {
+                        window.updateOpenLayersFromCurrentExtent();
+                    }
                 }
             } else if (value === 2 && this.checked) {
-                // Switching to Cadenza - update from window.currentExtent
-                console.log("Switching to Cadenza - updating view from window.currentExtent");
-                if (window.updateCadenzaFromCurrentExtent) {
-                    window.updateCadenzaFromCurrentExtent();
+                // Switching to Cadenza - sync from OpenLayers
+                console.log("Switching to Cadenza");
+                
+                if (window.map) {
+                    // Update current extent with OpenLayers values
+                    const center = window.map.getView().getCenter();
+                    const zoom = window.map.getView().getZoom();
+                    
+                    window.currentExtent.center = center;
+                    window.currentExtent.zoom = zoom;
+                    window.currentExtent.currentCenter = center;
+                    window.currentExtent.source = 'openlayers';
+                    
+                    // Update Cadenza view
+                    if (window.updateCadenzaFromCurrentExtent) {
+                        window.updateCadenzaFromCurrentExtent();
+                    }
                 }
             }
             

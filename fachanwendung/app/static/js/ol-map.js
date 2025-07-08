@@ -25,7 +25,9 @@ import { addRectangleToLayer } from './geometry-utils.js';
 window.currentExtent = {
   center: [927319.695213, 6277180.746092],
   zoom: 15,
-  extent: null // Will store the actual map extent
+  extent: null,
+  currentScale: null,
+  currentCenter: [927319.695213, 6277180.746092]
 };
 
 // ===========================================
@@ -62,6 +64,62 @@ window.map = new ol.Map({
 });
 
 // ===========================================
+// SCALE CONTROL SETUP
+// ===========================================
+
+// Create custom scale control class
+class CustomScaleControl extends ol.control.Control {
+  constructor(opt_options) {
+    const options = opt_options || {};
+    
+    const element = document.createElement('div');
+    element.className = 'ol-scale-control ol-unselectable ol-control';
+    element.innerHTML = '<div class="scale-text">1 / 1.000</div>';
+    
+    super({
+      element: element,
+      target: options.target,
+    });
+    
+    this.scaleText = element.querySelector('.scale-text');
+  }
+  
+  updateScale(scale) {
+    if (this.scaleText) {
+      this.scaleText.textContent = `1 / ${scale.toLocaleString()}`;
+    }
+  }
+}
+
+// Add custom scale control
+const scaleControl = new CustomScaleControl();
+window.map.addControl(scaleControl);
+
+// Store reference to scale control for access
+window.scaleControl = scaleControl;
+
+// Initialize scale control with current map scale and capture initial values
+window.map.once('rendercomplete', () => {
+  const resolution = window.map.getView().getResolution();
+  const initialScale = Math.round(resolution * 96 * 39.37);
+  const center = window.map.getView().getCenter();
+  
+  // Update scale control display
+  scaleControl.updateScale(initialScale);
+  
+  // Capture initial scale, resolution, and center values
+  window.currentExtent.currentScale = initialScale;
+  window.currentExtent.currentResolution = resolution;
+  window.currentExtent.currentCenter = center;
+  
+  console.log('Initial OpenLayers state captured:', {
+    initialScale: initialScale,
+    resolution: resolution,
+    center: center
+  });
+});
+
+// ===========================================
 // WINDOW OBJECT EXPOSURES FOR BACKWARD COMPATIBILITY
 // ===========================================
 
@@ -87,28 +145,46 @@ window.toggleLayerSwitcher = toggleLayerSwitcher;
 console.log('Layer switcher control initialized in HTML template');
 
 // ===========================================
-// EXTENT SYNCHRONIZATION
+// SIMPLE EXTENT SYNCHRONIZATION
 // ===========================================
+
+// Flag to prevent updating stored values during programmatic changes
+let isUpdatingFromSync = false;
 
 // Function to update currentExtent with all relevant information
 function updateCurrentExtent() {
+  // Don't update stored values if we're syncing from another map
+  if (isUpdatingFromSync) {
+    return;
+  }
+  
   const center = window.map.getView().getCenter();
   const zoom = window.map.getView().getZoom();
   const resolution = window.map.getView().getResolution();
   const extent = window.map.getView().calculateExtent();
   
+  // Calculate scale from resolution for display
+  const scale = Math.round(resolution * 96 * 39.37);
+  
+  // Store all relevant information for synchronization
+  window.currentExtent.extent = extent;
   window.currentExtent.center = center;
   window.currentExtent.zoom = zoom;
   window.currentExtent.resolution = resolution;
-  window.currentExtent.extent = extent; // Store the actual extent
-  window.currentExtent.source = 'openlayers'; // Track that this comes from OpenLayers
+  window.currentExtent.currentScale = scale;
+  window.currentExtent.currentCenter = center;
+  window.currentExtent.source = 'openlayers';
+  
+  // Update scale control display
+  if (window.scaleControl) {
+    window.scaleControl.updateScale(scale);
+  }
   
   console.log('OpenLayers extent updated:', {
-    center: window.currentExtent.center,
-    zoom: window.currentExtent.zoom,
-    resolution: window.currentExtent.resolution,
-    extent: window.currentExtent.extent,
-    source: window.currentExtent.source
+    center: center,
+    zoom: zoom,
+    scale: scale,
+    source: 'openlayers'
   });
 }
 
@@ -117,29 +193,37 @@ window.map.getView().on('change:center', updateCurrentExtent);
 window.map.getView().on('change:zoom', updateCurrentExtent);
 window.map.getView().on('change:resolution', updateCurrentExtent);
 
-// Expose function to update OpenLayers view from window.currentExtent
+// Simple function to update OpenLayers view from window.currentExtent
 window.updateOpenLayersFromCurrentExtent = function() {
   if (window.map && window.currentExtent) {
-    let targetZoom = window.currentExtent.zoom;
+    // Set flag to prevent updateCurrentExtent from overriding our values
+    isUpdatingFromSync = true;
     
-    // If the current extent comes from Cadenza, convert the zoom level
+    // Use the stored center and zoom
+    const targetCenter = window.currentExtent.currentCenter || window.currentExtent.center;
+    let targetZoom = window.currentExtent.zoom || 15;
+    
+    // If coming from Cadenza, convert zoom level
     if (window.currentExtent.source === 'cadenza' && window.cadenzaZoomToOlZoom) {
-      targetZoom = window.cadenzaZoomToOlZoom(window.currentExtent.zoom);
-      console.log('Converting Cadenza zoom to OpenLayers zoom:', {
+      targetZoom = window.cadenzaZoomToOlZoom(targetZoom);
+      console.log('Converting Cadenza zoom to OL zoom:', {
         cadenzaZoom: window.currentExtent.zoom,
         convertedOlZoom: targetZoom
       });
     }
     
-    // Set center and converted zoom
-    window.map.getView().setCenter(window.currentExtent.center);
+    window.map.getView().setCenter(targetCenter);
     window.map.getView().setZoom(targetZoom);
     
-    console.log('OpenLayers view updated with mapped zoom:', {
-      center: window.currentExtent.center,
-      originalZoom: window.currentExtent.zoom,
-      targetZoom: targetZoom,
+    console.log('OpenLayers view updated:', {
+      center: targetCenter,
+      zoom: targetZoom,
       source: window.currentExtent.source
     });
+    
+    // Reset flag after a short delay
+    setTimeout(() => {
+      isUpdatingFromSync = false;
+    }, 100);
   }
 };
