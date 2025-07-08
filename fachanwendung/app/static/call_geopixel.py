@@ -690,7 +690,7 @@ def process_tile_single_scale(image_path, query, api_process_url, scale, width, 
 
 def upscale_image(image_path, scale_factor):
     """
-    Create upscaled version of image
+    Create upscaled version of image with 4K resolution limit
     
     Args:
         image_path (str): Path to original image
@@ -702,28 +702,82 @@ def upscale_image(image_path, scale_factor):
     if scale_factor == 1:
         return image_path
     
+    # 4K resolution limits
+    MAX_4K_WIDTH = 3840
+    MAX_4K_HEIGHT = 2160
+    MAX_4K_PIXELS = MAX_4K_WIDTH * MAX_4K_HEIGHT  # 8,294,400 pixels
+    
     try:
         with Image.open(image_path) as img:
             original_width, original_height = img.size
+            original_pixels = original_width * original_height
             
-            # Calculate new dimensions
-            new_width = int(round(original_width * scale_factor))
-            new_height = int(round(original_height * scale_factor))
+            # Calculate target dimensions
+            target_width = int(round(original_width * scale_factor))
+            target_height = int(round(original_height * scale_factor))
+            target_pixels = target_width * target_height
             
-            print(f"Upscaling image from {original_width}x{original_height} to {new_width}x{new_height} (scale: {scale_factor})")
+            print(f"🔍 Upscaling request: {original_width}x{original_height} → {target_width}x{target_height} (scale: {scale_factor})")
+            print(f"🔍 Target pixels: {target_pixels:,} (4K limit: {MAX_4K_PIXELS:,})")
+            
+            # Check if target exceeds 4K resolution
+            if target_pixels > MAX_4K_PIXELS:
+                # Calculate maximum safe scale factor for 4K
+                max_safe_scale = (MAX_4K_PIXELS / original_pixels) ** 0.5
+                
+                # Use a slightly smaller scale for safety margin
+                safe_scale = max_safe_scale * 0.95
+                
+                print(f"⚠️ Target resolution exceeds 4K limit!")
+                print(f"🔧 Reducing scale from {scale_factor} to {safe_scale:.2f} to stay within 4K")
+                
+                # Recalculate with safe scale
+                new_width = int(round(original_width * safe_scale))
+                new_height = int(round(original_height * safe_scale))
+                actual_scale = safe_scale
+                
+                print(f"✅ Safe upscaling: {original_width}x{original_height} → {new_width}x{new_height} (scale: {actual_scale:.2f})")
+                
+            else:
+                # Original scale is within 4K limits
+                new_width = target_width
+                new_height = target_height
+                actual_scale = scale_factor
+                print(f"✅ Upscaling within 4K limits: {original_width}x{original_height} → {new_width}x{new_height} (scale: {actual_scale})")
+            
+            # Additional safety check for individual dimensions
+            if new_width > MAX_4K_WIDTH or new_height > MAX_4K_HEIGHT:
+                # Scale down to fit within 4K dimensions
+                width_scale = MAX_4K_WIDTH / original_width if new_width > MAX_4K_WIDTH else float('inf')
+                height_scale = MAX_4K_HEIGHT / original_height if new_height > MAX_4K_HEIGHT else float('inf')
+                dimension_scale = min(width_scale, height_scale) * 0.95  # 5% safety margin
+                
+                new_width = int(round(original_width * dimension_scale))
+                new_height = int(round(original_height * dimension_scale))
+                actual_scale = dimension_scale
+                
+                print(f"🔧 Dimension limit applied: {new_width}x{new_height} (scale: {actual_scale:.2f})")
+            
+            # Verify final dimensions are within limits
+            final_pixels = new_width * new_height
+            if final_pixels > MAX_4K_PIXELS:
+                print(f"❌ Error: Final dimensions still exceed 4K limit ({final_pixels:,} > {MAX_4K_PIXELS:,})")
+                print(f"🔄 Falling back to original image")
+                return image_path
             
             # Resize image
             upscaled_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
             
             # Save upscaled image
             base_name, ext = os.path.splitext(image_path)
-            upscaled_path = f"{base_name}_upscaled_x{scale_factor}{ext}"
+            upscaled_path = f"{base_name}_upscaled_x{actual_scale:.2f}{ext}"
             upscaled_img.save(upscaled_path, quality=CUDA_MEMORY_LIMITS['resize_quality'])
             
+            print(f"💾 Saved 4K-limited upscaled image: {upscaled_path}")
             return upscaled_path
             
     except Exception as e:
-        print(f"Error upscaling image: {str(e)}")
+        print(f"❌ Error upscaling image: {str(e)}")
         return image_path
 
 if __name__ == "__main__":

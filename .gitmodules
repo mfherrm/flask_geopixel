@@ -4,3 +4,6 @@
 [submodule "fachanwendung/app/geodata/deutschlandGeoJSON"]
 	path = fachanwendung/app/geodata/deutschlandGeoJSON
 	url = https://github.com/isellsoap/deutschlandGeoJSON.git
+[submodule "ol-ext"]
+	path = ol-ext
+	url = https://github.com/Viglino/ol-ext.git
