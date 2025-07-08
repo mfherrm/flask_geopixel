@@ -1154,7 +1154,10 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
 
   if (isUsingCadenza) {
     // Handle Cadenza geometry addition
-    addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadingState);
+    addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadingState).catch(error => {
+      console.error('Error in Cadenza geometry addition:', error);
+      setButtonLoadingState(false);
+    });
   } else {
     // Handle OpenLayers geometry addition (existing functionality)
     addGeometriesToOpenLayers(validResults, object, tileConfig, setButtonLoadingState);
@@ -1168,7 +1171,7 @@ export function combineAndDisplayTileResults(tileResults, object, tileConfig, se
  * @param {Object} tileConfig - The tile configuration object
  * @param {Function} setButtonLoadingState - Function to manage button loading state
  */
-function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadingState) {
+async function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadingState) {
   console.log('Adding geometries to Cadenza map');
 
   // First pass: collect all geometries with their tile information
@@ -1178,7 +1181,15 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
     const { tileIndex, data } = result;
 
     if (data.outline && data.outline.length > 0) {
-      console.log(`Processing geometries from tile ${tileIndex} for Cadenza`);
+      const isMultiScale = data.multiScale || false;
+      const scaleInfo = data.scaleInfo || null;
+      
+      if (isMultiScale && scaleInfo) {
+        console.log(`Processing multi-scale geometries from tile ${tileIndex} (${scaleInfo.totalScales} scales combined)`);
+        console.log(`Scale weights: ${scaleInfo.weights.map(w => `${w.scale}:${w.weight.toFixed(3)}`).join(', ')}`);
+      } else {
+        console.log(`Processing geometries from tile ${tileIndex} for Cadenza`);
+      }
 
       if (data.coordinates_transformed) {
         // Process all contours from this tile
@@ -1200,12 +1211,23 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
           }
 
           // Store geometry with tile information for mask combining
-          allGeometries.push({
+          // Include multi-scale metadata if available
+          const geometryData = {
             tileIndex: tileIndex,
             contourIndex: contourIndex,
             coordinates: mapCoords,
             processed: false
-          });
+          };
+          
+          // Add multi-scale metadata if available
+          if (isMultiScale && scaleInfo) {
+            geometryData.multiScale = true;
+            geometryData.scaleInfo = scaleInfo;
+            // Note: individual contour weights are lost in current structure
+            // but scale information is preserved at tile level
+          }
+          
+          allGeometries.push(geometryData);
         });
       }
     }
@@ -1217,8 +1239,8 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
   // Add geometries to Cadenza map
   if (combinedGeometries.length > 0) {
     try {
-      // Process each combined geometry
-      combinedGeometries.forEach((geom, index) => {
+      // Process each combined geometry sequentially using for...of loop
+      for (const [index, geom] of combinedGeometries.entries()) {
         // Create GeoJSON polygon from coordinates
         let coordinates;
         if (geom.holes && geom.holes.length > 0) {
@@ -1238,58 +1260,51 @@ function addGeometriesToCadenza(validResults, object, tileConfig, setButtonLoadi
 
         console.log(`Adding geometry ${index + 1} to Cadenza`, polygon);
 
-        // Add geometry to Cadenza using editGeometry
-        if (window.cadenzaClient && polygon) {
+        // Add geometry to Cadenza using the new wrapper function with UI closure
+        if (polygon) {
           try {
-            window.cadenzaClient.editGeometry('satellitenkarte', polygon, { useMapSrs: true });
-
-            window.cadenzaClient.on('editGeometry:ok', (event) => {
-              console.log('Geometry editing was completed', event.detail.geometry);
-              // Use current extent instead of initial extent
-              const currentExtent = window.cadenzaCurrentExtent
-              window.cadenzaClient.showMap('satellitenkarte', {
-                useMapSrs: true,
-                mapExtent: currentExtent,
-                geometry: polygon,
-                additionalLayers: [{
-                  content: polygon,
-                  name: "Test",
-                  type: "geojson"
-                }]
-              });
-            });
-
-            window.cadenzaClient.on('editGeometry:cancel', (event) => {
-              console.log('Geometry editing was cancelled');
-              // Use current extent instead of initial extent
-              const currentExtent = window.cadenzaCurrentExtent
-              window.cadenzaClient.showMap('satellitenkarte', {
-                useMapSrs: true,
-                mapExtent: currentExtent
-              });
-            });
+            await editGeometry('satellitenkarte', polygon, { useMapSrs: true });
+            console.log('Geometry successfully added with automatic UI closure');
           } catch (error) {
             console.log('Error adding geometry to Cadenza:', error);
+            // If editing fails, try creating a new geometry instead
+            try {
+              await addGeometry('satellitenkarte', 'Polygon', { useMapSrs: true });
+              console.log('Fallback: Created new geometry with automatic UI closure');
+            } catch (fallbackError) {
+              console.error('Failed to create geometry as fallback:', fallbackError);
+            }
           }
         } else {
-          console.log("No Cadenza client or polygon to add to Cadenza");
+          console.log("No polygon to add to Cadenza");
           // Fallback: create new geometry
-          if (window.cadenzaClient) {
-            window.cadenzaClient.createGeometry('satellitenkarte', 'Polygon');
+          try {
+            await addGeometry('satellitenkarte', 'Polygon', { useMapSrs: true });
+            console.log('Created new polygon geometry with automatic UI closure');
+          } catch (error) {
+            console.error('Failed to create new geometry:', error);
           }
         }
-      });
+      }
 
       // Log detailed information about merging
       const totalOriginalMasks = combinedGeometries.reduce((sum, geom) => {
         return sum + 1 + (geom.containedMasks ? geom.containedMasks.length : 0);
       }, 0);
       const masksWithHoles = combinedGeometries.filter(geom => geom.holes && geom.holes.length > 0).length;
+      
+      // Check if any results were from multi-scale processing
+      const multiScaleResults = validResults.filter(result => result.data.multiScale);
+      const totalScaleResults = multiScaleResults.reduce((sum, result) =>
+        sum + (result.data.scaleInfo ? result.data.scaleInfo.totalScales : 0), 0);
 
       console.log(`Added ${combinedGeometries.length} combined geometries to Cadenza`);
       console.log(`Processed ${totalOriginalMasks} original masks into ${combinedGeometries.length} final features`);
       if (masksWithHoles > 0) {
         console.log(`${masksWithHoles} features contain holes from contained masks`);
+      }
+      if (multiScaleResults.length > 0) {
+        console.log(`Multi-scale processing: ${multiScaleResults.length} tiles processed with ${totalScaleResults} total scale variations`);
       }
     } catch (error) {
       console.error(`Error adding geometries to Cadenza`, error);
@@ -1477,7 +1492,15 @@ function addGeometriesToOpenLayers(validResults, object, tileConfig, setButtonLo
     const { tileIndex, data } = result;
 
     if (data.outline && data.outline.length > 0) {
-      console.log(`Processing geometries from tile ${tileIndex}`);
+      const isMultiScale = data.multiScale || false;
+      const scaleInfo = data.scaleInfo || null;
+      
+      if (isMultiScale && scaleInfo) {
+        console.log(`Processing multi-scale geometries from tile ${tileIndex} (${scaleInfo.totalScales} scales combined)`);
+        console.log(`Scale weights: ${scaleInfo.weights.map(w => `${w.scale}:${w.weight.toFixed(3)}`).join(', ')}`);
+      } else {
+        console.log(`Processing geometries from tile ${tileIndex}`);
+      }
 
       if (data.coordinates_transformed) {
         // Process all contours from this tile
@@ -1499,12 +1522,23 @@ function addGeometriesToOpenLayers(validResults, object, tileConfig, setButtonLo
           }
 
           // Store geometry with tile information for mask combining
-          allGeometries.push({
+          // Include multi-scale metadata if available
+          const geometryData = {
             tileIndex: tileIndex,
             contourIndex: contourIndex,
             coordinates: mapCoords,
             processed: false
-          });
+          };
+          
+          // Add multi-scale metadata if available
+          if (isMultiScale && scaleInfo) {
+            geometryData.multiScale = true;
+            geometryData.scaleInfo = scaleInfo;
+            // Note: individual contour weights are lost in current structure
+            // but scale information is preserved at tile level
+          }
+          
+          allGeometries.push(geometryData);
         });
       }
     }
@@ -1531,26 +1565,71 @@ function addGeometriesToOpenLayers(validResults, object, tileConfig, setButtonLo
     };
 
     try {
+      // Debug: Log the polygon coordinates to see what we're working with
+      console.log('Creating OpenLayers features for polygon:', JSON.stringify(polygon, null, 2));
+      
+      // Detect coordinate format by examining the first coordinate
+      let isWebMercator = false;
+      if (polygon.coordinates && polygon.coordinates[0] && polygon.coordinates[0][0] && polygon.coordinates[0][0][0]) {
+        const firstCoord = polygon.coordinates[0][0][0];
+        const x = firstCoord[0];
+        const y = firstCoord[1];
+        
+        // Web Mercator coordinates are typically large numbers (> 180 for X, > 90 for Y in absolute value)
+        // Geographic coordinates are between -180 to 180 for X, -90 to 90 for Y
+        isWebMercator = Math.abs(x) > 180 || Math.abs(y) > 90;
+        
+        console.log(`Coordinate detection: x=${x}, y=${y}, isWebMercator=${isWebMercator}`);
+      }
+      
       const features = new ol.format.GeoJSON().readFeatures(polygon, {
-        dataProjection: 'EPSG:3857',
+        dataProjection: isWebMercator ? 'EPSG:3857' : 'EPSG:4326',
         featureProjection: 'EPSG:3857',
       });
+      
+      console.log(`Using ${isWebMercator ? 'EPSG:3857' : 'EPSG:4326'} as input projection`);
+
+      // Log the final transformed coordinates and feature information
+      features.forEach((feature, idx) => {
+        const geometry = feature.getGeometry();
+        const coordinates = geometry.getCoordinates();
+        console.log(`Feature ${idx + 1}:`, {
+          type: geometry.getType(),
+          coordinateCount: coordinates.length,
+          firstCoordinate: coordinates[0] ? coordinates[0][0] : 'N/A',
+          extent: geometry.getExtent(),
+          area: geometry.getArea ? geometry.getArea() : 'N/A'
+        });
+      });
+
+      console.log(`Successfully created ${features.length} features from combined geometries`);
+      console.log(`Features will be added to layer: ${layer.get('name') || 'unnamed layer'}`);
 
       features.forEach(feature => {
         feature.setStyle(layer.getStyle());
         layer.getSource().addFeature(feature);
       });
 
+      console.log(`Features added to map layer. Total features in layer: ${layer.getSource().getFeatures().length}`);
+
       // Log detailed information about merging
       const totalOriginalMasks = combinedGeometries.reduce((sum, geom) => {
         return sum + 1 + (geom.containedMasks ? geom.containedMasks.length : 0);
       }, 0);
       const masksWithHoles = combinedGeometries.filter(geom => geom.holes && geom.holes.length > 0).length;
+      
+      // Check if any results were from multi-scale processing
+      const multiScaleResults = validResults.filter(result => result.data.multiScale);
+      const totalScaleResults = multiScaleResults.reduce((sum, result) =>
+        sum + (result.data.scaleInfo ? result.data.scaleInfo.totalScales : 0), 0);
 
       console.log(`Added ${features.length} combined features to map`);
       console.log(`Processed ${totalOriginalMasks} original masks into ${combinedGeometries.length} final features`);
       if (masksWithHoles > 0) {
         console.log(`${masksWithHoles} features contain holes from contained masks`);
+      }
+      if (multiScaleResults.length > 0) {
+        console.log(`Multi-scale processing: ${multiScaleResults.length} tiles processed with ${totalScaleResults} total scale variations`);
       }
     } catch (error) {
       console.error(`Error creating combined features:`, error);
@@ -1572,3 +1651,163 @@ function addGeometriesToOpenLayers(validResults, object, tileConfig, setButtonLo
   // Re-enable the Call GeoPixel button
   setButtonLoadingState(false);
 }
+
+// ===========================================
+// CADENZA GEOMETRY FUNCTIONS WITH UI CLOSURE
+// ===========================================
+
+/**
+ * Add a new geometry to Cadenza with automatic UI closure on completion.
+ * This function replaces the showMap approach for geometry creation.
+ *
+ * @param {string} backgroundMapView - The workbook map view in the background
+ * @param {string} geometryType - The geometry type to create ('Point', 'LineString', 'Polygon', etc.)
+ * @param {object} options - Additional options for geometry creation
+ * @return {Promise<Feature>} A Promise that resolves with the created geometry when completed
+ */
+export async function addGeometry(backgroundMapView, geometryType, options = {}) {
+  console.log('addGeometry called with:', backgroundMapView, geometryType, options);
+  
+  if (!window.cadenzaClient) {
+    throw new Error('Cadenza client is not initialized');
+  }
+  
+  return new Promise(async (resolve, reject) => {
+    let unsubscribeOk, unsubscribeCancel;
+    
+    // Set up event listeners for completion
+    unsubscribeOk = window.cadenzaClient.on('editGeometry:ok', (event) => {
+      console.log('Geometry added successfully', event.detail);
+      
+      // Clean up event listeners
+      if (unsubscribeOk) unsubscribeOk();
+      if (unsubscribeCancel) unsubscribeCancel();
+      
+      // Close the UI by returning to regular map view
+      closeGeometryEditUI(backgroundMapView);
+      
+      resolve(event.detail);
+    });
+    
+    unsubscribeCancel = window.cadenzaClient.on('editGeometry:cancel', () => {
+      console.log('Geometry addition cancelled');
+      
+      // Clean up event listeners
+      if (unsubscribeOk) unsubscribeOk();
+      if (unsubscribeCancel) unsubscribeCancel();
+      
+      // Close the UI by returning to regular map view
+      closeGeometryEditUI(backgroundMapView);
+      
+      reject(new Error('Geometry addition was cancelled'));
+    });
+    
+    try {
+      // Use the existing createGeometry method
+      await window.cadenzaClient.createGeometry(backgroundMapView, geometryType, options);
+    } catch (error) {
+      // Clean up event listeners on error
+      if (unsubscribeOk) unsubscribeOk();
+      if (unsubscribeCancel) unsubscribeCancel();
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Edit an existing geometry in Cadenza with automatic UI closure on completion.
+ * This function replaces the showMap approach for geometry editing.
+ *
+ * @param {string} backgroundMapView - The workbook map view in the background
+ * @param {Object} geometry - The geometry to edit (GeoJSON format)
+ * @param {object} options - Additional options for geometry editing
+ * @return {Promise<Feature>} A Promise that resolves with the edited geometry when completed
+ */
+export async function editGeometry(backgroundMapView, geometry, options = {}) {
+  console.log('editGeometry called with:', backgroundMapView, geometry, options);
+  
+  if (!window.cadenzaClient) {
+    throw new Error('Cadenza client is not initialized');
+  }
+  
+  return new Promise(async (resolve, reject) => {
+    let unsubscribeOk, unsubscribeCancel;
+    
+    // Set up event listeners for completion
+    unsubscribeOk = window.cadenzaClient.on('editGeometry:ok', (event) => {
+      console.log('Geometry edited successfully', event.detail);
+      
+      // Clean up event listeners
+      if (unsubscribeOk) unsubscribeOk();
+      if (unsubscribeCancel) unsubscribeCancel();
+      
+      // Close the UI by returning to regular map view
+      closeGeometryEditUI(backgroundMapView);
+      
+      resolve(event.detail);
+    });
+    
+    unsubscribeCancel = window.cadenzaClient.on('editGeometry:cancel', () => {
+      console.log('Geometry editing cancelled');
+      
+      // Clean up event listeners
+      if (unsubscribeOk) unsubscribeOk();
+      if (unsubscribeCancel) unsubscribeCancel();
+      
+      // Close the UI by returning to regular map view
+      closeGeometryEditUI(backgroundMapView);
+      
+      reject(new Error('Geometry editing was cancelled'));
+    });
+    
+    try {
+      // Use the existing editGeometry method
+      await window.cadenzaClient.editGeometry(backgroundMapView, geometry, options);
+    } catch (error) {
+      // Clean up event listeners on error
+      if (unsubscribeOk) unsubscribeOk();
+      if (unsubscribeCancel) unsubscribeCancel();
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Helper function to close the geometry editing UI and return to regular map view
+ * @param {string} backgroundMapView - The map view to return to
+ */
+function closeGeometryEditUI(backgroundMapView) {
+  try {
+    console.log('Closing geometry edit UI and returning to regular map view');
+    
+    // Return to regular map view to close the geometry editing UI
+    if (window.cadenzaClient && backgroundMapView) {
+      // Use current extent if available
+      const showMapOptions = {
+        useMapSrs: true,
+      };
+      
+      // If window.currentExtent is available, use it to maintain the current view
+      if (window.currentExtent && window.currentExtent.extent) {
+        showMapOptions.extentStrategy = {
+          type: 'static',
+          extent: window.currentExtent.extent
+        };
+        console.log('Returning to map view with current extent:', window.currentExtent.extent);
+      }
+      
+      // Return to regular satellite map view
+      window.cadenzaClient.showMap(backgroundMapView, showMapOptions);
+      console.log('Successfully returned to regular map view');
+    }
+  } catch (error) {
+    console.warn('Error closing geometry edit UI:', error);
+    // Even if there's an error, the geometry operation was successful
+  }
+}
+
+// Expose functions to window for global access
+window.addGeometry = addGeometry;
+window.editGeometry = editGeometry;
+
+console.log('Cadenza geometry functions with UI closure initialized');

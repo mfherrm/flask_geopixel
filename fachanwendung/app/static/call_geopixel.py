@@ -71,8 +71,8 @@ def resize_image_if_needed(image_path, max_pixels=None):
             
             # Calculate new dimensions maintaining aspect ratio
             scale_factor = (max_pixels / total_pixels) ** 0.5
-            new_width = int(width * scale_factor)
-            new_height = int(height * scale_factor)
+            new_width = int(round(width * scale_factor))
+            new_height = int(round(height * scale_factor))
             
             log_debug(f"Resizing image to {new_width}x{new_height} ({new_width*new_height:,} pixels)")
             
@@ -103,18 +103,28 @@ def check_health(api_url):
     """
     health_url = api_url.rstrip('/process') + '/health'
     try:
-        print(f"Checking API health at {health_url}")
+        print(f"🔍 Checking API health at {health_url}")
         response = requests.get(health_url, timeout=10)
         if response.status_code == 200:
             result = response.json()
-            print(f"Health check result: {result}")
+            print(f"✅ Health check successful: {result}")
             return True
         else:
-            print(f"Health check failed with status code {response.status_code}")
+            print(f"❌ Health check failed with status code {response.status_code}")
             print(f"Response: {response.text}")
             return False
+    except requests.exceptions.ConnectTimeout:
+        print(f"❌ Connection timeout - RunPod instance may be starting or not accessible")
+        return False
+    except requests.exceptions.ConnectionError as e:
+        print(f"❌ Connection error - RunPod instance may be stopped or URL incorrect")
+        print(f"Connection error details: {str(e)}")
+        return False
+    except requests.exceptions.Timeout:
+        print(f"❌ Request timeout - RunPod instance may be overloaded or slow")
+        return False
     except Exception as e:
-        print(f"Error checking API health: {str(e)}")
+        print(f"❌ Error checking API health: {str(e)}")
         return False
 
 def process_image_with_retry(image_path, query, api_url):
@@ -285,202 +295,436 @@ def process_image(image_path, query, api_url):
         log_debug(f"Error sending request: {error_message}")
         raise e
 
+def post_process_mask(pred_masks):
+    """
+    Post-process prediction masks to clean them up
+    
+    Args:
+        pred_masks (numpy.ndarray): Raw prediction masks
+        
+    Returns:
+        numpy.ndarray: Post-processed masks
+    """
+    if pred_masks is None:
+        return None
+        
+    # Convert to proper format if needed
+    if pred_masks.ndim == 3:
+        mask = pred_masks.squeeze()
+    else:
+        mask = pred_masks
+        
+    # Convert to uint8 if needed
+    if mask.dtype != np.uint8:
+        mask = (mask * 255).astype(np.uint8)
+    
+    # Apply morphological operations to clean up the mask
+    kernel = np.ones((3, 3), np.uint8)
+    
+    # Remove small noise
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    
+    # Fill small holes
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    
+    return mask
+
 def get_object_outlines(api_base_url, image_path, query, upscaling_config=None):
+    """
+    NEW MASK PROCESSING LOGIC:
+    Process tiles with multi-scale approach and mask concatenation
+    """
     # Set default upscaling configuration if not provided
     if upscaling_config is None:
         upscaling_config = {'scale': 1, 'label': 'x1'}
     
-    # Define upscaling fallback chain: x8 -> x4 -> x2 -> x1
-    upscaling_fallback_chain = [8, 4, 2, 1]
     requested_scale = upscaling_config.get('scale', 1)
-    
-    # Start fallback chain from requested scale or lower
-    fallback_scales = [scale for scale in upscaling_fallback_chain if scale <= requested_scale]
     
     api_process_url = f"{api_base_url}/process"
     
-    print(f"GeoPixel API Client")
-    print(f"==================")
+    print(f"GeoPixel API Client - NEW MASK LOGIC")
+    print(f"====================================")
     print(f"API URL: {api_base_url}")
     print(f"Image: {image_path}")
     print(f"Query: {query}")
     print(f"Requested Upscaling: {upscaling_config.get('label', 'x1')}")
-    print(f"Fallback chain: {fallback_scales}")
-    print(f"==================\n")
-       
+    
     # Check API health first
     if not check_health(api_base_url):
-        print("\nWARNING: API health check failed. The server might not be ready.")
-        # In web application context, don't prompt user - just proceed with a warning
-        print("Proceeding anyway...")
+        print(f"\nERROR: API health check failed for {api_base_url}")
+        return None
     
-    # Process the image with fallback upscaling and CUDA OOM protection
-    log_debug("Processing image with CUDA OOM protection and upscaling fallback...")
-    
-    # Get original image dimensions first
+    # Get original image dimensions
     with Image.open(image_path) as img:
         width, height = img.size
-        print("Original image size: ", width, "x", height)
+        print(f"Original image size: {width}x{height}")
     
-    response = None
-    processed_image_path = None
+    # NEW LOGIC: Multi-scale processing with mask concatenation
+    if requested_scale >= 2:
+        print(f"\n🔄 NEW MULTI-SCALE MASK PROCESSING (scale >= 2)")
+        return process_tile_with_multiscale_masks(image_path, query, api_process_url, requested_scale, width, height)
+    else:
+        print(f"\n🔄 SINGLE SCALE PROCESSING (scale < 2)")
+        return process_tile_single_scale(image_path, query, api_process_url, requested_scale, width, height)
+
+def process_tile_with_multiscale_masks(image_path, query, api_process_url, scale, width, height):
+    """
+    NEW LOGIC: Process tile at multiple scales and combine masks via concatenation
     
-    # Try each scale factor in the fallback chain
-    for scale_factor in fallback_scales:
+    For upscaling factor s >= 2, process at 4 different scales:
+    - s (the selected upscaling factor)
+    - s/2^i (original size, where i = log2(s))
+    - s/2^(i+1) (half size) 
+    - s/2^(i+2) (quarter size)
+    """
+    print(f"Processing tile with multi-scale mask logic for scale {scale}")
+    
+    # Calculate the 4 scales according to the formula
+    i = int(np.log2(scale))
+    scales = [
+        scale,                          # s
+        scale / (2 ** i),              # s/2^i (original)
+        scale / (2 ** (i + 1)),        # s/2^(i+1) (half)
+        scale / (2 ** (i + 2))         # s/2^(i+2) (quarter)
+    ]
+    
+    print(f"Processing at scales: {scales}")
+    
+    # Step 1: Build array of scaled images
+    tile_array = []
+    for scale_factor in scales:
+        upscaled_image_path = upscale_image(image_path, scale_factor)
+        tile_array.append(upscaled_image_path)
+        print(f"✓ Created scaled image for factor {scale_factor}")
+    
+    # Step 2: Process each scaled image through GeoPixel and collect masks
+    mask_array = []
+    for i, scaled_image_path in enumerate(tile_array):
+        scale_factor = scales[i]
+        print(f"🔍 Processing scale {scale_factor} ({i+1}/{len(tile_array)})")
+        
+        # Call GeoPixel API
         try:
-            print(f"\n--- Trying upscaling factor: x{scale_factor} ---")
-            
-            with Image.open(image_path) as img:
-                # Apply dynamic upscaling based on current scale factor
-                new_width = width * scale_factor
-                new_height = height * scale_factor
-                print(f"Upscaling image to: {new_width}x{new_height} (scale factor: {scale_factor})")
+            response = process_image_with_retry(scaled_image_path, query, api_process_url)
+            if response:
+                result, pred_masks = response
                 
-                processed_image = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                base_name, ext = os.path.splitext(image_path)
-                processed_image_path = f"{base_name}_upscaled_x{scale_factor}{ext}"
-                processed_image.save(processed_image_path, quality=CUDA_MEMORY_LIMITS['resize_quality'])
-            
-            # Try processing with current scale factor
-            response = process_image_with_retry(processed_image_path, query, api_process_url)
-            
-            # Clean up upscaled image if created
-            if processed_image_path and processed_image_path != image_path:
-                try:
-                    os.remove(processed_image_path)
-                    print(f"Cleaned up upscaled image: {processed_image_path}")
-                except:
-                    pass
-            
-            # If successful, break out of fallback loop
-            if response is not None:
-                print(f"✓ Successfully processed with upscaling factor x{scale_factor}")
-                break
+                # Post-process the mask
+                if pred_masks is not None:
+                    processed_mask = post_process_mask(pred_masks)
+                    if processed_mask is not None:
+                        # Resize mask back to original dimensions for concatenation
+                        resized_mask = cv2.resize(processed_mask, (width, height), interpolation=cv2.INTER_AREA)
+                        mask_array.append(resized_mask)
+                        print(f"✓ Processed mask for scale {scale_factor}, resized to {width}x{height}")
+                    else:
+                        print(f"⚠️ No valid mask from scale {scale_factor}")
+                        # Add empty mask to maintain array structure
+                        mask_array.append(np.zeros((height, width), dtype=np.uint8))
+                else:
+                    print(f"⚠️ No prediction masks from scale {scale_factor}")
+                    # Add empty mask to maintain array structure
+                    mask_array.append(np.zeros((height, width), dtype=np.uint8))
+            else:
+                print(f"❌ Failed to process scale {scale_factor}")
+                # Add empty mask to maintain array structure
+                mask_array.append(np.zeros((height, width), dtype=np.uint8))
                 
         except Exception as e:
-            error_message = str(e)
+            print(f"❌ Error processing scale {scale_factor}: {str(e)}")
+            # Add empty mask to maintain array structure
+            mask_array.append(np.zeros((height, width), dtype=np.uint8))
+        
+        # Clean up scaled image
+        if scaled_image_path != image_path:
+            try:
+                os.remove(scaled_image_path)
+                print(f"🧹 Cleaned up scaled image: {scaled_image_path}")
+            except:
+                pass
+    
+    # Step 3: Concatenate masks and apply threshold
+    print(f"🔗 Concatenating {len(mask_array)} masks...")
+    
+    if not mask_array:
+        print("❌ No masks to concatenate")
+        return None
+    
+    # NEW LOGIC: Concatenate masks by summing them
+    combined_mask = np.zeros((height, width), dtype=np.float32)
+    
+    for i, mask in enumerate(mask_array):
+        if mask is not None:
+            # Normalize mask to 0-1 range
+            normalized_mask = mask.astype(np.float32) / 255.0
+            combined_mask += normalized_mask
+            print(f"✓ Added mask {i+1} to combination")
+    
+    # Apply NEW threshold logic: if value > 0, set to 1, else 0
+    print("🎯 Applying threshold: value > 0 → 1, else → 0")
+    binary_mask = (combined_mask > 0).astype(np.uint8)
+    
+    active_pixels = np.count_nonzero(binary_mask)
+    print(f"✓ Final mask: {active_pixels} active pixels out of {width*height}")
+    
+    # Step 4: Extract contours from the final binary mask
+    print("🔍 Extracting contours from final mask...")
+    print(f"🔍 Binary mask info: shape={binary_mask.shape}, dtype={binary_mask.dtype}, unique_values={np.unique(binary_mask)}")
+    
+    contours, hierarchy = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    print(f"🔍 Found {len(contours)} raw contours from findContours")
+    
+    # Filter contours by area
+    min_area = max(1, int(width * height * 0.0001))  # 0.01% of image area
+    print(f"🔍 Using minimum area filter: {min_area} pixels")
+    
+    result_contours = []
+    for i, contour in enumerate(contours):
+        try:
+            print(f"🔍 Processing multi-scale contour {i}: type={type(contour)}, shape={contour.shape if hasattr(contour, 'shape') else 'no shape'}")
             
-            # Clean up upscaled image on error
-            if processed_image_path and processed_image_path != image_path:
-                try:
-                    os.remove(processed_image_path)
-                    print(f"Cleaned up upscaled image after error: {processed_image_path}")
-                except:
-                    pass
-            
-            # Check if this is a CUDA OOM error
-            if is_oom_error(error_message):
-                print(f"✗ CUDA OOM error with upscaling factor x{scale_factor}: {error_message}")
-                
-                # If this was the last scale factor in the chain, give up
-                if scale_factor == fallback_scales[-1]:
-                    print("✗ All upscaling fallback options exhausted. Processing failed.")
-                    return None
-                else:
-                    print(f"→ Falling back to next lower upscaling factor...")
+            # Check contour area first
+            try:
+                area = cv2.contourArea(contour)
+                if area <= min_area:
+                    print(f"⚠️ Multi-scale contour {i} area {area} too small, skipping")
                     continue
+                print(f"✓ Multi-scale contour {i} area: {area}")
+            except Exception as area_error:
+                print(f"❌ Error calculating area for multi-scale contour {i}: {str(area_error)}")
+                continue
+            
+            # Ensure contour is a proper numpy array
+            if not isinstance(contour, np.ndarray):
+                print(f"❌ Multi-scale contour {i} is not a numpy array: {type(contour)}")
+                continue
+            
+            # Check contour shape
+            if len(contour.shape) != 3 or contour.shape[2] != 2:
+                print(f"❌ Multi-scale contour {i} has invalid shape: {contour.shape}")
+                continue
+            
+            # Ensure contour has enough points
+            if len(contour) < 3:
+                print(f"⚠️ Multi-scale contour {i} has only {len(contour)} points, skipping")
+                continue
+            
+            # Safely calculate perimeter
+            try:
+                perimeter = cv2.arcLength(contour, True)
+                print(f"✓ Multi-scale contour {i} perimeter: {perimeter}")
+            except Exception as arc_error:
+                print(f"❌ arcLength failed for multi-scale contour {i}: {str(arc_error)}")
+                print(f"   Contour details: shape={contour.shape}, dtype={contour.dtype}")
+                continue
+            
+            # Simplify contour if perimeter is valid
+            if perimeter > 0:
+                epsilon = 0.002 * perimeter
+                try:
+                    simplified = cv2.approxPolyDP(contour, epsilon, True)
+                    print(f"✓ Multi-scale contour {i} simplified: {len(contour)} → {len(simplified)} points")
+                except Exception as approx_error:
+                    print(f"❌ approxPolyDP failed for multi-scale contour {i}: {str(approx_error)}")
+                    simplified = contour
             else:
-                # For non-OOM errors, don't continue fallback chain
-                print(f"✗ Non-OOM error occurred: {error_message}")
-                return None
-    
-    # Handle the final result after trying all fallback options
-    try:
-        # Check if response is valid
-        if response is None:
-            print("No response received from API")
-            return None
+                simplified = contour
             
-        result, pred_masks = response
+            # Convert to list format
+            if len(simplified) >= 3:
+                try:
+                    contour_points = [[int(point[0][0]), int(point[0][1])] for point in simplified]
+                    result_contours.append(contour_points)
+                    print(f"✅ Successfully processed multi-scale contour {i}")
+                except Exception as convert_error:
+                    print(f"❌ Error converting multi-scale contour {i} to points: {str(convert_error)}")
+            else:
+                print(f"⚠️ Simplified multi-scale contour {i} has only {len(simplified)} points, skipping")
                 
-    except Exception as e:
-        print(f"\nFailed to process image: {str(e)}")
-        return None
+        except Exception as e:
+            print(f"❌ Error processing multi-scale contour {i}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            continue
     
-    if result:
-        # Check for errors in the result
-        if "error" in result:
-            print(f"\nError from API: {result['error']}")
-            return None
-        
-        # Print the text response
-        print("\n--- Text Response ---")
-        print(result.get("text_response", "No text response"))
-        
-        # Print any error messages
-        for key in result:
-            if key.endswith('_error'):
-                print(f"\n--- Error: {key} ---")
-                print(result[key])
-        
-        # Print the reconstructed text if available
-        if "reconstructed_text" in result:
-            print("\n--- Reconstructed Text ---")
-            print(result["reconstructed_text"])
-        
-        # Initialize default values
-        filtered_contours = []
-        mask_uint8 = None
-        
-        # If we have prediction masks, print information about them
-        if pred_masks is not None:
-            print("\n--- Prediction Masks ---")
-            print(f"Prediction masks available: {pred_masks is not None}")
-            if hasattr(pred_masks, "shape"):
-                print(f"Mask shape: {pred_masks.shape}")
-                print(f"Number of masks: {pred_masks.shape[0]}")
-            
-            # Process the mask for contour detection
-            print("Processing mask for improved contour detection...")
-            mask_uint8 = pred_masks.astype(np.uint8).squeeze()
+    print(f"✅ Multi-scale mask processing complete: {len(result_contours)} final contours")
+    
+    # Return in the expected format
+    return {
+        'text_response': f"Multi-scale mask processing complete with {len(result_contours)} contours",
+        'multi_scale_processing': True,
+        'scales_used': scales,
+        'mask_combination': 'concatenation_with_threshold'
+    }, result_contours, binary_mask
 
-            # Apply inverse scaling to match original image dimensions
-            original_width = width
-            original_height = height
-            mask_uint8 = cv2.resize(mask_uint8, (original_width, original_height), interpolation=cv2.INTER_AREA)
-            print(f"Mask resized back to original dimensions: {original_width}x{original_height}")
-            
-            # Debug: Check mask content
-            unique_values = np.unique(mask_uint8)
-            non_zero_pixels = np.count_nonzero(mask_uint8)
-            print(f"Mask debug: unique values = {unique_values}, non-zero pixels = {non_zero_pixels}, total pixels = {mask_uint8.size}")
-            
-            # If mask is completely empty, provide helpful feedback
-            if non_zero_pixels == 0:
-                print("WARNING: Mask is completely empty - no objects detected. This could be due to:")
-                print("  1. No matching objects in the image")
-                print("  2. Image resolution too low after tiling")
-                print("  3. Query format not optimal for the AI model")
-                print("  4. Objects too small to detect in tile")
-            
-            contours, hierarchy = cv2.findContours(mask_uint8, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)
-            print(f"Found {len(contours)} total contours before filtering")
-            
-            # Debug: Show contour areas before filtering
-            if len(contours) > 0:
-                contour_areas = [cv2.contourArea(cnt) for cnt in contours]
-                print(f"Contour areas: {contour_areas}")
-            
-            # Filter contours by area to remove tiny noise contours
-            # Make minimum area proportional to image size for tile processing
-            image_area = mask_uint8.shape[0] * mask_uint8.shape[1]
-            min_contour_area = max(1, int(image_area * 0.000001))  # 0.0001% of image area, minimum 1 pixel
-            print(f"Using minimum contour area: {min_contour_area} pixels (image area: {image_area})")
-            filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
-            
-            print(f"Found {len(filtered_contours)} significant contours after filtering")
-        else:
-            print("\n--- No Prediction Masks ---")
-            print("No prediction masks available from API response")
-
-        print("\nProcessing complete!")
-
-        # Return the prediction masks for potential further processing
-        print(f"Returning: result, {len(filtered_contours)} contours, mask shape: {mask_uint8.shape if mask_uint8 is not None else 'None'}")
-        return result, filtered_contours, mask_uint8
+def process_tile_single_scale(image_path, query, api_process_url, scale, width, height):
+    """
+    Process tile at single scale (traditional approach for scale < 2)
+    """
+    print(f"Processing tile with single scale {scale}")
+    
+    # Create upscaled image if scale != 1
+    if scale != 1:
+        upscaled_image_path = upscale_image(image_path, scale)
     else:
-        print("\nFailed to process the image. Please check the API server logs for more details.")
-        return None
+        upscaled_image_path = image_path
+    
+    try:
+        # Process image
+        response = process_image_with_retry(upscaled_image_path, query, api_process_url)
+        
+        if response:
+            result, pred_masks = response
+            
+            if pred_masks is not None:
+                # Post-process mask
+                processed_mask = post_process_mask(pred_masks)
+                
+                if processed_mask is not None:
+                    # Resize back to original dimensions
+                    if processed_mask.shape[:2] != (height, width):
+                        resized_mask = cv2.resize(processed_mask, (width, height), interpolation=cv2.INTER_AREA)
+                    else:
+                        resized_mask = processed_mask
+                    
+                    # Extract contours
+                    contours, _ = cv2.findContours(resized_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    print(f"🔍 Found {len(contours)} raw contours from findContours")
+                    
+                    # Filter and format contours
+                    min_area = max(1, int(width * height * 0.0001))
+                    print(f"🔍 Using minimum area filter: {min_area} pixels")
+                    
+                    result_contours = []
+                    for i, contour in enumerate(contours):
+                        try:
+                            print(f"🔍 Processing contour {i}: type={type(contour)}, shape={contour.shape if hasattr(contour, 'shape') else 'no shape'}")
+                            
+                            # Check contour area first
+                            try:
+                                area = cv2.contourArea(contour)
+                                if area <= min_area:
+                                    print(f"⚠️ Contour {i} area {area} too small, skipping")
+                                    continue
+                                print(f"✓ Contour {i} area: {area}")
+                            except Exception as area_error:
+                                print(f"❌ Error calculating area for contour {i}: {str(area_error)}")
+                                continue
+                            
+                            # Ensure contour is a proper numpy array
+                            if not isinstance(contour, np.ndarray):
+                                print(f"❌ Contour {i} is not a numpy array: {type(contour)}")
+                                continue
+                            
+                            # Check contour shape
+                            if len(contour.shape) != 3 or contour.shape[2] != 2:
+                                print(f"❌ Contour {i} has invalid shape: {contour.shape}")
+                                continue
+                            
+                            # Ensure contour has enough points
+                            if len(contour) < 3:
+                                print(f"⚠️ Contour {i} has only {len(contour)} points, skipping")
+                                continue
+                            
+                            # Safely calculate perimeter
+                            try:
+                                perimeter = cv2.arcLength(contour, True)
+                                print(f"✓ Contour {i} perimeter: {perimeter}")
+                            except Exception as arc_error:
+                                print(f"❌ arcLength failed for contour {i}: {str(arc_error)}")
+                                print(f"   Contour details: shape={contour.shape}, dtype={contour.dtype}")
+                                continue
+                            
+                            # Simplify contour if perimeter is valid
+                            if perimeter > 0:
+                                epsilon = 0.002 * perimeter
+                                try:
+                                    simplified = cv2.approxPolyDP(contour, epsilon, True)
+                                    print(f"✓ Contour {i} simplified: {len(contour)} → {len(simplified)} points")
+                                except Exception as approx_error:
+                                    print(f"❌ approxPolyDP failed for contour {i}: {str(approx_error)}")
+                                    simplified = contour
+                            else:
+                                simplified = contour
+                            
+                            # Convert to list format
+                            if len(simplified) >= 3:
+                                try:
+                                    contour_points = [[int(point[0][0]), int(point[0][1])] for point in simplified]
+                                    result_contours.append(contour_points)
+                                    print(f"✅ Successfully processed contour {i}")
+                                except Exception as convert_error:
+                                    print(f"❌ Error converting contour {i} to points: {str(convert_error)}")
+                            else:
+                                print(f"⚠️ Simplified contour {i} has only {len(simplified)} points, skipping")
+                                
+                        except Exception as e:
+                            print(f"❌ Error processing contour {i}: {str(e)}")
+                            import traceback
+                            traceback.print_exc()
+                            continue
+                    
+                    print(f"✅ Single scale processing complete: {len(result_contours)} contours")
+                    
+                    return result, result_contours, resized_mask
+                else:
+                    print("⚠️ No valid processed mask")
+            else:
+                print("⚠️ No prediction masks returned")
+        else:
+            print("❌ Failed to process image")
+    
+    except Exception as e:
+        print(f"❌ Error in single scale processing: {str(e)}")
+    
+    finally:
+        # Clean up upscaled image
+        if upscaled_image_path != image_path:
+            try:
+                os.remove(upscaled_image_path)
+                print(f"🧹 Cleaned up upscaled image: {upscaled_image_path}")
+            except:
+                pass
+    
+    return None
+
+def upscale_image(image_path, scale_factor):
+    """
+    Create upscaled version of image
+    
+    Args:
+        image_path (str): Path to original image
+        scale_factor (float): Scale factor for upscaling
+        
+    Returns:
+        str: Path to upscaled image
+    """
+    if scale_factor == 1:
+        return image_path
+    
+    try:
+        with Image.open(image_path) as img:
+            original_width, original_height = img.size
+            
+            # Calculate new dimensions
+            new_width = int(round(original_width * scale_factor))
+            new_height = int(round(original_height * scale_factor))
+            
+            print(f"Upscaling image from {original_width}x{original_height} to {new_width}x{new_height} (scale: {scale_factor})")
+            
+            # Resize image
+            upscaled_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Save upscaled image
+            base_name, ext = os.path.splitext(image_path)
+            upscaled_path = f"{base_name}_upscaled_x{scale_factor}{ext}"
+            upscaled_img.save(upscaled_path, quality=CUDA_MEMORY_LIMITS['resize_quality'])
+            
+            return upscaled_path
+            
+    except Exception as e:
+        print(f"Error upscaling image: {str(e)}")
+        return image_path
 
 if __name__ == "__main__":
     get_object_outlines("https://bpds0xic8d0b7g-5000.proxy.runpod.net/", "GeoPixel/images/example1.png","Please give me a segmentation mask for grey car with different colors for each.", {'scale': 2, 'label': 'x2'})

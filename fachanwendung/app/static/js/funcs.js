@@ -251,23 +251,42 @@ async function handleOpenLayersCapture() {
     // Store current visibility of all layers
     const layerVisibility = [];
     
-    // Hide only vector/overlay layers, preserve visible base layer for capture
+    // Hide all layers except the currently active baselayer
     const layers = map.getLayers().getArray();
+    let activeBaseLayer = null;
+    
+    // Find the currently visible/active base layer
+    layers.forEach((layer) => {
+        const layerName = layer.get('name');
+        const isBaseLayer = layerName && (
+            layerName.includes('Google') ||
+            layerName.includes('201') ||
+            layerName.includes('202') ||
+            layerName.includes('OSM') ||
+            layerName.includes('Satellite') ||
+            layerName.includes('Street') ||
+            layerName.includes('Terrain')
+        );
+        
+        if (isBaseLayer && layer.getVisible()) {
+            activeBaseLayer = layer;
+        }
+    });
+    
+    // Hide all layers except the active base layer
     layers.forEach((layer, index) => {
         layerVisibility[index] = layer.getVisible();
         
-        // Check if this is a vector layer (contains geometries that should be hidden during capture)
-        const layerName = layer.get('name');
-        const isVectorLayer = layerName && (
-            layer.getSource().constructor.name.includes('Vector')
-        );
-        
-        // Hide vector layers but keep base layers (satellite, OSM, etc.) as they are
-        if (isVectorLayer) {
+        if (layer === activeBaseLayer) {
+            // Keep the active base layer visible
+            layer.setVisible(true);
+        } else {
+            // Hide all other layers (vectors, other base layers, etc.)
             layer.setVisible(false);
         }
-        // Base layers keep their current visibility state - no change
     });
+    
+    console.log(`Capturing with only active base layer: ${activeBaseLayer ? activeBaseLayer.get('name') : 'none'}`);
     
     // Force map re-render without vector layers
     map.renderSync();
