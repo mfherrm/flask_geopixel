@@ -406,8 +406,9 @@ $(document).ready(function () {
                 if (isCadenzaMode && window.setCurrentViewMode) {
                     console.log("Switching to Cadenza mode - triggering stats refresh");
                     window.setCurrentViewMode('cadenza');
-                    document.getElementById('layer-overlap-btn').disabled = true;
-                    document.getElementById('layer-overlap-btn').style.cursor = 'not-allowed';
+                    // Enable overlap button for Cadenza mode as well
+                    document.getElementById('layer-overlap-btn').disabled = false;
+                    document.getElementById('layer-overlap-btn').style.cursor = 'pointer';
                 } else if (isOpenLayersMode && window.setCurrentViewMode) {
                     window.setCurrentViewMode('openlayers');
                     document.getElementById('layer-overlap-btn').disabled = false;

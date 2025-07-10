@@ -2,7 +2,7 @@ from flask import Flask
 import os
 from .config import Config
 
-def create_app():
+def create_app(persistent_data=False):
     # Load environment variables from .env file if it exists
     env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
     if os.path.exists(env_path):
@@ -21,5 +21,10 @@ def create_app():
     
     app.register_blueprint(views.bp)
     app.register_blueprint(runpod.runpod_bp)
+
+    # Initialize database on startup with persistence setting
+    from .database import initialize_database
+    with app.app_context():
+        initialize_database(clear_data=not persistent_data)
 
     return app

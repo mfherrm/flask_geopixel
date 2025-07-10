@@ -3,7 +3,11 @@ import os
 
 from app import create_app # type: ignore
 
-app = create_app()
+# Configuration for database persistence
+# Set to True to keep existing data on startup, False to clear all tables
+persistData = True
+
+app = create_app(persistent_data=persistData)
 
 if __name__ == '__main__':
     app.run(debug=True)

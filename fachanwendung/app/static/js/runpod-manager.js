@@ -41,6 +41,8 @@ class RunPodManager {
     }
 
     clearStaleData() {
+        console.log('Clearing any stale pod state data...');
+
         // Clear any stale pod ID that might be cached
         this.currentPodId = null;
 
@@ -59,13 +61,21 @@ class RunPodManager {
         stalePodKeys.forEach(key => {
             if (localStorage.getItem(key)) {
                 localStorage.removeItem(key);
+                console.log(`Cleared stale data: ${key}`);
             }
         });
+
+        console.log('Stale data cleanup complete');
     }
 
     loadSavedCredentials() {
         const apiKey = localStorage.getItem('runpod-api-key');
         const templateId = localStorage.getItem('runpod-template-id');
+
+        console.log('Loaded saved credentials:', {
+            hasApiKey: !!apiKey,
+            hasTemplateId: !!templateId
+        });
 
         if (apiKey) document.getElementById('runpod-api-key').value = apiKey;
         if (templateId) document.getElementById('runpod-template-id').value = templateId;
@@ -83,6 +93,14 @@ class RunPodManager {
         if (this.startBtn && this.stopBtn && this.callGeoPixelBtn) {
             // Start button should be ENABLED initially (assume no pod running until verified)
             this.set_btn_enabled(this.startBtn, "start")
+
+            this.callGeoPixelBtn.setAttribute('data-initialization-complete', 'false');
+
+            console.log('Initial button states set (cache-independent):', {
+                startBtn_disabled: this.startBtn.disabled,
+                stopBtn_disabled: this.stopBtn.disabled,
+                callGeoPixelBtn_disabled: this.callGeoPixelBtn.disabled
+            });
         } else {
             console.error('Some button elements not found during initialization');
         }
@@ -91,32 +109,20 @@ class RunPodManager {
         this.updateStatus('Not Connected', 'Checking for saved credentials...');
     }
 
-    isInitializationComplete() {
-        // Initialization is complete when we're not in the initial checking/verifying states
-        return this.status !== 'Checking...' &&
-            this.status !== 'Verifying...' &&
-            !this.status.toLowerCase().includes('checking for saved credentials');
-    }
-
     updateButtonStates() {
-        // Update current view mode every time this is called
-        this.isOpenLayersMode = document.getElementById('olbtn') && document.getElementById('olbtn').checked;
-        
-        console.log(`Updating button states - Status: ${this.status}, OpenLayers Mode: ${this.isOpenLayersMode}`);
-        
         // Centralized button state management based on internal pod status
+        console.log(`Updating button states for internal status: "${this.status}"`);
+
         // New status pipeline: checking, stopping, starting, endpoint initialized, else
         if (this.status === 'Checking...' || this.status === 'Verifying...' || this.status.toLowerCase().includes('checking')) {
             // Checking state: Preserve loading state if button is already in loading mode
             if (this.startBtn && !this.startBtn.classList.contains('loading-button')) {
                 this.set_btn_disabled(this.startBtn)
                 this.set_btn_disabled(this.stopBtn)
+                console.log('Pod checking - START button DISABLED');
             } else if (this.startBtn && this.startBtn.classList.contains('loading-button')) {
+                console.log('Pod checking - START button already in LOADING state, preserving it');
                 this.set_btn_disabled(this.stopBtn)
-            }
-            // Always disable CallGeoPixel during checking
-            if (this.callGeoPixelBtn) {
-                this.set_btn_disabled(this.callGeoPixelBtn)
             }
         } else if (this.status === 'Stopping...' || this.status.toLowerCase().includes('stopping')) {
             if (this.startBtn) {
@@ -125,56 +131,40 @@ class RunPodManager {
             if (this.stopBtn) {
                 this.set_btn_disabled(this.stopBtn)
             }
-            if (this.callGeoPixelBtn) {
+            if(this.callGeoPixelBtn) {
                 this.set_btn_disabled(this.callGeoPixelBtn)
             }
         } else if (this.status === 'Starting' || this.status === 'Starting...' || this.status === 'STARTING' || this.status.toLowerCase().includes('starting')) {
             // Starting state: Preserve loading state if button is already in loading mode
             if (this.startBtn && !this.startBtn.classList.contains('loading-button')) {
                 this.set_btn_loading(this.startBtn)
-            }
+                console.log('Pod starting - START button set to LOADING');
+            } 
             if (this.stopBtn) {
                 this.set_btn_enabled(this.stopBtn, "stop")
-            }
-            // Disable CallGeoPixel during starting (endpoint not yet available)
-            if (this.callGeoPixelBtn) {
-                this.set_btn_disabled(this.callGeoPixelBtn)
-            }
-        } else if (this.status === 'RUNNING') {
-            // RUNNING state: Pod is running but endpoint availability needs to be verified
-            if (this.startBtn) {
-                this.set_btn_disabled(this.startBtn)
-            }
-            if (this.stopBtn) {
-                this.set_btn_enabled(this.stopBtn, "stop")
-            }
-            // Keep CallGeoPixel disabled until endpoint is confirmed available
-            if (this.callGeoPixelBtn) {
-                this.set_btn_disabled(this.callGeoPixelBtn)
+                console.log('Pod starting - STOP button ENABLED');
             }
         } else if (this.status === 'Endpoint Initialized') {
             // Endpoint initialized state: Pod is running and endpoint is available - DISABLE start, ENABLE stop
             if (this.startBtn) {
                 this.set_btn_disabled(this.startBtn)
+                console.log('Endpoint initialized - START button DISABLED');
             }
             if (this.stopBtn) {
                 this.set_btn_enabled(this.stopBtn, "stop")
+                console.log('Endpoint initialized - STOP button ENABLED (red)');
             }
-            // Enable CallGeoPixel ONLY when endpoint is confirmed available (regardless of OpenLayers/Cadenza mode)
-            if (this.callGeoPixelBtn) {
-                if (this.endpointAvailable && !this.startBtn.classList.contains('loading-button')) {
-                    console.log("Enabling Call GeoPixel button - endpoint confirmed available");
-                    this.set_btn_enabled(this.callGeoPixelBtn, "start")
-                } else {
-                    console.log(`Disabling Call GeoPixel button - Endpoint Available: ${this.endpointAvailable}, Loading: ${this.startBtn?.classList.contains('loading-button')}`);
-                    this.set_btn_disabled(this.callGeoPixelBtn)
-                }
+            if (this.callGeoPixelBtn && this.isOpenLayersMode) {
+                if (this.startBtn.classList.contains('loading-button')) {
+                    console.log('Button is in loading state - skipping update to preserve loading state');
+                    return;
+                } 
+                this.set_btn_enabled(this.callGeoPixelBtn, "start")
             }
-            console.log("Initialization successful, clearing console")
-            console.clear()
         } else {
-            // All other states: No pod available - disable CallGeoPixel
+            // All other states: Preserve loading state during transitions or enable start for inactive states
             if (this.startBtn && this.startBtn.classList.contains('loading-button')) {
+                console.log(`Status "${this.status}" - START button already in LOADING state, preserving it`);
                 // Keep stop button disabled during startup
                 if (this.stopBtn) {
                     this.set_btn_enabled(this.stopBtn)
@@ -183,14 +173,15 @@ class RunPodManager {
                 // For other states (Error, Stopped, Not Connected, Not Running, etc.): ENABLE start, DISABLE stop
                 if (this.startBtn) {
                     this.set_btn_enabled(this.startBtn, "start")
+                    console.log(`Status "${this.status}" - START button ENABLED`);
                 }
                 if (this.stopBtn) {
                     this.set_btn_disabled(this.stopBtn)
+                    console.log(`Status "${this.status}" - STOP button DISABLED`);
                 }
-            }
-            // Always disable CallGeoPixel when no pod is available
-            if (this.callGeoPixelBtn) {
-                this.set_btn_disabled(this.callGeoPixelBtn)
+                if (this.callGeoPixelBtn) {
+                    this.set_btn_disabled(this.callGeoPixelBtn)
+                }
             }
         }
     }
@@ -229,31 +220,48 @@ class RunPodManager {
         const templateId = document.getElementById('runpod-template-id').value.trim();
         const apiKey = document.getElementById('runpod-api-key').value.trim();
 
+        console.log('checkInitialPodStatus: Starting with fresh verification...');
+
         // CRITICAL: Always start with correct initial button states
         this.forceCorrectInitialButtonStates();
 
         if (templateId && apiKey) {
+            console.log('Credentials found, performing FRESH pod status verification...');
             this.updateStatus('Verifying...', 'Checking actual pod status (ignoring cache)');
 
             // Perform a fresh, real-time check - don't trust any cached data
             await this.checkPodStatusWithTemplate(templateId, apiKey);
         } else {
+            console.log('No credentials found, maintaining initial button states');
             this.updateStatus('Not Connected', 'Enter API key and template ID to check pod status');
+
+            // Mark initialization as complete when no credentials are provided
+            if (this.callGeoPixelBtn) {
+                this.callGeoPixelBtn.setAttribute('data-initialization-complete', 'true');
+                console.log('No credentials - initialization marked complete');
+            }
         }
     }
 
     forceCorrectInitialButtonStates() {
+        console.log('FORCING correct initial button states (cache-independent)...');
+
         // ALWAYS start with these states regardless of any cached data
         if (this.callGeoPixelBtn) {
             this.set_btn_disabled(this.callGeoPixelBtn)
+            this.callGeoPixelBtn.setAttribute('data-initialization-complete', 'false');
         }
 
         // Use centralized button state logic for initial state
         this.updateButtonStates();
+
+        console.log('Initial button states FORCED to correct values');
     }
 
     async checkPodStatusWithTemplate(templateId, apiKey) {
         try {
+            console.log(`Performing FRESH pod status check for template: ${templateId}`);
+
             const response = await fetch('/check-pod-status', {
                 method: 'POST',
                 headers: {
@@ -266,9 +274,18 @@ class RunPodManager {
             });
 
             const data = await response.json();
+            console.log('Fresh pod status response:', data);
+
+            // Mark initialization as complete after first status check
+
+            if (this.callGeoPixelBtn) {
+                this.callGeoPixelBtn.setAttribute('data-initialization-complete', 'true');
+                console.log('RunPod status check complete - initialization flag set to true');
+            }
 
             if (data.success && data.pod_running) {
                 // Pod is running - need to verify endpoint availability
+                console.log(`Found running pod: ${data.pod_id} - need to verify endpoint availability`);
                 this.currentPodId = data.pod_id;
                 this.endpointAvailable = false; // Don't assume - verify first
                 this.shouldCheckEndpointHealth = true; // Enable health checks for existing pod
@@ -277,8 +294,13 @@ class RunPodManager {
                 this.updateStatus('RUNNING', `Pod: ${data.pod_name || data.pod_id}\nEndpoint: Verifying...`);
                 this.startStatusChecking();
                 this.startHealthCheckPolling(); // Start health checks to verify endpoint
+
+                console.log('Page load: Starting health checks to verify endpoint availability for existing pod');
+
+                console.log(`Found running pod with template ${templateId}: ${data.pod_id}`);
             } else if (data.success && !data.pod_running) {
                 // No pod running with this template - this is the expected state for fresh loads
+                console.log(`No running pod found with template ${templateId} - this is correct for fresh loads`);
                 this.updateStatus('Not Running', 'No pod found with this template');
 
                 // Ensure buttons are in correct state for no running pod
@@ -292,6 +314,13 @@ class RunPodManager {
             }
         } catch (error) {
             console.error('Failed to check pod status:', error);
+
+            // Mark initialization as complete even on error
+            if (this.callGeoPixelBtn) {
+                this.callGeoPixelBtn.setAttribute('data-initialization-complete', 'true');
+                console.log('RunPod status check failed but initialization flag set to true');
+            }
+
             this.updateStatus('Error', 'Failed to check pod status');
 
             // On network error, maintain safe initial state
@@ -303,9 +332,13 @@ class RunPodManager {
     async checkEndpointAvailability() {
         // Check if the RunPod endpoint is actually available and responding with status "ok"
         try {
+            // Get the current pod ID
             if (!this.currentPodId) {
+                console.log('No current pod ID - endpoint not available');
                 return false;
             }
+
+            console.log(`Checking endpoint health for pod: ${this.currentPodId}`);
 
             try {
                 // Use the backend proxy to check health (avoids CORS)
@@ -321,44 +354,79 @@ class RunPodManager {
 
                 if (healthResponse.ok) {
                     const healthData = await healthResponse.json();
+                    console.log('Health proxy response:', healthData);
 
                     // Check if the backend confirmed the endpoint is available with status "ok"
                     if (healthData.available && healthData.status === 'ok') {
+                        console.log('✅ HEALTH CHECK PASSED: Backend confirmed status = "ok"');
+
                         // Set endpoint as available and stop health checks
                         this.endpointAvailable = true;
                         this.shouldCheckEndpointHealth = false;
                         this.status = 'Endpoint Initialized'; // Set internal status for button management
+                        console.log('ENDPOINT HEALTHY: Flags set - endpointAvailable=true, shouldCheckEndpointHealth=false, status=Endpoint Initialized');
 
                         // Update status to show endpoint is available
                         this.updateStatus('Endpoint Initialized', `Pod: ${this.currentPodId}\nEndpoint: Available (status: ok)`);
 
-                        // IMMEDIATE button state update
+                        // CRITICAL: Set initialization complete flag when health check passes
                         if (this.callGeoPixelBtn) {
-                            const initializationComplete = this.isInitializationComplete();
+                            this.callGeoPixelBtn.setAttribute('data-initialization-complete', 'true');
+                            console.log('✅ INITIALIZATION COMPLETE: Set to true after successful health check');
+                        }
 
-                            if (initializationComplete) {
+                        // IMMEDIATE button state update
+                        console.log('IMMEDIATE BUTTON UPDATE: Health check passed with status "ok"');
+                        if (this.callGeoPixelBtn) {
+                            const openLayersRadio = document.getElementById('olbtn');
+                            const isOpenLayersMode = openLayersRadio && openLayersRadio.checked;
+                            const initializationComplete = this.callGeoPixelBtn.getAttribute('data-initialization-complete') === 'true';
+
+                            console.log('IMMEDIATE UPDATE - Button conditions:', {
+                                initializationComplete,
+                                isOpenLayersMode,
+                                currentDisabled: this.callGeoPixelBtn.disabled,
+                                healthStatus: healthData.status,
+                                available: healthData.available
+                            });
+
+                            if (initializationComplete && isOpenLayersMode) {
+                                console.log('IMMEDIATE BUTTON UPDATE: Enabling Call GeoPixel button - health check OK');
                                 this.set_btn_enabled(this.callGeoPixelBtn, "start")
 
-                                // Enable stop button when endpoint is available
+                                // FIXED: Enable stop button when endpoint is available, not disable it
                                 if (this.stopBtn) {
                                     this.set_btn_enabled(this.stopBtn, "stop")
+                                    console.log('✅ STOP BUTTON ENABLED - Health check successful!');
                                 }
+
+                                console.log('✅ CALL GEOPIXEL BUTTON ENABLED - Health check successful!');
+                                console.log('Button state after health check passed:', {
+                                    disabled: this.callGeoPixelBtn.disabled,
+                                    className: this.callGeoPixelBtn.className
+                                });
+                            } else {
+                                console.log('IMMEDIATE BUTTON UPDATE: Conditions not met for enabling button');
                             }
                         }
 
                         return true;
                     } else {
+                        console.log(`❌ HEALTH CHECK FAILED: Backend reported available=${healthData.available}, status="${healthData.status}"`);
                         return false;
                     }
                 } else {
+                    console.log(`❌ HEALTH CHECK FAILED: Backend proxy error ${healthResponse.status}`);
                     return false;
                 }
 
             } catch (fetchError) {
+                console.log('❌ HEALTH CHECK FAILED: Backend proxy error:', fetchError.message);
                 return false;
             }
 
         } catch (error) {
+            console.log('❌ HEALTH CHECK FAILED: Unexpected error:', error.message);
             return false;
         }
     }
@@ -535,6 +603,7 @@ class RunPodManager {
         const apiKey = document.getElementById('runpod-api-key').value.trim();
 
         if (templateId && apiKey) {
+            console.log('Template or API key changed, checking pod status...');
             await this.checkPodStatusWithTemplate(templateId, apiKey);
         } else {
             // Reset status if either field is empty and ensure buttons are disabled
@@ -542,13 +611,18 @@ class RunPodManager {
             this.currentPodId = null;
             this.stopStatusChecking();
 
-            // Explicitly disable Call GeoPixel button when credentials are missing
+            // Mark initialization as complete even when credentials are missing
             if (this.callGeoPixelBtn) {
+                this.callGeoPixelBtn.setAttribute('data-initialization-complete', 'true');
+                console.log('Credentials missing but initialization flag set to true');
+
+                // Explicitly disable Call GeoPixel button when credentials are missing
                 this.set_btn_disabled(this.callGeoPixelBtn)
 
                 // Also ensure Stop Pod button is disabled when no credentials
                 if (this.stopBtn) {
                     this.set_btn_disabled(this.stopBtn)
+                    console.log('Credentials missing - STOP button DISABLED');
                 }
             }
         }
@@ -562,6 +636,8 @@ class RunPodManager {
         }
 
         try {
+            console.log('Making request to RunPod Proxy:', this.apiBaseUrl);
+
             const response = await fetch(this.apiBaseUrl, {
                 method: 'POST',
                 headers: {
@@ -574,11 +650,14 @@ class RunPodManager {
                 })
             });
 
+            console.log('Response status:', response.status);
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
             }
 
             const data = await response.json();
+            console.log('Response data:', data);
 
             if (data.errors) {
                 throw new Error(data.errors[0].message);
@@ -643,9 +722,10 @@ class RunPodManager {
             const templateId = document.getElementById('runpod-template-id').value.trim();
             const podName = document.getElementById('runpod-name').value.trim() || 'GeoPixel-Pod';
 
-            // Immediately set start button to loading state when clicked
+            // FIXED: Immediately set start button to loading state when clicked
             if (this.startBtn) {
                 this.set_btn_loading(this.startBtn)
+                console.log('FIXED: Start button set to LOADING immediately when clicked');
             }
             // Use centralized logic to disable stop button during start process
             this.updateButtonStates();
@@ -660,6 +740,8 @@ class RunPodManager {
 
             // First check if there's already a pod running with this template
             this.updateStatus('Checking...', 'Checking for existing pods with this template');
+
+            // const existingPodStatus = await this.checkPodStatusWithTemplate(templateId, apiKey);
 
             // If a pod is already running, don't start a new one
             if (this.currentPodId) {
@@ -719,6 +801,7 @@ class RunPodManager {
                 this.endpointAvailable = false; // Reset endpoint availability
                 this.shouldCheckEndpointHealth = true; // Enable health checks for new pod
                 this.status = 'Starting'; // Set internal status
+                console.log('Pod started - starting continuous health checks every 5 seconds');
                 this.updateStatus('Starting', `Pod ID: ${this.currentPodId}`);
                 this.startStatusChecking();
                 this.startHealthCheckPolling(); // Start 5-second health check loop
@@ -768,6 +851,7 @@ class RunPodManager {
             this.endpointAvailable = false; // Reset endpoint availability
             this.shouldCheckEndpointHealth = false; // Disable health checks until next pod start
             this.status = 'Stopped'; // Reset internal status
+            console.log('Pod stopped - resetting health check flags and internal status. Health checks will resume only when starting a new pod.');
             this.stopStatusChecking();
             this.stopHealthCheckPolling(); // Stop health check polling
             this.updateStatus('Stopped', 'Pod terminated successfully');
@@ -854,12 +938,14 @@ class RunPodManager {
                     if (status === 'RUNNING') {
                         if (this.shouldCheckEndpointHealth && !this.endpointAvailable) {
                             // Only check endpoint health if we should and it's not already confirmed available
+                            console.log('Periodic check: Checking endpoint availability...');
                             this.checkEndpointAvailabilityWithFallback().then(isAvailable => {
+                                console.log(`Periodic status check: Endpoint availability: ${isAvailable}`);
                                 if (isAvailable) {
                                     this.endpointAvailable = true;
                                     this.shouldCheckEndpointHealth = false; // Stop checking once available
-                                    this.status = 'Endpoint Initialized'; // Set internal status for button management
-                                    this.updateStatus('Endpoint Initialized', details + '\nEndpoint: Available');
+                                    console.log('Periodic check: Endpoint available - stopping health checks and updating button');
+                                    this.updateStatus(status, details + '\nEndpoint: Available');
                                     this.updateButtonStates();
                                 } else {
                                     this.updateStatus(status, details + '\nEndpoint: Starting...');
@@ -869,13 +955,11 @@ class RunPodManager {
                                 this.updateStatus(status, details + '\nEndpoint: Check failed');
                             });
                         } else if (this.endpointAvailable) {
-                            // Endpoint already confirmed available - set to Endpoint Initialized
-                            this.status = 'Endpoint Initialized';
-                            this.updateStatus('Endpoint Initialized', details + '\nEndpoint: Available (cached)');
+                            // Endpoint already confirmed available
+                            this.updateStatus(status, details + '\nEndpoint: Available (cached)');
                         } else {
-                            // Not checking endpoint health - assume available for running pods
-                            this.status = 'Endpoint Initialized';
-                            this.updateStatus('Endpoint Initialized', details + '\nEndpoint: Assumed available');
+                            // Not checking endpoint health
+                            this.updateStatus(status, details + '\nEndpoint: Assumed available');
                         }
                     } else {
                         this.updateStatus(status, details);
@@ -907,6 +991,7 @@ class RunPodManager {
 
             // Stop status checking ONLY when Call GeoPixel button is enabled (endpoint is confirmed reachable)
             if (isButtonEnabled) {
+                console.log('🛑 Stopping status checking - endpoint is confirmed reachable and Call GeoPixel button is enabled');
                 this.stopStatusChecking();
                 return;
             }
@@ -955,12 +1040,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Small delay to ensure the view has switched before updating button state
                 setTimeout(() => {
                     if (window.runPodManager) {
+                        console.log('Radio button changed, updating Call GeoPixel button state...');
+
                         // Check if initialization is complete
-                        const initializationComplete = window.runPodManager.isInitializationComplete();
+                        const initializationComplete = window.runPodManager.callGeoPixelBtn?.getAttribute('data-initialization-complete') === 'true';
 
                         if (initializationComplete) {
+                            console.log('Initialization complete, updating button state based on radio selection');
                             window.runPodManager.updateButtonStates();
                         } else {
+                            console.log('Initialization not complete, keeping button disabled');
                             // Ensure button stays disabled
                             if (window.runPodManager.callGeoPixelBtn) {
                                 window.runPodManager.set_btn_disabled(window.runPodManager.callGeoPixelBtn)

@@ -505,3 +505,109 @@ def health_check():
         'service': 'GeoPixel Flask Backend',
         'timestamp': str(os.path.getmtime(__file__) if os.path.exists(__file__) else 'unknown')
     }), 200
+
+@bp.route('/insert_geometry', methods=['POST'])
+def insert_geometry():
+    """Insert geometry into PostGIS database"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        object_name = data.get('object')
+        geometry_wkt = data.get('geometry_wkt')
+        attributes = data.get('attributes', {})
+        
+        if not object_name or not geometry_wkt:
+            return jsonify({'error': 'Missing required fields: object and geometry_wkt'}), 400
+        
+        # Import database module
+        from ..database import get_database
+        db = get_database()
+        
+        # Insert geometry
+        geometry_id = db.insert_geometry(object_name, geometry_wkt, attributes)
+        
+        # Immediately get updated count for this table
+        updated_count = db.get_geometries_count(object_name)
+        table_name = db.object_name_to_table_name(object_name)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Geometry inserted successfully',
+            'geometry_id': geometry_id,
+            'table_name': table_name,
+            'updated_count': updated_count,
+            'object_name': object_name
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to insert geometry: {str(e)}'}), 500
+
+@bp.route('/fetch_area_intersection', methods=['POST'])
+def fetch_area_intersection():
+    """Calculate area intersection between two object layers"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        layer1_name = data.get('layer1')
+        layer2_name = data.get('layer2')
+        
+        if not layer1_name or not layer2_name:
+            return jsonify({'error': 'Missing required fields: layer1 and layer2'}), 400
+        
+        if layer1_name == layer2_name:
+            return jsonify({'error': 'Cannot calculate intersection of layer with itself'}), 400
+        
+        # Import database module
+        from ..database import get_database
+        db = get_database()
+        
+        # Calculate intersection
+        intersection_data = db.calculate_area_intersection(layer1_name, layer2_name)
+        
+        return jsonify({
+            'success': True,
+            'intersection_data': intersection_data,
+            'layer1_name': layer1_name,
+            'layer2_name': layer2_name
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to calculate intersection: {str(e)}'}), 500
+
+@bp.route('/get_layer_stats', methods=['GET'])
+def get_layer_stats():
+    """Get statistics for all layers in the database"""
+    try:
+        from ..database import get_database
+        db = get_database()
+        
+        # Get all table names
+        table_names = db.get_all_object_tables()
+        
+        # Get count for each table
+        layer_stats = {}
+        total_count = 0
+        
+        for table_name in table_names:
+            # Convert table name back to object name
+            object_name = table_name.replace('_', ' ').title()
+            count = db.get_geometries_count(object_name)
+            if count > 0:  # Only include tables with data
+                layer_stats[object_name] = count
+                total_count += count
+        
+        return jsonify({
+            'success': True,
+            'layer_stats': layer_stats,
+            'total_count': total_count,
+            'layer_count': len(layer_stats)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to get layer stats: {str(e)}'}), 500

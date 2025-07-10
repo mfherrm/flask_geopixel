@@ -302,7 +302,7 @@ def check_pod_running_with_template(template_id):
 
 @runpod_bp.route('/check-health', methods=['POST'])
 def check_health():
-    """Proxy health check requests to RunPod endpoints to avoid CORS issues"""
+    """Enhanced health check that verifies service is fully ready, not just started"""
     import requests
     
     try:
@@ -317,8 +317,11 @@ def check_health():
         if not pod_id:
             return jsonify({'error': 'Pod ID is required', 'available': False}), 400
         
-        # Construct health check URL
-        health_url = f'https://{pod_id}-5000.proxy.runpod.net/health'
+        # Construct base URL for the service
+        base_url = f'https://{pod_id}-5000.proxy.runpod.net'
+        
+        # First, check basic health endpoint
+        health_url = f'{base_url}/health'
         print(f"Health Check Proxy: Checking {health_url}")
         
         try:
@@ -333,17 +336,85 @@ def check_health():
                     
                     # Check if status is "ok"
                     if health_data.get('status') == 'ok':
-                        print("Health Check Proxy: ✅ Status is 'ok' - endpoint available")
-                        return jsonify({
-                            'available': True,
-                            'status': 'ok',
-                            'health_data': health_data
-                        })
+                        print("Health Check Proxy: ✅ Basic health check passed")
+                        
+                        # Enhanced readiness check - verify service can handle actual requests
+                        print("Health Check Proxy: 🔍 Performing enhanced readiness check...")
+                        
+                        # Check if service has additional readiness indicators
+                        service_ready = True
+                        
+                        # Check for model loading status if available
+                        if 'model_loaded' in health_data:
+                            model_loaded = health_data.get('model_loaded')
+                            print(f"Health Check Proxy: Model loaded status: {model_loaded}")
+                            if not model_loaded:
+                                service_ready = False
+                                print("Health Check Proxy: ❌ Model not loaded yet")
+                        
+                        # Check for ready flag if available
+                        if 'ready' in health_data:
+                            ready_flag = health_data.get('ready')
+                            print(f"Health Check Proxy: Ready flag: {ready_flag}")
+                            if not ready_flag:
+                                service_ready = False
+                                print("Health Check Proxy: ❌ Service not ready yet")
+                        
+                        # If health endpoint doesn't provide readiness info, try a test request
+                        if service_ready and 'model_loaded' not in health_data and 'ready' not in health_data:
+                            print("Health Check Proxy: 🧪 Testing service with lightweight request...")
+                            
+                            # Try to make a simple test request to verify service is actually ready
+                            try:
+                                # Try a lightweight endpoint if available, otherwise skip this test
+                                test_endpoints = [
+                                    f'{base_url}/api/status',
+                                    f'{base_url}/status',
+                                    f'{base_url}/ready'
+                                ]
+                                
+                                test_passed = False
+                                for test_url in test_endpoints:
+                                    try:
+                                        test_response = requests.get(test_url, timeout=3)
+                                        if test_response.status_code == 200:
+                                            print(f"Health Check Proxy: ✅ Test endpoint {test_url} responded")
+                                            test_passed = True
+                                            break
+                                    except:
+                                        continue
+                                
+                                # If no test endpoints work, assume service is ready if basic health passes
+                                if not test_passed:
+                                    print("Health Check Proxy: ⚠️ No test endpoints available, assuming ready based on health check")
+                                    
+                            except Exception as e:
+                                print(f"Health Check Proxy: ⚠️ Test request failed: {e}")
+                                # Don't fail the health check for test request failures
+                        
+                        if service_ready:
+                            print("Health Check Proxy: ✅ Service is fully ready")
+                            return jsonify({
+                                'available': True,
+                                'status': 'ok',
+                                'ready': True,
+                                'health_data': health_data
+                            })
+                        else:
+                            print("Health Check Proxy: ❌ Service not fully ready yet")
+                            return jsonify({
+                                'available': False,
+                                'status': 'loading',
+                                'ready': False,
+                                'health_data': health_data
+                            })
+                        
                     else:
                         print(f"Health Check Proxy: ❌ Status is '{health_data.get('status')}' - not ready")
                         return jsonify({
                             'available': False,
                             'status': health_data.get('status', 'unknown'),
+                            'ready': False,
                             'health_data': health_data
                         })
                         
