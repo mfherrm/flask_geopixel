@@ -860,6 +860,7 @@ window.setCurrentViewMode = setCurrentViewMode;
 window.refreshCadenzaStats = refreshCadenzaStats;
 window.onCadenzaActionTriggered = onCadenzaActionTriggered;
 window.debugLayerCoverage = debugLayerCoverage;
+window.getCadenzaLayerStatistics = getCadenzaLayerStatistics;
 
 // ===========================================
 // LAYER OVERLAP ANALYSIS FUNCTIONALITY

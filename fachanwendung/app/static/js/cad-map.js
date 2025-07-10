@@ -126,8 +126,6 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // Listen for extent changes and update window.currentExtent
     window.cadenzaClient.on('change:extent', (event) => {
-      console.log('Cadenza extent changed:', event);
-      
       // Don't update stored values if we're syncing from another map
       if (isUpdatingCadenzaFromSync) {
         return;
@@ -152,11 +150,6 @@ window.addEventListener('DOMContentLoaded', () => {
           window.currentExtent.currentCenter = center;
           window.currentExtent.source = 'cadenza';
           
-          console.log('Cadenza extent changed - stored values:', {
-            center: center,
-            zoom: zoom,
-            scale: scale
-          });
         }
       }
     });

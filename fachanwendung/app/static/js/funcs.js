@@ -211,8 +211,6 @@ async function handleCadenzaCapture() {
         // Convert extent to mapBounds format [[NW], [SE]]
         const mapBounds = [[currentExtent[0], currentExtent[3]], [currentExtent[2], currentExtent[1]]];
         
-        console.log("Cadenza map bounds (extent): [minX, minY, maxX, maxY] = ", currentExtent);
-        console.log("Map bounds as NW/SE:", mapBounds);
         
         // Process the captured image
         handleSuccessfulCapture(imgBlob, mapBounds, setButtonLoadingState);
@@ -230,7 +228,6 @@ async function handleCadenzaCapture() {
 async function handleOpenLayersCapture() {
     let mbs = map.getView().calculateExtent()
 
-    console.log("Map bounds (extent): [minX, minY, maxX, maxY] = ", mbs)
     // As NW and SE
     var mapBounds = [[mbs[0], mbs[3]], [mbs[2], mbs[1]]]
     // Store current visibility of all layers
@@ -404,8 +401,18 @@ $(document).ready(function () {
                 
                 // Trigger Cadenza layer statistics refresh when switching to Cadenza mode
                 if (isCadenzaMode && window.setCurrentViewMode) {
-                    console.log("Switching to Cadenza mode - triggering stats refresh");
+                    console.log("Switching to Cadenza mode - triggering immediate stats refresh");
                     window.setCurrentViewMode('cadenza');
+                    
+                    // Force immediate refresh of Cadenza stats from database
+                    if (window.getCadenzaLayerStatistics) {
+                        window.getCadenzaLayerStatistics(true).then(() => {
+                            console.log("Cadenza stats refreshed on mode switch");
+                        }).catch(error => {
+                            console.error("Error refreshing Cadenza stats on mode switch:", error);
+                        });
+                    }
+                    
                     // Enable overlap button for Cadenza mode as well
                     document.getElementById('layer-overlap-btn').disabled = false;
                     document.getElementById('layer-overlap-btn').style.cursor = 'pointer';

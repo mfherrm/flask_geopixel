@@ -179,13 +179,6 @@ function updateCurrentExtent() {
   if (window.scaleControl) {
     window.scaleControl.updateScale(scale);
   }
-  
-  console.log('OpenLayers extent updated:', {
-    center: center,
-    zoom: zoom,
-    scale: scale,
-    source: 'openlayers'
-  });
 }
 
 // Listen for map extent changes and update window.currentExtent

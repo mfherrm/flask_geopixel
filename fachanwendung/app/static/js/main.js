@@ -119,9 +119,6 @@ function initializeApplication() {
   // Setup event listeners for modal controls
   setupModalEventListeners();
   
-  // Setup periodic refresh for stats table
-  setupPeriodicRefresh();
-  
   console.log('GeoPixel application initialized successfully');
 }
 
@@ -157,15 +154,9 @@ function setupModalEventListeners() {
   });
 }
 
-/**
- * Setup periodic refresh for the stats table
- */
-function setupPeriodicRefresh() {
-  // Refresh stats table every 2 seconds to catch any changes
-  setInterval(() => {
-    refreshStatsTable(); // Uses current view mode
-  }, 2000);
-}
+// Periodic refresh removed - stats are now updated only when:
+// 1. Radio button is switched to Cadenza mode
+// 2. Geometry is added to the database (already implemented)
 
 // ===========================================
 // GLOBAL EXPORTS FOR BACKWARD COMPATIBILITY
