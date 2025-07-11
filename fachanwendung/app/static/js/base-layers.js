@@ -146,59 +146,6 @@ export const getAllBaseLayersArray = () => {
 // LAYER SWITCHING FUNCTIONALITY
 // ===========================================
 
-// Function to fetch and log WMTS GetCapabilities for MapTiler
-const logMapTilerCapabilities = async function() {
-  try {
-    const capabilitiesUrl = 'https://api.maptiler.com/tiles/satellite/WMTSCapabilities.xml?key=9VPg0nTfKLIPtIfMnJlk';
-    console.log(`🔍 Fetching MapTiler WMTS GetCapabilities from: ${capabilitiesUrl}`);
-    
-    const response = await fetch(capabilitiesUrl);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const capabilitiesXml = await response.text();
-    console.log('📄 MapTiler WMTS GetCapabilities Response:');
-    console.log('='.repeat(50));
-    console.log(capabilitiesXml);
-    console.log('='.repeat(50));
-    
-    // Parse and log key information
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(capabilitiesXml, 'text/xml');
-    
-    // Extract service information
-    const serviceTitle = xmlDoc.querySelector('ServiceIdentification Title')?.textContent;
-    const serviceAbstract = xmlDoc.querySelector('ServiceIdentification Abstract')?.textContent;
-    const serviceKeywords = Array.from(xmlDoc.querySelectorAll('ServiceIdentification Keywords Keyword')).map(k => k.textContent);
-    
-    console.log('🎯 MapTiler WMTS Service Information:');
-    console.log(`   Title: ${serviceTitle || 'N/A'}`);
-    console.log(`   Abstract: ${serviceAbstract || 'N/A'}`);
-    console.log(`   Keywords: ${serviceKeywords.join(', ') || 'N/A'}`);
-    
-    // Extract layer information
-    const layers = Array.from(xmlDoc.querySelectorAll('Contents Layer'));
-    console.log(`🗂️  Available Layers (${layers.length}):`);
-    layers.forEach((layer, index) => {
-      const identifier = layer.querySelector('Identifier')?.textContent;
-      const title = layer.querySelector('Title')?.textContent;
-      const formats = Array.from(layer.querySelectorAll('Format')).map(f => f.textContent);
-      const tileMatrixSets = Array.from(layer.querySelectorAll('TileMatrixSetLink TileMatrixSet')).map(tms => tms.textContent);
-      
-      console.log(`   Layer ${index + 1}:`);
-      console.log(`     Identifier: ${identifier || 'N/A'}`);
-      console.log(`     Title: ${title || 'N/A'}`);
-      console.log(`     Formats: ${formats.join(', ') || 'N/A'}`);
-      console.log(`     TileMatrixSets: ${tileMatrixSets.join(', ') || 'N/A'}`);
-    });
-    
-  } catch (error) {
-    console.error('❌ Failed to fetch MapTiler WMTS GetCapabilities:', error);
-    console.error('   Error details:', error.message);
-  }
-};
 
 // Layer switching function with enhanced debugging
 export const switchBaseLayer = function (layerKey) {
@@ -222,11 +169,6 @@ export const switchBaseLayer = function (layerKey) {
     console.log(`✅ Switched to base layer: ${layerName}`);
     console.log(`📍 Layer source URLs:`, urls);
 
-    // Log WMTS GetCapabilities for MapTiler layer
-    if (layerKey === 'maptiler') {
-      console.log('🔍 MapTiler layer selected - fetching WMTS GetCapabilities...');
-      logMapTilerCapabilities();
-    }
 
     // Force refresh of tiles to ensure new layer loads
     source.refresh();
