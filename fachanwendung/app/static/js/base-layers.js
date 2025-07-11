@@ -54,153 +54,38 @@ const mapTilerSatelliteLayer = new ol.layer.Tile({
   name: 'MapTiler Satellite (High Resolution)'
 });
 
-// ArcGIS Wayback XYZ Layers - Using consistent Wayback service URLs
-const waybackLayers = {
-  '2025': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/25285/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2025'
-  }),
-  '2024': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/39767/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2024'
-  }),
-  '2023': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/47963/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2023'
-  }),
-  '2022': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/13851/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2022'
-  }),
-  '2021': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/8432/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2021'
-  }),
-  '2020': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/9549/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2020'
-  }),
-  '2018': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/14829/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2018'
-  }),
-  '2014': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/31144/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2014'
-  }),
-  '2019': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/16681/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2019'
-  }),
-  '2017': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/3319/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2017'
-  }),
-  '2016': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/11509/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2016'
-  }),
-  '2015': new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/11952/{z}/{y}/{x}',
-      maxZoom: 19,
-      crossOrigin: 'anonymous',
-      tileLoadFunction: function (imageTile, src) {
-        imageTile.getImage().src = src;
-      }
-    }),
-    visible: false,
-    name: '2015'
-  })
+// ArcGIS Wayback XYZ Layers - Using year:tile_id dictionary and for loop
+const waybackYearTileIds = {
+  '2025': 25285,
+  '2024': 39767,
+  '2023': 47963,
+  '2022': 13851,
+  '2021': 8432,
+  '2020': 9549,
+  '2019': 16681,
+  '2018': 14829,
+  '2017': 3319,
+  '2016': 11509,
+  '2015': 11952,
+  '2014': 31144
 };
+
+// Create wayback layers using for loop
+const waybackLayers = {};
+for (const [year, tileId] of Object.entries(waybackYearTileIds)) {
+  waybackLayers[year] = new ol.layer.Tile({
+    source: new ol.source.XYZ({
+      url: `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/${tileId}/{z}/{y}/{x}`,
+      maxZoom: 19,
+      crossOrigin: 'anonymous',
+      tileLoadFunction: function (imageTile, src) {
+        imageTile.getImage().src = src;
+      }
+    }),
+    visible: false,
+    name: year
+  });
+}
 
 // Bing Aerial Layer (High Resolution)
 const bingAerialLayer = new ol.layer.Tile({

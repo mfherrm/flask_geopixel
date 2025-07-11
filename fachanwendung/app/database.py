@@ -239,25 +239,6 @@ class PostGISDatabase:
             logger.error(f"Error getting count from {table_name}: {e}")
             return 0
     
-    def get_all_geometries(self, object_name: str) -> List[Dict[str, Any]]:
-        """Get all geometries from a table"""
-        try:
-            table_name = self.object_name_to_table_name(object_name)
-            
-            with self.get_connection() as conn:
-                with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                    cursor.execute(f"""
-                        SELECT id, ST_AsText(geom) as geometry_wkt, created_at, attributes
-                        FROM {table_name}
-                        ORDER BY created_at DESC
-                    """)
-                    results = cursor.fetchall()
-                    return [dict(row) for row in results]
-                    
-        except Exception as e:
-            logger.error(f"Error getting geometries from {table_name}: {e}")
-            return []
-    
     def calculate_area_intersection(self, object_name1: str, object_name2: str) -> Dict[str, Any]:
         """Calculate area intersection between two object tables"""
         try:

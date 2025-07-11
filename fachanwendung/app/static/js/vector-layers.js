@@ -36,9 +36,6 @@ export const truckLayer = new ol.layer.Vector({
   })
 });
 
-
-
-
 const trainSource = new ol.source.Vector({});
 export const trainLayer = new ol.layer.Vector({
   source: trainSource,
@@ -569,8 +566,6 @@ export const iceLayer = new ol.layer.Vector({
     stroke: new ol.style.Stroke({ color: '#B0E0E6', width: 2 })
   })
 });
-
-
 
 const smokeSource = new ol.source.Vector({});
 export const smokeLayer = new ol.layer.Vector({

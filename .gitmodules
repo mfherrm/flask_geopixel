@@ -1,9 +1,6 @@
-[submodule "GeoPixel"]
-	path = GeoPixel
-	url = https://github.com/mbzuai-oryx/GeoPixel.git
-[submodule "fachanwendung/app/geodata/deutschlandGeoJSON"]
-	path = fachanwendung/app/geodata/deutschlandGeoJSON
+[submodule "fachanwendung/app/static/geodata/deutschlandGeoJSON"]
+	path = fachanwendung/app/static/geodata/deutschlandGeoJSON
 	url = https://github.com/isellsoap/deutschlandGeoJSON.git
-[submodule "ol-ext"]
-	path = ol-ext
+[submodule "fachanwendung/app/static/js/ol-ext"]
+	path = fachanwendung/app/static/js/ol-ext
 	url = https://github.com/Viglino/ol-ext.git
