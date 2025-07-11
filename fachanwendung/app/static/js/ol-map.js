@@ -17,6 +17,12 @@ import {
 // Import geometry utilities
 import { addRectangleToLayer } from './geometry-utils.js';
 
+// Import scale synchronization utilities
+import {
+  cadenzaZoomToOlZoom,
+  zoomToScale
+} from './scale-sync.js';
+
 // ===========================================
 // CURRENT EXTENT MANAGEMENT
 // ===========================================
@@ -101,7 +107,8 @@ window.scaleControl = scaleControl;
 // Initialize scale control with current map scale and capture initial values
 window.map.once('rendercomplete', () => {
   const resolution = window.map.getView().getResolution();
-  const initialScale = Math.round(resolution * 96 * 39.37);
+  const zoom = window.map.getView().getZoom();
+  const initialScale = zoomToScale(zoom);
   const center = window.map.getView().getCenter();
   
   // Update scale control display
@@ -163,8 +170,8 @@ function updateCurrentExtent() {
   const resolution = window.map.getView().getResolution();
   const extent = window.map.getView().calculateExtent();
   
-  // Calculate scale from resolution for display
-  const scale = Math.round(resolution * 96 * 39.37);
+  // Calculate scale from zoom level for display
+  const scale = zoomToScale(zoom);
   
   // Store all relevant information for synchronization
   window.currentExtent.extent = extent;
@@ -197,8 +204,8 @@ window.updateOpenLayersFromCurrentExtent = function() {
     let targetZoom = window.currentExtent.zoom || 15;
     
     // If coming from Cadenza, convert zoom level
-    if (window.currentExtent.source === 'cadenza' && window.cadenzaZoomToOlZoom) {
-      targetZoom = window.cadenzaZoomToOlZoom(targetZoom);
+    if (window.currentExtent.source === 'cadenza') {
+      targetZoom = cadenzaZoomToOlZoom(targetZoom);
       console.log('Converting Cadenza zoom to OL zoom:', {
         cadenzaZoom: window.currentExtent.zoom,
         convertedOlZoom: targetZoom
