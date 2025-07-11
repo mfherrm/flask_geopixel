@@ -24,6 +24,7 @@
 import './ol-map.js';                    // Map initialization (creates window.map)
 import './cad-map.js';                   // Cadenza map functionality
 import './funcs.js';                     // GeoPixel functionality
+import './chat-functions.js';            // Chat functionality
 import './dropup-controls.js';           // Dropdown menus
 import './runpod-manager.js';            // RunPod management
 import './runpod-toggle.js';             // RunPod toggle

@@ -100,6 +100,10 @@
             <!-- Dropup Controls -->
             {% include 'color_dropup.html' %}
             {% include 'object_dropup.html' %}
+            <button id="chatBttn" class="enabled-button-start">
+                <span class="btn-text-full">Chat Query</span>
+                <span class="btn-text-short">Chat</span>
+            </button>
             {% include 'tiles_dropup.html' %}
             {% include 'upscaling_dropup.html' %}
 
@@ -137,6 +141,23 @@
 
         <!-- Layer Statistics Modal (kept for overlap analysis) -->
         {% include 'layer_stats_modal.html' %}
+        
+        <!-- Chat Query Modal -->
+        <div id="chat-query-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Freeform query</h2>
+                    <span class="close" id="chat-modal-close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="chatInput" placeholder="Please give me segmentation masks for..." />
+                    <div class="chat-modal-buttons">
+                        <button id="chat-cancel-btn" class="chat-cancel-button">Cancel</button>
+                        <button id="chat-call-geopixel-btn" class="enabled-button-start">Call GeoPixel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts loaded at the end for better performance -->

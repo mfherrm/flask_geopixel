@@ -23,6 +23,101 @@ from ..image_processing import (
     create_overlay_images
 )
 
+def determine_target_layer_from_chat_query(query):
+    """
+    Determine the target layer based on chat query text.
+    Returns the layer name that best matches the query, or 'misc' if no match.
+    """
+    if not query:
+        return 'misc'
+    
+    # Convert query to lowercase for comparison
+    query_lower = query.lower()
+    
+    # Split query into words
+    words = query_lower.split()
+    
+    # Define object type mappings (returns display names that match frontend expectations)
+    object_mappings = {
+        # Transportation
+        'car': 'Car', 'cars': 'Car', 'vehicle': 'Car', 'vehicles': 'Car',
+        'truck': 'Truck', 'trucks': 'Truck',
+        'train': 'Train', 'trains': 'Train',
+        'aircraft': 'Aircraft', 'airplane': 'Aircraft', 'plane': 'Aircraft',
+        'ship': 'Ship', 'ships': 'Ship', 'boat': 'Ship', 'boats': 'Ship',
+        
+        # Infrastructure
+        'building': 'Building', 'buildings': 'Building',
+        'house': 'House', 'houses': 'House', 'home': 'House', 'homes': 'House',
+        'factory': 'Factory', 'factories': 'Factory',
+        'warehouse': 'Warehouse', 'warehouses': 'Warehouse',
+        'hospital': 'Hospital', 'hospitals': 'Hospital',
+        'bridge': 'Bridge', 'bridges': 'Bridge',
+        'road': 'Road', 'roads': 'Road', 'street': 'Road', 'streets': 'Road',
+        'highway': 'Highway', 'highways': 'Highway',
+        'runway': 'Runway', 'runways': 'Runway',
+        'parking': 'Parking Lot', 'solar': 'Solar Panel', 'wind': 'Wind Turbine', 'turbine': 'Wind Turbine',
+        
+        # Natural features
+        'river': 'River', 'rivers': 'River',
+        'lake': 'Lake', 'lakes': 'Lake',
+        'ocean': 'Ocean', 'sea': 'Ocean', 'water': 'River',
+        'wetland': 'Wetland', 'wetlands': 'Wetland',
+        'mountain': 'Mountain', 'mountains': 'Mountain',
+        'hill': 'Hill', 'hills': 'Hill',
+        'valley': 'Valley', 'valleys': 'Valley',
+        'canyon': 'Canyon', 'canyons': 'Canyon',
+        'beach': 'Beach', 'beaches': 'Beach',
+        'coast': 'Coastline', 'coastline': 'Coastline',
+        'island': 'Island', 'islands': 'Island',
+        
+        # Vegetation
+        'forest': 'Forest', 'forests': 'Forest',
+        'tree': 'Tree', 'trees': 'Tree',
+        'grass': 'Grass', 'farmland': 'Farmland', 'farm': 'Farmland', 'farms': 'Farmland',
+        'vineyard': 'Vineyard', 'vineyards': 'Vineyard',
+        'park': 'Park', 'parks': 'Park',
+        'garden': 'Garden', 'gardens': 'Garden',
+        'pasture': 'Pasture', 'pastures': 'Pasture',
+        
+        # Urban features
+        'urban': 'Urban Area', 'city': 'City', 'cities': 'City',
+        'residential': 'Residential', 'commercial': 'Commercial', 'industrial': 'Industrial',
+        'construction': 'Construction Site', 'stadium': 'Stadium', 'stadiums': 'Stadium',
+        'sports': 'Sports Field', 'golf': 'Golf Course', 'cemetery': 'Cemetery', 'cemeteries': 'Cemetery',
+        
+        # Geological
+        'rock': 'Rock Formation', 'rocks': 'Rock Formation',
+        'sand': 'Sand', 'desert': 'Desert', 'deserts': 'Desert',
+        'quarry': 'Quarry', 'quarries': 'Quarry',
+        'mine': 'Mine', 'mines': 'Mine',
+        'landslide': 'Landslide', 'landslides': 'Landslide',
+        'erosion': 'Erosion',
+        
+        # Environmental
+        'fire': 'Fire', 'fires': 'Fire',
+        'flood': 'Flood', 'floods': 'Flood', 'flooding': 'Flood',
+        'snow': 'Snow', 'ice': 'Ice', 'smoke': 'Smoke',
+        'shadow': 'Shadow', 'shadows': 'Shadow',
+        
+        # Agriculture
+        'greenhouse': 'Greenhouse', 'greenhouses': 'Greenhouse',
+        'barn': 'Barn', 'barns': 'Barn',
+        'silo': 'Silo', 'silos': 'Silo',
+        'livestock': 'Livestock', 'cattle': 'Livestock', 'animals': 'Livestock'
+    }
+    
+    # Check each word in the query against the mappings
+    for word in words:
+        if word in object_mappings:
+            matched_object = object_mappings[word]
+            print(f"Found matching object for word '{word}': {matched_object}")
+            return matched_object
+    
+    # If no match found, return misc
+    print(f"No matching object found for query '{query}', using misc")
+    return 'misc'
+
 def create_tile_mask_overlay(tile_filepath, contours, masks, is_multi_scale, tile_info, tile_bounds, tile_dims, save_folder):
     """
     Create and save mask overlay for a specific tile showing actual contours from mask data
@@ -235,6 +330,14 @@ def receive_image():
     
     mapBounds = json.loads(request.form['mapExtent'])
     selection = json.loads(request.form['selection'])
+    
+    # Check if this is a chat query
+    is_chat_query = request.form.get('isChat', 'false').lower() == 'true'
+    original_query = request.form.get('originalQuery', '') if is_chat_query else None
+    
+    if is_chat_query:
+        print(f"Processing chat query: {original_query}")
+        print(f"Chat selection: {selection}")
     
     # Get RunPod API key from the request if provided (from frontend interface)
     if 'runpodApiKey' in request.form and request.form['runpodApiKey'].strip():
@@ -492,6 +595,19 @@ def receive_image():
             response_data['rawMask'] = masks.tolist()
             tile_prefix = f"Tile {tile_info['index']}: " if tile_info else ""
             print(f"{tile_prefix}Added raw mask data to response (length: {len(masks)})")
+        
+        # Add chat query information if this is a chat query
+        if is_chat_query and original_query:
+            target_layer = determine_target_layer_from_chat_query(original_query)
+            response_data['isChatQuery'] = True
+            response_data['originalQuery'] = original_query
+            response_data['targetLayer'] = target_layer
+            print(f"Chat query processed - target layer: {target_layer}")
+        
+        # Add alert if no valid geometries found
+        if not serializable_contours or len(serializable_contours) == 0:
+            response_data['alert'] = 'No valid geometries found.'
+            print("No valid geometries found in response")
         
         return jsonify(response_data), 200
     except Exception as e:

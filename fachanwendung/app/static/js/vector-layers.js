@@ -633,6 +633,19 @@ export const livestockLayer = new ol.layer.Vector({
 });
 
 // ===========================================
+// MISCELLANEOUS LAYERS
+// ===========================================
+
+const miscSource = new ol.source.Vector({});
+export const miscLayer = new ol.layer.Vector({
+  source: miscSource,
+  style: new ol.style.Style({
+    fill: new ol.style.Fill({ color: 'rgba(128, 128, 128, 0.5)' }),
+    stroke: new ol.style.Stroke({ color: '#808080', width: 2 })
+  })
+});
+
+// ===========================================
 // LAYER COLLECTIONS AND UTILITIES
 // ===========================================
 
@@ -724,6 +737,10 @@ export const agricultureLayers = {
   livestockLayer
 };
 
+export const miscellaneousLayers = {
+  miscLayer
+};
+
 // Export all layers as a single collection
 export const allVectorLayers = {
   ...transportationLayers,
@@ -733,7 +750,8 @@ export const allVectorLayers = {
   ...urbanFeaturesLayers,
   ...geologicalLayers,
   ...environmentalLayers,
-  ...agricultureLayers
+  ...agricultureLayers,
+  ...miscellaneousLayers
 };
 
 // Get all layers as array for easy map addition

@@ -25,7 +25,8 @@ import {
   urbanFeaturesLayers,
   geologicalLayers,
   environmentalLayers,
-  agricultureLayers
+  agricultureLayers,
+  miscellaneousLayers
 } from './vector-layers.js';
 
 // ===========================================
@@ -72,6 +73,7 @@ export const getLayerStatistics = () => {
     geological: {},
     environmental: {},
     agriculture: {},
+    miscellaneous: {},
     total: 0
   };
 
@@ -85,6 +87,7 @@ export const getLayerStatistics = () => {
     geological: geologicalLayers,
     environmental: environmentalLayers,
     agriculture: agricultureLayers,
+    miscellaneous: miscellaneousLayers,
   };
 
   // Iterate through each category
@@ -343,6 +346,7 @@ export const generateStatsTableHTML = async (viewMode = 'openlayers') => {
     { key: 'geological', name: 'Geological', data: stats.geological },
     { key: 'environmental', name: 'Environmental', data: stats.environmental },
     { key: 'agriculture', name: 'Agriculture', data: stats.agriculture },
+    { key: 'miscellaneous', name: 'Miscellaneous', data: stats.miscellaneous },
   ];
 
   // Collect all layers with counts in a flat list for cross-category reordering
@@ -2583,6 +2587,11 @@ function addGeometriesToOpenLayers(validResults, object, tileConfig, setButtonLo
     layer = allVectorLayers.siloLayer;
   } else if (object === "Livestock") {
     layer = allVectorLayers.livestockLayer;
+
+    // Miscellaneous layer
+  } else if (object === "misc") {
+    layer = allVectorLayers.miscLayer;
+    console.log(`Using misc layer for object: ${object}`);
 
     // Default fallback to building layer
   } else {

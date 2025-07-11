@@ -80,22 +80,24 @@ class PostGISDatabase:
             # Transportation
             'aircraft', 'car', 'ship', 'train',
             # Infrastructure
-            'bridge', 'building', 'city', 'factory', 'highway', 'hospital', 
+            'bridge', 'building', 'city', 'factory', 'highway', 'hospital',
             'house', 'parking_lot', 'road', 'runway', 'solar_panel', 'warehouse', 'wind_turbine',
             # Natural Features
-            'beach', 'canyon', 'coastline', 'hill', 'island', 'lake', 'mountain', 
+            'beach', 'canyon', 'coastline', 'hill', 'island', 'lake', 'mountain',
             'ocean', 'river', 'valley', 'wetland',
             # Vegetation
             'farmland', 'forest', 'garden', 'grass', 'park', 'pasture', 'tree', 'vineyard',
             # Urban Features
-            'cemetery', 'commercial', 'construction_site', 'golf_course', 'industrial', 
+            'cemetery', 'commercial', 'construction_site', 'golf_course', 'industrial',
             'residential', 'sports_field', 'stadium', 'urban_area',
             # Geological
             'desert', 'erosion', 'landslide', 'mine', 'quarry', 'rock_formation', 'sand',
             # Environmental
             'fire', 'flood', 'ice', 'shadow', 'smoke', 'snow',
             # Agriculture
-            'barn', 'greenhouse', 'livestock', 'silo'
+            'barn', 'greenhouse', 'livestock', 'silo',
+            # Miscellaneous
+            'misc'
         ]
         
         # Convert to table names (lowercase with underscores)
