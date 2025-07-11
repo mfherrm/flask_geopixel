@@ -224,5 +224,3 @@ if (document.readyState === 'loading') {
   // DOM is already loaded
   initializeLayerSwitcher();
 }
-
-console.log('🌍 ArcGIS Wayback Integration loaded successfully!')
