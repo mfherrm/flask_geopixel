@@ -174,6 +174,8 @@ class PostGISDatabase:
             if clear_data:
                 logger.info("Clearing existing data...")
                 self.drop_all_tables()
+                # Force a commit to ensure tables are actually dropped
+                self.force_commit()
             else:
                 logger.info("Preserving existing data...")
             
@@ -182,12 +184,41 @@ class PostGISDatabase:
             
             if clear_data:
                 logger.info("Database initialization completed successfully - data cleared")
+                # Verify tables are actually empty
+                self.verify_tables_empty()
             else:
                 logger.info("Database initialization completed successfully - data preserved")
             
         except Exception as e:
             logger.error(f"Database initialization failed: {e}")
             raise
+    
+    def force_commit(self):
+        """Force commit to ensure all operations are written to disk"""
+        try:
+            with self.get_connection() as conn:
+                conn.commit()
+                logger.info("Database transactions committed")
+        except Exception as e:
+            logger.error(f"Error forcing commit: {e}")
+    
+    def verify_tables_empty(self):
+        """Verify that all tables are actually empty after clearing"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cursor:
+                    table_names = self.get_all_object_tables()
+                    total_rows = 0
+                    for table_name in table_names:
+                        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+                        count = cursor.fetchone()[0]
+                        total_rows += count
+                        if count > 0:
+                            logger.warning(f"Table {table_name} still has {count} rows after clearing")
+                    
+                    logger.info(f"Database verification: {total_rows} total rows across all tables")
+        except Exception as e:
+            logger.error(f"Error verifying empty tables: {e}")
     
     def object_name_to_table_name(self, object_name: str) -> str:
         """Convert object name from dropdown to table name"""
@@ -304,17 +335,35 @@ class PostGISDatabase:
             logger.error(f"Error calculating intersection between {table_name1} and {table_name2}: {e}")
             raise
 
-# Global database instance
-db = PostGISDatabase()
+# Global database instance - will be initialized later
+db = None
 
 def get_database() -> PostGISDatabase:
     """Get the global database instance"""
+    global db
+    if db is None:
+        host = os.environ.get('DB_HOST', 'localhost')
+        port = int(os.environ.get('DB_PORT', '5432'))
+        user = os.environ.get('DB_USER', 'postgres')
+        password = os.environ.get('DB_PASSWORD', 'postgres')
+        database = os.environ.get('DB_NAME', 'postgres')
+        
+        logger.info(f"Database connection parameters: host={host}, port={port}, user={user}, database={database}")
+        
+        db = PostGISDatabase(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database
+        )
     return db
 
 def initialize_database(clear_data=True):
     """Initialize the database on startup"""
     try:
-        db.initialize_database(clear_data=clear_data)
+        database = get_database()
+        database.initialize_database(clear_data=clear_data)
         logger.info("Database initialized successfully on startup")
     except Exception as e:
         logger.error(f"Failed to initialize database on startup: {e}")

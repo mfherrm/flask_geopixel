@@ -1,0 +1,143 @@
+<meta http-equiv="Content-Type" content="text/html; charset=Windows-1252"><link rel="stylesheet" href="{{ themeUrl('/css/welcome.css') }}" />
+
+<div id="section-0" class="welcome-section">
+  <div class="cadenza__hero">
+    <div class="welcome-section--wrapper d-flex align-items-center">
+      <div class="welcome-logo--wrapper col-6">
+        {% include './hero.html' %}
+      </div>
+    </div>
+  </div>
+  <div class="welcome-text--wrapper col-6">
+    <h1 class="welcome-title">Dashboarding. Reporting. Location Analytics.</h1>
+    <p>With <a href="https://www.disy.net/de/produkte/cadenza/datenanalyse-software/" target="_blank">disy Cadenza</a> you can easily analyze, visualize and present your data resulting in an enhanced overview, discovered correlations or new insights. Experience the vast possibilities of intelligent data analysis: Business &amp; Location Intelligence makes a powerful difference as your data speak.</p>
+    <p>&quot;First steps&quot;, our <a href="https://www.youtube.com/playlist?list=PLNSw3ORHtTWVuvWnwmA2o6v9_rqPIfz0Q" target="_blank">Tutorials</a>, <a href="/cadenza/learning/#/index/1/1" target="_blank">Learning Modules</a> and <a href="/cadenza/help/#/index/1/1" target="_blank">Online Help</a> make it easy to get started. For the latest information on disy Cadenza, please visit our <a href="https://www.disy.net/de/" target="_blank">website</a>.</p>
+  </div>
+  <div>{{ getProperty('BRANCHING_DATE') }}</div>
+  <div class="scroll-down">
+    <div class="scroll-down-label">
+      First steps in disy Cadenza
+    </div>
+    <div class="scroll-down-icon"></div>
+  </div>
+</div>
+
+<section class="quick-intro">
+
+  {% include './quick-intro.html' %}
+
+  <!--
+    These sections are linked to by a navigation bar. Please keep in mind that the
+    aria labels are provided in JS, see quick-intro.js.
+   -->
+  <section id="section-1" class="startpage-section section1">
+    <h2 class="flag">1 Welcome Page</h2>
+    <div class="inner-container reverse-md">
+      <img loading="lazy" class="section-pic" src="{{ themeUrl('/images/welcome/welcome_1_en.png') }}" width="400" height="368" alt=""/>
+      <div>
+        <p>disy Cadenza's welcome page is divided into two parts. The Navigator on the left allows you to access and visualize the connected data. When launching Cadenza, the Navigator is always available. When opening a workbook or a single view, the Navigator automatically closes.</p>
+        <p class="d-stack-h space-2"><span class="symbol-navigator"></span>It can be reopened at any time by clicking the Navigator button in the main header.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-2" class="startpage-section section2">
+    <h2 class="flag">2 Navigator</h2>
+    <div class="inner-container">
+      <img loading="lazy" class="section-pic" src="{{ themeUrl('/images/welcome/welcome_2_en.png') }}" width="400" height="509" alt="" />
+      <div>
+        <p class="d-stack-h space-2"><span class="symbol-navigator"></span>The Navigator provides a quick overview of the contents.</p>
+        <div class="d-stack-h space-2">
+          <span class="symbol-folder"></span>
+          <div>
+            <p>These are thematically grouped in different directories. They typically include:</p>
+            <ul style="padding-left: 24px">
+              <li>Workbooks with corresponding worksheets</li>
+              <li>Directories with workbooks grouped by topic</li>
+              <li>Links</li>
+            </ul>
+          </div>
+        </div>
+        <p class="d-stack-h space-2"><span class="symbol-glass"></span>To help you find specific content, Disy Cadenza offers a search function. It is located in the upper part of the Navigator.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-3" class="startpage-section section3">
+    <h2 class="flag">3 Demo Content</h2>
+    <div class="inner-container reverse-md">
+      <div>
+        <p>For demonstration purposes, this disy Cadenza installation contains data from the fields of Verkehr &amp; Mobility (traffic and mobility), Gewaesserguete (water quality) and Personal-Controlling (personell controlling within directory &quot;Zentrale Bereiche&quot;).</p>
+        <p>Examples of individual views as well as workbooks are provided in directory Gewaesserguete (water quality). English-language analyses are provided in directory &quot;Verkehr &amp; Mobilitaet (traffic &amp; mobility)&quot;.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-4" class="startpage-section section4">
+    <h2 class="flag">4 Workbooks</h2>
+    <div class="inner-container">
+      <img loading="lazy" class="section-pic" src="{{ themeUrl('/images/welcome/welcome_4_en.png') }}" width="400" height="509" alt="" />
+      <div>
+        <p>In disy Cadenza, workbooks are used for data visualization and systematic analysis. In this way, correlations can be identified and visualized in a comprehensible way.</p>
+        <p>A workbook consists of one or more worksheets containing the data prepared in a topic-based structure.</p>
+        <p class="d-stack-h space-2"><span class="symbol-workbook"></span>Click this symbol to create a new, empty workbook.</p>
+        <p>Ready-to-use workbooks are available in directories &quot;Gewaesserguete (water quality)&quot;, &quot;Verkehr &amp; Mobilitaet (traffic &amp; mobility)&quot; and &quot;Zentrale Dienste (central services)&quot;.</p>
+        <p>Click the arrow next to a workbook to list all available worksheets in the Navigator. By clicking a worksheet, it opens in disy Cadenza.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-5" class="startpage-section section5">
+    <h2 class="flag">5 Worksheets</h2>
+    <div class="inner-container reverse-md">
+      <div>
+        <p>Various worksheets are listed in workbook &quot;Uebersicht Messstellen (measurement stations overview)&quot; .</p>
+        <p>The preceding symbols quickly indicate how the data is visualized on the worksheet. The following options are available:</p>
+        <ul class="d-stack-v space-4" style="padding-left: 0">
+          <li class="d-stack-h space-2"><span class="symbol-dashboard"></span>Dashboard</li>
+          <li class="d-stack-h space-2"><span class="symbol-table"></span>Table</li>
+          <li class="d-stack-h space-2"><span class="symbol-chart"></span>Chart</li>
+          <li class="d-stack-h space-2"><span class="symbol-map"></span>Map</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-6" class="startpage-section section6">
+    <h2 class="flag">6 Dashboard</h2>
+    <div class="inner-container">
+      <img loading="lazy" class="section-pic" src="{{ themeUrl('/images/welcome/welcome_6_en.png') }}" width="400" height="225" alt="" />
+      <div>
+        <p>A dashboard consists of several views that can simultaneously show different visualizations of the underlying data. In the &quot;Total Registrations&quot; worksheet of the &quot;Registrations&quot; workbook, for example, the data is presented in the form of two indicators, a column chart, a table with color highlighting and a map.</p>
+        <p>A text field provides additional information about the data. An image visually places data in context. Additional visualization types are available.</p>
+        <div class="d-stack-h space-4">
+          <div class="d-stack-v space-2">
+            <div class="symbol-databrowser" title="Data Manager icon"></div>
+            <div class="symbol-designer" title="Designer"></div>
+          </div>
+          <p>If you have permission to access the workbook, you can use the Data Manager to add additional data or change various data settings in the Designer, such as customizing the aggregation or display.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-7" class="startpage-section section7">
+    <h2 class="flag">7 Filtering Data</h2>
+    <div class="inner-container reverse-md">
+      <img loading="lazy" class="section-pic" src="{{ themeUrl('/images/welcome/welcome_7_en.png') }}" width="273" height="310" alt="" />
+
+      <div>
+        <p class="d-stack-h space-2"><span class="symbol-analysis-context"></span>The filters in the so-called Analysis Context on the left allow a precise data selection in the displayed views. Apply the filters in the Analysis Context of a workbook as needed to narrow down the data relevant to you. The worksheet views refresh automatically.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="outro-text">
+    For more information on how to work with disy Cadenza and how to process data in a workbook, please refer to the <a href="/cadenza/learning/#/index/1/1" target="_blank">Learning Modules</a>.
+  </div>
+
+</section>
+
+<nav class="startpage-section-navigation">
+  <!-- contents get dynamically added by JS -->
+</nav>

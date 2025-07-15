@@ -223,6 +223,14 @@ def process_image(image_path, query, api_url):
         print(f"Image: {image_path}")
         print(f"Query: {query}")
         
+        # Test basic internet connectivity
+        try:
+            print("🔍 Testing internet connectivity...")
+            test_response = requests.get("https://httpbin.org/get", timeout=10)
+            print(f"🔍 Internet test result: {test_response.status_code}")
+        except Exception as e:
+            print(f"❌ Internet connectivity test failed: {str(e)}")
+        
         # Apply rate limiting to prevent GPU overload
         rate_limit_api_request()
         
@@ -232,7 +240,11 @@ def process_image(image_path, query, api_url):
             data = {'query': query}
             
             # Send the POST request with configured timeout
+            print(f"🔍 Making request to: {api_url}")
+            print(f"🔍 Request data: {data}")
+            print(f"🔍 Files: {list(files.keys())}")
             response = requests.post(api_url, files=files, data=data, timeout=ERROR_HANDLING['api_timeout'])
+            print(f"🔍 Response status: {response.status_code}")
         
         # Check if the request was successful
         if response.status_code == 200:
@@ -340,7 +352,7 @@ def get_object_outlines(api_base_url, image_path, query, upscaling_config=None):
     
     requested_scale = upscaling_config.get('scale', 1)
     
-    api_process_url = f"{api_base_url}/process"
+    api_process_url = f"{api_base_url.rstrip('/')}/process"
     
     print(f"GeoPixel API Client - NEW MASK LOGIC")
     print(f"====================================")

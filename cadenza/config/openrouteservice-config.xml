@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openrouteserviceConfiguration xmlns="http://www.disy.net/routing/ors/config">
+  <service>
+    <url>$VAR{ROUTING_URL}</url>
+    <version>v2</version>
+    <capabilities>
+      <profiles>
+        <profile>driving-car</profile>
+        <profile>driving-hgv</profile>
+        <profile>cycling-regular</profile>
+        <profile>wheelchair</profile>
+        <profile>foot-walking</profile>
+      </profiles>
+      <isochrones/>
+    </capabilities>
+    <tuning>
+      <language>de</language>
+      <defaultIsochroneDuration>PT30M</defaultIsochroneDuration>
+      <defaultIsochroneDistance>20000</defaultIsochroneDistance>
+    </tuning>
+    <restrictions>
+      <maxStopovers>18</maxStopovers>
+      <maxIsochroneLocations>3</maxIsochroneLocations>
+      <maxIsochroneZones>5</maxIsochroneZones>
+      <maxIsochroneDuration>PT60M</maxIsochroneDuration>
+      <maxIsochroneDistance>50000</maxIsochroneDistance>
+      <!-- <onDemand> -->
+    </restrictions>
+  </service>
+</openrouteserviceConfiguration>

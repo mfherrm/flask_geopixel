@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TemporalDataAnalysis3D xmlns="http://www.disy.net/cadenza/temporaldataanalysis3d-config">
+  <warningPointCount>750000</warningPointCount>
+  <maximumPointCount>1000000</maximumPointCount>
+  <showMapPlaneForDataPointAtMousePointer>false</showMapPlaneForDataPointAtMousePointer>
+</TemporalDataAnalysis3D>

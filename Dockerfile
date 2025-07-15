@@ -5,15 +5,26 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
-    libxrender-dev \
+    libxrender1 \
     libgomp1 \
-    libgthread-2.0-0 \
     libfontconfig1 \
     libgtk-3-0 \
     libgl1-mesa-glx \
-    libglib2.0-0 \
     libgstreamer1.0-0 \
     libgstreamer-plugins-base1.0-0 \
+    libxrandr2 \
+    libxss1 \
+    libxcursor1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxi6 \
+    libxtst6 \
+    libcairo-gobject2 \
+    libgdk-pixbuf2.0-0 \
+    libpango-1.0-0 \
+    libatk1.0-0 \
+    libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -29,8 +40,9 @@ COPY . .
 EXPOSE 5000
 
 # Set environment variables for Flask
-ENV FLASK_APP=fachanwendung/run.py
-ENV FLASK_ENV=production
+ENV FLASK_HOST=0.0.0.0
+ENV FLASK_PORT=5000
+ENV FLASK_DEBUG=False
 
 # Run the application
-CMD ["python3", "-c", "import sys; sys.path.insert(0, '.'); from fachanwendung.app import create_app; app = create_app(); app.run(host='0.0.0.0', port=5000, debug=False)"]
+CMD ["python3", "fachanwendung/run.py"]

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workbookReportConfiguration xmlns="http://www.disy.net/cadenza/workbook/report">
+  <localWebDriver>
+    <webDriverExecutable>$SYSTEM{CADENZA_CHROMEDRIVER_EXECUTABLE}</webDriverExecutable>
+    <webDriverBrowserExecutable>$SYSTEM{CADENZA_CHROME_EXECUTABLE}</webDriverBrowserExecutable>
+  </localWebDriver>
+</workbookReportConfiguration>

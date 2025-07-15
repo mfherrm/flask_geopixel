@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<logConfiguration xmlns="http://www.disy.net/cadenza/auditlog/">
+
+  <auditors>
+	<!-- <auditor name="AccessManager" /> -->
+	<auditor name="Authentication" />
+	<auditor name="Selector" />
+  <auditor name="Workbook" />
+  </auditors>
+
+  <appender name="hibernate" class="net.disy.cadenza.logging.audit.appender.HibernateAuditLogAppender">
+    <param name="driverName" value="$SYSTEM{AUDITLOG_DB_DRIVER}"/>
+    <param name="jdbcURL" value="$SYSTEM{AUDITLOG_DB_URL}"/>
+    <param name="user" value="$SYSTEM{AUDITLOG_DB_USER}"/>
+    <param name="password" value="$SYSTEM{AUDITLOG_DB_PW}"/>
+    <param name="passwordEncrypted" value="true"/>
+    <param name="connectionPoolSize" value="5" />
+  </appender>
+
+  <root>
+    <priority value ="info" />
+    <appender-ref ref="hibernate" />
+  </root>
+
+  <logger name="GroupABC">
+    <priority value ="info" />
+    <appender-ref ref="hibernate" />
+  </logger>
+
+  <logger name="GroupDEF">
+    <priority value ="error" />
+    <appender-ref ref="hibernate" />
+  </logger>
+
+</logConfiguration>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<geocodingConfiguration xmlns="http://www.disy.net/cadenza/geocoding/1">
+
+	<geocodingServices>
+		<!-- Unstrukturierte Adresssuche  -->
+		<geocodingService id="unstructured">
+			<supportedRequestTypes>
+				<requestType>unstructured</requestType>
+			</supportedRequestTypes>
+			<server>
+				<url>$VAR{GEOCODER_URL}</url>
+				<wrapperMappingUrl>https://geocoding.gdi.disy.net/geocoder/ols-mapping</wrapperMappingUrl>
+				<timeout>PT600S</timeout>
+			</server>
+		</geocodingService>
+
+		<!-- POI Suche  -->
+		<geocodingService id="poi">
+			<supportedRequestTypes>
+				<requestType>poi</requestType>
+			</supportedRequestTypes>
+			<server>
+				<url>$VAR{GEOCODER_URL}</url>
+				<timeout>PT600S</timeout>
+			</server>
+		</geocodingService>
+
+		<!-- Strukturierte Adresssuche für den Excel Import  -->
+		<geocodingService id="structured">
+			<supportedRequestTypes>
+				<requestType>structured</requestType>
+			</supportedRequestTypes>
+			<server>
+				<url>$VAR{GEOCODER_URL}</url>
+				<wrapperMappingUrl>https://geocoding.gdi.disy.net/geocoder/ols-mapping</wrapperMappingUrl>
+				<timeout>PT600S</timeout>
+			</server>
+			<properties>
+				<property name="multipleAddressesPerGeocodeRequest">false</property>
+			</properties>
+		</geocodingService>
+
+		<!-- Reverse Geokodierung -->
+		<geocodingService id="reverse">
+			<!-- <rankingGroup>1</rankingGroup> -->
+			<supportedRequestTypes>
+				<requestType>reverse</requestType>
+			</supportedRequestTypes>
+			<server>
+				<url>$VAR{GEOCODER_URL}</url>
+				<timeout>PT600S</timeout>
+			</server>
+		</geocodingService>
+
+	</geocodingServices>
+
+	<!-- Aufbau des reverse Geocoding Dialogs -->
+	<reverseGeocoding geocoderId="reverse">
+		<maxSearchDistance value="200" unit="M"/>
+		<defaultResult>
+			<line>{Street}</line>
+			<line>{PostalCode} {Municipality}</line>
+		</defaultResult>
+		<result countryCode="DE">
+			<line>{Street} {Housenumber}</line>
+			<line>{PostalCode} {Municipality}</line>
+			<line>{CountrySubdivision}</line>
+			<!-- <line>{CountryCode}</line> -->
+		</result>
+	</reverseGeocoding>
+
+</geocodingConfiguration>

@@ -1,0 +1,82 @@
+<workbookTableConfiguration>
+    <tableStyles>
+        <tableStyle id="green">
+            <printName>Grün Gesamtwerte</printName>
+            <grandTotal>
+                <backgroundColor>#57af64</backgroundColor>
+            </grandTotal>
+            <columnSubtotal>
+                <backgroundColor>#9dd394</backgroundColor>
+            </columnSubtotal>
+            <rowSubtotal>
+                <backgroundColor>#d5edcd</backgroundColor>
+            </rowSubtotal>
+            <borders>SPECIFIC</borders>
+        </tableStyle>
+        <tableStyle id="blue">
+            <printName>Blau Gesamtwerte</printName>
+            <grandTotal>
+                <backgroundColor>#386eb5</backgroundColor>
+            </grandTotal>
+            <columnSubtotal>
+                <backgroundColor>#7bb0d6</backgroundColor>
+            </columnSubtotal>
+            <rowSubtotal>
+                <backgroundColor>#c6d9ed</backgroundColor>
+            </rowSubtotal>
+            <borders>SPECIFIC</borders>
+        </tableStyle>
+        <tableStyle id="bluewithborders">
+            <printName>Blau Gesamtwerte (mit Rahmenlinien)</printName>
+            <grandTotal>
+                <backgroundColor>#386eb5</backgroundColor>
+            </grandTotal>
+            <columnSubtotal>
+                <backgroundColor>#7bb0d6</backgroundColor>
+            </columnSubtotal>
+            <rowSubtotal>
+                <backgroundColor>#c6d9ed</backgroundColor>
+            </rowSubtotal>
+            <borders>ALL</borders>
+        </tableStyle>
+        <tableStyle id="orange">
+            <printName>Orange Gesamtwerte</printName>
+            <grandTotal>
+                <backgroundColor>#ea752a</backgroundColor>
+            </grandTotal>
+            <columnSubtotal>
+                <backgroundColor>#f6aa66</backgroundColor>
+            </columnSubtotal>
+            <rowSubtotal>
+                <backgroundColor>#f9d9b5</backgroundColor>
+            </rowSubtotal>
+            <borders>SPECIFIC</borders>
+        </tableStyle>
+        <tableStyle id="red">
+            <printName>Rot Gesamtwerte</printName>
+            <grandTotal>
+                <backgroundColor>#e84d3a</backgroundColor>
+            </grandTotal>
+            <columnSubtotal>
+                <backgroundColor>#f38e6d</backgroundColor>
+            </columnSubtotal>
+            <rowSubtotal>
+                <backgroundColor>#f7cab5</backgroundColor>
+            </rowSubtotal>
+            <borders>SPECIFIC</borders>
+        </tableStyle>
+        <tableStyle id="grey">
+            <printName>Grau Gesamtwerte</printName>
+            <grandTotal>
+                <backgroundColor>#7a7a7a</backgroundColor>
+            </grandTotal>
+            <columnSubtotal>
+                <backgroundColor>#b5b5b5</backgroundColor>
+            </columnSubtotal>
+            <rowSubtotal>
+                <backgroundColor>#e2e2e2</backgroundColor>
+            </rowSubtotal>
+            <borders>SPECIFIC</borders>
+        </tableStyle>
+    </tableStyles>
+</workbookTableConfiguration>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration strict="true">
+  <Appenders>
+    <Appender type="Console" name="console">
+      <Layout type="PatternLayout" pattern="%d{ISO8601} %-5p [%t] %-c - %m%n" />
+    </Appender>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="console"/>
+    </Root>
+  </Loggers>
+</Configuration>

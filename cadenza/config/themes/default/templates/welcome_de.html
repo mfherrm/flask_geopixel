@@ -1,0 +1,147 @@
+<link rel="stylesheet" href="{{ themeUrl('/css/welcome.css') }}" />
+
+<div id="section-0" class="welcome-section">
+  <div class="cadenza__hero">
+    <div class="welcome-section--wrapper d-flex align-items-center">
+      <div class="welcome-logo--wrapper col-6">
+        {% include './hero.html' %}
+      </div>
+    </div>
+  </div>
+  <div class="welcome-text--wrapper col-6">
+    <h1 class="welcome-title">Dashboarding. Reporting. Location Analytics.</h1>
+    <p>Ob besserer Überblick, das Entdecken von Zusammenhängen oder das Teilen neu gewonnener Erkenntnisse – mit <a href="https://www.disy.net/de/produkte/cadenza/datenanalyse-software/" target="_blank">disy Cadenza</a>
+      analysieren, visualisieren und präsentieren Sie Ihre Daten ganz leicht. Erleben Sie die vielfältigen Möglichkeiten intelligenter Datenanalyse:
+      Business & Location Intelligence bringt Ihre Daten zum Sprechen und damit können Sie viel bewegen.</p>
+    <p>Steigen Sie mühelos ein mit den „Ersten Schritten“, unseren <a href="https://www.youtube.com/playlist?list=PLNSw3ORHtTWVuvWnwmA2o6v9_rqPIfz0Q" target="_blank">Tutorials</a>, den <a href="/cadenza/learning/#/index/1/1" target="_blank">Lernmodulen</a>
+      und der <a href="/cadenza/help/#/index/1/1" target="_blank">Onlinehilfe</a>.
+      Aktuelle Informationen rund um disy Cadenza erhalten Sie auch auf unserer <a href="https://www.disy.net/de/" target="_blank">Webseite</a>.</p>
+  </div>
+  <div>{{ getProperty('BRANCHING_DATE') }}</div>
+  <div class="scroll-down">
+    <div class="scroll-down-label">
+      Erste Schritte in disy Cadenza
+    </div>
+    <div class="scroll-down-icon"></div>
+  </div>
+</div>
+
+<section class="quick-intro">
+
+  {% include './quick-intro.html' %}
+
+  <!--
+    These sections are linked to by a navigation bar. Please keep in mind that the
+    aria labels are provided in JS, see quick-intro.js.
+   -->
+  <section id="section-1" class="startpage-section section1">
+    <h2 class="flag">1 Startseite</h2>
+    <div class="inner-container reverse-md">
+      <img loading="lazy" class="section-pic" src="{{ themeUrl('/images/welcome/welcome_1_de.png') }}" width="400" height="368" alt=""/>
+      <div>
+        <p>Die Startseite von disy Cadenza ist zweigeteilt. Auf der linken Seite sehen Sie den sogenannten Navigator, über den Sie auf die angebundenen Daten zugreifen und diese visualisieren können. Auf der Startseite ist er immer geöffnet. Sobald Sie eine Arbeitsmappe oder eine Einzelsicht öffnen, wird der Navigator automatisch geschlossen.</p>
+        <p class="d-stack-h space-2"><span class="symbol-navigator"></span>Sie können den Navigator jederzeit wieder öffnen, indem Sie in der Hauptleiste auf die Schaltfläche „Navigator“ klicken.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-2" class="startpage-section section2">
+    <h2 class="flag">2 Navigator</h2>
+    <div class="inner-container">
+      <img loading="lazy" class="section-pic" src="{{ themeUrl('/images/welcome/welcome_2_de.png') }}" width="400" height="509" alt="" />
+      <div>
+        <p class="d-stack-h space-2"><span class="symbol-navigator"></span>Der Navigator ermöglicht Ihnen einen schnellen Überblick über die zur Verfügung gestellten Inhalte.</p>
+        <div class="d-stack-h space-2">
+          <span class="symbol-folder"></span>
+          <div>
+            <p>Diese sind in unterschiedlichen Verzeichnissen thematisch gruppiert. Mögliche Inhalte sind:</p>
+            <ul style="padding-left: 24px">
+              <li>Arbeitsmappen mit zugehörigen Arbeitsblättern</li>
+              <li>Verzeichnisse, um Arbeitsmappen thematisch zu bündeln</li>
+              <li>Links</li>
+            </ul>
+          </div>
+        </div>
+        <p class="d-stack-h space-2"><span class="symbol-glass"></span>Wenn Sie gezielt nach bestimmten Inhalten suchen möchten, bietet Ihnen disy Cadenza eine Suchfunktion. Diese befindet sich im oberen Bereich des Navigators.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-3" class="startpage-section section3">
+    <h2 class="flag">3 Demo-Inhalte</h2>
+    <div class="inner-container reverse-md">
+      <div>
+        <p>In dieser disy Cadenza-Installation sind zu Demonstrationszwecken Daten aus den Themenbereichen Verkehr & Mobilität, Gewässergüte und Personal-Controlling (zu finden im Verzeichnis „Zentrale Bereiche") enthalten.</p>
+        <p>Im Verzeichnis Gewässergüte finden Sie Beispiele für Arbeitsmappen zu Gewässermessstellen in Niedersachsen. Englischsprachige Auswertungen werden im Verzeichnis „Verkehr & Mobilität / traffic & mobility“  bereitgestellt.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-4" class="startpage-section section4">
+    <h2 class="flag">4 Arbeitsmappen</h2>
+    <div class="inner-container">
+      <img loading="lazy" class="section-pic" src="{{ themeUrl('/images/welcome/welcome_4_de.png') }}" width="400" height="509" alt="" />
+      <div>
+        <p>In disy Cadenza werden Arbeitsmappen verwendet, um einen Überblick über die Daten zu erhalten und diese gezielt zu analysieren. So können Zusammenhänge herausgearbeitet und verständlich visualisiert werden.</p>
+        <p>Eine Arbeitsmappe besteht aus einem oder mehreren Arbeitsblättern, in denen die Daten thematisch strukturiert aufbereitet sind.</p>
+        <p class="d-stack-h space-2"><span class="symbol-workbook"></span>Klicken Sie auf dieses Symbol, um eine neue, leere Arbeitsmappe zu erstellen.</p>
+        <p>Vorbereitete Beispiele für Arbeitsmappen finden Sie in den Verzeichnissen „Gewässergüte", „Verkehr & Mobilität / traffic & mobility" und "Zentrale Dienste".</p>
+        <p>Klicken Sie auf den Pfeil neben einer Arbeitsmappe, um alle darin enthaltenen Arbeitsblätter im Navigator anzuzeigen. Durch einen Klick auf ein Arbeitsblatt wird das betreffende Arbeitsblatt in disy Cadenza geöffnet.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-5" class="startpage-section section5">
+    <h2 class="flag">5 Arbeitsblätter</h2>
+    <div class="inner-container reverse-md">
+      <div>
+        <p>In der Arbeitsmappe „Übersicht Messtellen" sehen Sie verschiedene Arbeitsblätter.</p>
+        <p>Anhand der vorangestellten Symbole können Sie auf einen Blick erkennen, wie die Daten auf dem Arbeitsblatt visualisiert werden. Es gibt folgende Optionen:</p>
+        <ul class="d-stack-v space-4" style="padding-left: 0">
+          <li class="d-stack-h space-2"><span class="symbol-dashboard"></span>Dashboard</li>
+          <li class="d-stack-h space-2"><span class="symbol-table"></span>Tabelle</li>
+          <li class="d-stack-h space-2"><span class="symbol-chart"></span>Diagramm</li>
+          <li class="d-stack-h space-2"><span class="symbol-map"></span>Karte</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-6" class="startpage-section section6">
+    <h2 class="flag">6 Dashboard</h2>
+    <div class="inner-container">
+      <img loading="lazy" class="section-pic" src="{{ themeUrl('/images/welcome/welcome_6_de.png') }}" width="400" height="225" alt="" />
+      <div>
+        <p>Ein Dashboard besteht aus mehreren Sichten, die gleichzeitig unterschiedliche Visualisierungen der zugrundeliegenden Daten zeigen können. Im Arbeitsblatt „Total Registrations" der Arbeitsmappe „Registrations" werden die Daten beispielsweise in zwei Indikatoren, einem Säulendiagramm, einer Tabelle mit farblicher Hervorhebung sowie in einer Karte aufbereitet dargestellt.</p>
+        <p>Ein Textfeld liefert weitere Informationen zu den Daten. Ein Bild ordnet die Daten visuell ein. Daneben stehen weitere Visualisierungstypen zur Verfügung.</p>
+        <div class="d-stack-h space-4">
+          <div class="d-stack-v space-2">
+            <div class="symbol-databrowser" title="Datenbrowser"></div>
+            <div class="symbol-designer" title="Designer"></div>
+          </div>
+          <p>Wenn Sie die entsprechenden Rechte an der Arbeitsmappe haben, können Sie mithilfe des Datenmanagers weitere Daten hinzufügen oder im Designer unterschiedliche Einstellungen an den Daten vornehmen, wie beispielsweise die Anpassung der Aggregation oder der Darstellung.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-7" class="startpage-section section7">
+    <h2 class="flag">7 Daten filtern</h2>
+    <div class="inner-container reverse-md">
+      <img loading="lazy" class="section-pic" src="{{ themeUrl('/images/welcome/welcome_7_de.png') }}" width="273" height="310" alt="" />
+
+      <div>
+        <p class="d-stack-h space-2"><span class="symbol-analysis-context"></span>Die Filter im sogenannten Analysekontext auf der linken Seite ermöglichen eine gezielte Datenauswahl in den dargestellten Sichten. Um die Daten der Arbeitsmappe auf einen für Sie relevanten Bereich einzuschränken, setzen Sie die entsprechenden Filter im Analysekontext. Die Sichten im Arbeitsblatt werden automatisch aktualisiert.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="outro-text">
+    Ausführliche Informationen zu den Arbeitsmöglichkeiten in disy Cadenza und der Datenaufbereitung in einer Arbeitsmappe erhalten Sie in den <a href="/cadenza/learning/#/index/1/1" target="_blank">Lernmodulen</a>.
+  </div>
+
+</section>
+
+<nav class="startpage-section-navigation">
+  <!-- contents get dynamically added by JS -->
+</nav>

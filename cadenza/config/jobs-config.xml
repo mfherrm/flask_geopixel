@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jobsConfig>
+ 
+  <!--XSD Duration Data Type. Default is 1 minute. -->
+  <heartbeat>PT5S</heartbeat>
+ 
+  <datasource>
+    <driverName>$SYSTEM{JOB_DB_DRIVER}</driverName>
+    <jdbcURL>$SYSTEM{JOB_DB_URL}</jdbcURL>
+    <user>$SYSTEM{JOB_DB_USER}</user>
+    <password>$SYSTEM{JOB_DB_PW}</password>
+    <connectionPoolSize>3</connectionPoolSize>
+  </datasource>
+ 
+  <execution>
+    <workerThreadPoolSize>3</workerThreadPoolSize>
+    <!-- <workerKeepAliveTime>PT30S</workerKeepAliveTime> -->
+  </execution>
+ 
+</jobsConfig>  

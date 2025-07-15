@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<basicWebConfiguration>
+  <publicCadenzaUrl>http://localhost:8080/cadenza</publicCadenzaUrl>
+  <management>
+    <maxConcurrentUsers>10</maxConcurrentUsers>
+    <defaultDatasourceMaxCachingAge>PT5M</defaultDatasourceMaxCachingAge>
+  </management>
+  <appearance>
+    <menuEntries>
+      <menuEntry id="help">
+        <urlKey>help.learning.link.url</urlKey>
+        <printNameKey>mainMenu.help.learning</printNameKey>
+      </menuEntry>
+      <menuEntry id="help">
+        <urlKey>help.user.link.url</urlKey>
+      </menuEntry>
+      <menuEntry id="keymap" />
+    </menuEntries>
+  </appearance>
+  <csp>
+    <frame-ancestors enabled="true">
+      <source>http://localhost:5000/</source>
+	  <source>http://127.0.0.1:5000/</source>
+    </frame-ancestors>
+  </csp>
+</basicWebConfiguration>
+
+

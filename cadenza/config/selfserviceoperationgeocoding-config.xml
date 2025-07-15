@@ -1,0 +1,59 @@
+<operationGeocoding xmlns="http://www.disy.net/cadenza/operationGeocoding/">
+  <geocodingServices>
+    <structuredGeocodingService id="structured" batchSize="50"/>
+    <unstructuredGeocodingService id="unstructured" batchSize="20"/>
+  </geocodingServices>
+
+  <attributeMappings>
+    <country>
+      <attributeName>Ländercode</attributeName>
+	  <attributeName>Laendercode</attributeName>
+      <attributeName>Country code</attributeName>
+    </country>
+    <federalState>
+      <attributeName>Bundesland</attributeName>
+    </federalState>
+    <countrySecondarySubdivision>
+      <attributeName>Kreis</attributeName>
+      <attributeName>Landkreis</attributeName>
+      <attributeName>County</attributeName>
+    </countrySecondarySubdivision>
+    <zipCode>
+      <attributeName>PLZ</attributeName>
+      <attributeName>Postleitzahl</attributeName>
+      <attributeName>ZIP</attributeName>
+    </zipCode>
+    <city>
+      <attributeName>Ort</attributeName>
+	  <attributeName>Ortschaft</attributeName>
+      <attributeName>Stadt</attributeName>
+      <attributeName>Gemeinde</attributeName>
+      <attributeName>City</attributeName>
+	  <attributeName>Town</attributeName>
+      <attributeName>Municipality</attributeName>
+    </city>
+    <cityDistrict>
+      <attributeName>Stadtbezirk</attributeName>
+      <attributeName>Stadtteil</attributeName>
+	  <attributeName>Stadtviertel</attributeName>
+      <attributeName>Ortsteil</attributeName>
+      <attributeName>Bezirk</attributeName>
+      <attributeName>District</attributeName>
+      <attributeName>Settlement</attributeName>
+    </cityDistrict>
+    <street>
+      <attributeName>Street</attributeName>
+      <attributeName>Straße</attributeName>
+	  <attributeName>Strasse</attributeName>
+	  <attributeName>Str.</attributeName>
+	  <attributeName>Str</attributeName>
+	  <attributeName>Road</attributeName>
+    </street>
+    <streetNumber>
+      <attributeName>Hausnummer</attributeName>
+      <attributeName>House number</attributeName>
+      <attributeName>Street number</attributeName>
+	  <attributeName>Haus</attributeName>
+    </streetNumber>
+  </attributeMappings>
+</operationGeocoding>

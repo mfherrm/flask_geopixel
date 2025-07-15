@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="{{ themeUrl('/css/helpMenuBottomContent.css') }}">
+
+<hr />
+<div class="helpMenuBottomContent">
+  <h2>{{ i18n('helpMenu.publisher') }}</h2>
+  <a class="helpMenuBottomContentImageTop" href="http://www.disy.net" target="_blank" rel="noopener noreferrer">
+    <img src="{{ themeUrl('/images/disy-logo-transparent.svg') }}" alt="{{ i18n('helpMenu.logo.alt') }}" height="45"/>
+  </a>
+  <div class="helpMenuBottomContentText">
+    <p>
+      Disy Informationssysteme GmbH<br/>
+      Ludwig-Erhard-Allee 6<br/>
+      76131 Karlsruhe
+    </p>
+    <table class="helpMenuPublisherPhone">
+      <tbody>
+      <tr>
+        <th>Tel.</th>
+        <td>+49 721 16006-000</td>
+      </tr>
+      <tr>
+        <th>Fax.</th>
+        <td>+49 721 16006-05</td>
+      </tr>
+      </tbody>
+    </table>
+    <p>
+      <a href="mailto:sales@disy.net">sales@disy.net</a><br/>
+      <a href="http://www.disy.net" target="_blank" rel="noopener noreferrer">www.disy.net</a><br/>
+    </p>
+  </div>
+
+  <h2>{{ i18n('helpMenu.license.versionInfo') }}</h2>
+  <dl class="helpMenuLicenseInfo">
+    <dt>{{ i18n('helpMenu.license.version') }}</dt>
+    <dd>{{ cadenzaVersion }}</dd>
+
+    <dt>{{ i18n('helpMenu.license.owner') }}</dt>
+    <dd>{{ cadenzaLicense.customer }}</dd>
+
+    <dt>{{ i18n('helpMenu.license.expireDate') }}</dt>
+    <dd>{{ cadenzaLicense.expireDate }}</dd>
+
+    <dt>{{ i18n('helpMenu.license.licenseType') }}</dt>
+    <dd>{{ cadenzaLicense.type }}</dd>
+  </dl>
+
+</div>

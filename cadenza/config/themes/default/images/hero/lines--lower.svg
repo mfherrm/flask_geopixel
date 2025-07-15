@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="2050px" height="2050px" viewBox="0 0 2050 2050" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Circles</title>
+    <g id="Circles" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group" transform="translate(291.000000, 27.000000)"></g>
+        <g id="lines--lower" transform="translate(181.000000, 26.000000)" stroke-width="2">
+            <polyline id="Stroke-1" stroke="#DDDDDD" points="239 1760.21523 631.145119 1808 1039.87636 1774.29169 1334.67411 1718.62229 1708.62727 1517.18793 1728 1306.40888 1686.80506 897.379278 1539.18794 493.768334 1290.9108 202.55422 950.032162 51.4992082 622.896033 59.4847677 446.554506 0"></polyline>
+            <polyline id="Stroke-3" stroke="#DDDDDD" points="537 1872.48663 937.300714 1746.12633 1530.06381 1565.7939 1282.95077 1933 1334.89569 1719.24362 1658.5871 1357 1705 1532.88263 1538.52148 1561.26597 1531 1565.7939"></polyline>
+            <line x1="1302" y1="1423" x2="1530" y2="1565" id="Stroke-4" stroke="#DDDDDD"></line>
+            <polyline id="Stroke-5" stroke="#DDDDDD" points="1301 215 1228 512 1547 494 1518 249"></polyline>
+            <line x1="1302.09783" y1="212.701784" x2="1518" y2="249" id="Stroke-6" stroke="#DDDDDD"></line>
+            <polyline id="Stroke-7" stroke="#DDDDDD" points="1600.59741 578.339658 1752.9847 997 1767 614.298465 1547 494 1594.52265 570.964578"></polyline>
+            <polyline id="Stroke-8" stroke="#DDDDDD" points="1767 618 1687.7533 903.823815 1478 909"></polyline>
+            <line x1="1607" y1="578" x2="1767" y2="618" id="Stroke-9" stroke="#BCBCBB"></line>
+            <polyline id="Stroke-10" stroke="#DDDDDD" points="1753 997 1527.1242 1258.54678 1295 1495 1657 1357"></polyline>
+            <line x1="1687" y1="897" x2="1296" y2="1423" id="Stroke-11" stroke="#DDDDDD"></line>
+            <polyline id="Stroke-12" stroke="#DDDDDD" points="1145 1241 1844 1089 1728.61083 1306.81945 1527.51014 1569.95733 1335.40815 1719 948 1375.8892"></polyline>
+            <polyline id="Stroke-14" stroke="#DDDDDD" points="1145 1241 1526.73498 1258.58313 1656.68121 1345.92187 1731 1301.1889 1295.84605 1423"></polyline>
+            <polyline id="Stroke-15" stroke="#DDDDDD" points="1684 897.212895 1600.75834 577.688916 1466.08427 911 1541.62304 498.906622 1362 180"></polyline>
+            <line x1="1466" y1="911" x2="1527" y2="1258" id="Stroke-16" stroke="#DDDDDD"></line>
+            <polyline id="Stroke-17" stroke="#DDDDDD" points="637 1808 940.83895 1377 1026 1774.25222"></polyline>
+            <polyline id="Stroke-18" stroke="#DDDDDD" points="239 1760.21523 267 1933.69455 608.734938 2000 634.494132 1791 988 1935.22771"></polyline>
+            <polyline id="Stroke-20" stroke="#DDDDDD" points="537 1872.05814 988 1935 964.738224 1784.44518 929.291087 1703 1281.70235 1935"></polyline>
+            <polyline id="Stroke-21" stroke="#DDDDDD" points="446.625842 1 308.401044 230.6191 7 286"></polyline>
+            <line x1="308" y1="230" x2="710.75778" y2="72.3764571" id="Stroke-22" stroke="#DDDDDD"></line>
+            <line x1="242" y1="208" x2="0" y2="280" id="Stroke-23" stroke="#DDDDDD"></line>
+            <polyline id="Stroke-25" stroke="#DDDDDD" points="710.75778 72.3764571 710.75778 239 932.582991 50.8117275 1173.3926 17 1362 180.270005 710.75778 63.1968982 246 206.926 307.912743 230.026888"></polyline>
+            <polyline id="Stroke-26" stroke="#DDDDDD" points="1530.29907 1565 1531 1768 1335 1718.5394"></polyline>
+        </g>
+    </g>
+</svg>

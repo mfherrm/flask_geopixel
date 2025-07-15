@@ -1,0 +1,18 @@
+.d-logo {
+  max-width: 100%;
+}
+
+.d-login-heading {
+  display: none;
+  margin: 0;
+}
+
+@media (min-width: 1024px) {
+  .d-logo {
+    display: none;
+  }
+
+  .d-login-heading {
+    display: block;
+  }
+}

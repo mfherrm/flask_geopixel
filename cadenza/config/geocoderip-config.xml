@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<geocoderIpConfiguration xmlns="http://www.disy.net/cadenza/geocoderIp/1">
+  <geocoderIpServices>
+    <geocoderIpService id="geocoder_ip">
+      <server>
+        <url>https://geoip.gdi-ext1.disy.io/geoipservice</url>
+        <timeout>PT600S</timeout>
+      </server>
+    </geocoderIpService>
+  </geocoderIpServices>
+</geocoderIpConfiguration>

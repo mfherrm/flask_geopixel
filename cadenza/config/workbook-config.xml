@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workbookConfiguration xmlns="http://www.disy.net/cadenza/workbook/">
+  <restrictions>
+    <rowCountLimit>100000</rowCountLimit>
+    <maxRowCountLimit>300000</maxRowCountLimit>
+    <queryResultGeometryVertexLimit>300000</queryResultGeometryVertexLimit>
+    <maxQueryResultGeometryVertexLimit>1000000</maxQueryResultGeometryVertexLimit>
+  </restrictions>
+</workbookConfiguration>

@@ -1,0 +1,8 @@
+<TemporalDataAnimationConfig xmlns="http://www.disy.net/cadenza/temporaldataanimation-config">
+  <warningPointCount>75000</warningPointCount>
+  <maximumPointCount>100000</maximumPointCount>
+  <maximumDisplayPointCount>
+    <internetExplorer>1000</internetExplorer>
+    <default>5000</default>
+  </maximumDisplayPointCount>
+</TemporalDataAnimationConfig>

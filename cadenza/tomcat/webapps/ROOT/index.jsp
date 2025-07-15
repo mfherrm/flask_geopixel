@@ -1,0 +1,1 @@
+<%@ page session="false" %><% response.sendRedirect("/" + System.getProperty("net.disy.cadenza.web.contextpath", "cadenza")  + "/"); %>

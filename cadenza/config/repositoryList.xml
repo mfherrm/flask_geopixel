@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<repositoryList:repositoryList xmlns:repositoryList="http://www.disy.net/cadenza/repositoryList/schema">
+	<repositoryList:databaseRepository name="databaserepository" printName="Mein Datenbank Repository">
+		<repositoryList:jdbcURL>$SYSTEM{REPO_DB_URL}</repositoryList:jdbcURL>
+		<!--Please replace the <jdbcURL> config with the entry commented out below in case you want to use the same database repository for web and desktop and share it between instances-->
+		<!-- <repositoryList:jdbcURL>jdbc:h2:file:$VAR{DIRECTORY_DATABASE}/repository/repository;AUTO_SERVER=TRUE</repositoryList:jdbcURL> -->
+		<repositoryList:driverName>$SYSTEM{REPO_DB_DRIVER}</repositoryList:driverName>
+		<repositoryList:user>$SYSTEM{REPO_DB_USER}</repositoryList:user>
+		<repositoryList:password encrypted="true">$SYSTEM{REPO_DB_PW}</repositoryList:password>
+		<repositoryList:connectionPoolSize>3</repositoryList:connectionPoolSize>
+	</repositoryList:databaseRepository>
+</repositoryList:repositoryList>

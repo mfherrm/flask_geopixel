@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<embedded>
+	<users>
+		<user>
+			<loginName>Viewer</loginName>
+			<password>Viewer</password>
+			<realName>Vincent Viewer</realName>
+			<email>viewer@disy.net</email>
+			<groups>
+				<group>Viewer</group>
+				<group>Self-Service_verwenden</group>
+				<group>Gewaesser</group>	
+				<group>Automobile</group>
+				<group>Personalszenario_Demo</group>
+			</groups>
+		</user>
+		<user>
+			<loginName>Analyst</loginName>
+			<password>Analyst</password>
+			<realName>Anja Analyst</realName>
+			<email>analyst@disy.net</email>
+			<groups>
+				<group>Analyst</group>
+				<group>Self-Service_bearbeiten</group>
+				<group>Gewaesser_verwenden</group>
+				<group>Automobile_verwenden</group>
+				<group>Referat_Personal</group>
+			</groups>
+		</user>
+		<user>
+			<loginName>Creator</loginName>
+			<password>Creator</password>
+			<realName>Charly Creator</realName>
+			<email>creator@disy.net</email>
+			<groups>
+				<group>Creator</group>
+				<group>Self-Service_bearbeiten</group>
+				<group>Gewaesser_verwalten</group>
+				<group>Automobile_verwalten</group>
+				<group>Referat_Personal_Kuratoren</group>
+			</groups>
+		</user>
+		<user>
+			<loginName>Administrator</loginName>
+			<password>Administrator</password>
+			<realName>Achim Administrator</realName>
+			<email>administrator@disy.net</email>
+			<groups>
+				<group>Administrator</group>
+				<group>Self-Service_verwalten</group>
+				<group>Gewaesser_verwalten</group>
+				<group>Automobile_verwalten</group>
+				<group>Referat_Personal</group>
+			</groups>
+		</user>
+		<user>
+			<loginName>Tutorial</loginName>
+			<password>Tutorial</password>
+			<realName>Toni Tutorial</realName>
+			<email>tutorial@disy.net</email>
+			<groups>
+				<group>Creator</group>
+				<group>Self-Service_verwenden</group>
+				<group>Tutorial_verwalten</group>
+				<group>Gewaesser_verwalten</group>
+				<group>Automobile_verwalten</group>
+				<group>Referat_Personal_Kuratoren</group>
+			</groups>
+		</user>
+		
+		<user>
+			<loginName>Digital</loginName>
+			<password>Digital</password>
+			<realName>Doro Digital</realName>
+			<email>doro.digital@disy.net</email>
+			<groups>
+				<group>Analyst</group>
+				<group>Self-Service_bearbeiten</group>
+				<group>Abteilungsleitung</group>
+			</groups>
+			<properties>
+				<property name="Abteilung">
+					<value>Abt. 3: Digitale Transformation</value>
+				</property>
+			</properties>
+		</user>
+		<user>
+			<loginName>Operativ</loginName>
+			<password>Operativ</password>
+			<realName>Otto Operativ</realName>
+			<email>otto.operativ@disy.net</email>
+			<groups>
+				<group>Analyst</group>
+				<group>Self-Service_bearbeiten</group>
+				<group>Abteilungsleitung</group>
+			</groups>
+			<properties>
+				<property name="Abteilung">
+					<value>Abt. 1: Operative Aufgaben</value>
+				</property>
+			</properties>
+		</user>
+		<user>
+			<loginName>Personal</loginName>
+			<password>Personal</password>
+			<realName>Patrick Personal</realName>
+			<email>patrick.personal@disy.net</email>
+			<groups>
+				<group>Creator</group>
+				<group>Self-Service_bearbeiten</group>
+				<group>Referat_Personal_Kuratoren</group>
+			</groups>
+			<properties>
+				<property name="Abteilung">
+					<value>Abt. Z: Zentralabteilung</value>
+				</property>
+			</properties>
+		</user>
+	</users>
+</embedded>

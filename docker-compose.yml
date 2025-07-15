@@ -1,35 +1,50 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgis/postgis:15-3.3
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   flask-app:
     build: .
     ports:
       - "5000:5000"
-    environment:
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
-      - DATABASE_URI=${DATABASE_URI:-postgresql://user:password@postgres:5432/geopixel_db}
-      - CADENZA_URI=${CADENZA_URI:-}
-      - CADENZA_REPOSITORY_NAME=${CADENZA_REPOSITORY_NAME:-}
-      - CADENZA_EXTERNAL_LINK_ID=${CADENZA_EXTERNAL_LINK_ID:-}
-      - GEOPIXEL_API_URL=${GEOPIXEL_API_URL:-}
-      - RUNPOD_API_KEY=${RUNPOD_API_KEY:-}
-    depends_on:
-      - postgres
     volumes:
       - .:/app
     restart: unless-stopped
-
-  postgres:
-    image: postgres:15
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
-      - POSTGRES_DB=geopixel_db
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
+      - FLASK_ENV=production
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+      - FLASK_DEBUG=false
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - CADENZA_API_URL=http://host.docker.internal:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 
 volumes:
   postgres_data:

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xmlns="http://www.disy.net/cadenza/datasource/templates/">
+	<template>
+		<id>personal_h2</id>
+		<name>Personal DB</name>
+		<url>jdbc:h2:$SYSTEM{DEMO_DATA_PATH}/personal;CACHE_SIZE=25000</url>
+		<type>H2</type>
+		<driverName>org.h2.Driver</driverName>
+		<dataSourceProperties>
+			<property>
+				<name>net.disy.pivot.comparison.collatorlanguage</name>
+				<value>de-DE</value>
+			</property>
+			<property>
+				<name>net.disy.pivot.comparison.nullvalues</name>
+				<value>last</value>
+			</property>
+		</dataSourceProperties>
+	</template>
+	<template>
+		<id>cmdb_h2</id>
+		<name>Cadenza Data Store</name>
+		<url>jdbc:h2:$VAR{DIRECTORY_DATABASE}/datastore/datastore;CACHE_SIZE=25000;</url>
+		<type>H2</type>
+		<driverName>org.h2.Driver</driverName>
+		<dataSourceProperties>
+			<property>
+				<name>net.disy.pivot.comparison.collatorlanguage</name>
+				<value>de-DE</value>
+			</property>
+			<property>
+				<name>net.disy.pivot.comparison.nullvalues</name>
+				<value>last</value>
+			</property>
+		</dataSourceProperties>
+	</template>
+	<template>
+		<id>gewaesser_db</id>
+		<name>Gewaesser DB</name>
+		<url>jdbc:h2:$SYSTEM{DEMO_DATA_PATH}/ni_gewaesser_demo;CACHE_SIZE=25000</url>
+		<type>H2</type>
+		<driverName>org.h2.Driver</driverName>
+		<dataSourceProperties>
+			<property>
+				<name>net.disy.pivot.comparison.collatorlanguage</name>
+				<value>de-DE</value>
+			</property>
+			<property>
+				<name>net.disy.pivot.comparison.nullvalues</name>
+				<value>last</value>
+			</property>
+		</dataSourceProperties>
+	</template>
+	<template>
+		<id>automobile_db</id>
+		<name>Automobile DB</name>
+		<url>jdbc:h2:$SYSTEM{DEMO_DATA_PATH}/automotive;CACHE_SIZE=25000</url>
+		<type>H2</type>
+		<driverName>org.h2.Driver</driverName>
+		<dataSourceProperties>
+			<property>
+				<name>net.disy.pivot.comparison.collatorlanguage</name>
+				<value>de-DE</value>
+			</property>
+			<property>
+				<name>net.disy.pivot.comparison.nullvalues</name>
+				<value>last</value>
+			</property>
+		</dataSourceProperties>
+	</template>
+	<template>
+    <id>ladesaeulen</id>
+    <name>Ladesaeulen DB</name>
+    <url>jdbc:h2:$SYSTEM{DEMO_DATA_PATH}/ladesaeulen;CACHE_SIZE=100000</url>
+    <type>H2</type>
+    <driverName>org.h2.Driver</driverName>
+	<dataSourceProperties>
+		<property>
+			<name>net.disy.pivot.comparison.collatorlanguage</name>
+			<value>de-DE</value>
+		</property>
+		<property>
+			<name>net.disy.pivot.comparison.nullvalues</name>
+			<value>last</value>
+		</property>
+	</dataSourceProperties>
+    </template>
+	<template>
+    	<id>Hintergrundkarten_disy_wms</id>
+    	<name>Hintergrundkarten Disy WMS</name>
+    	<url>$SYSTEM{MAP_WMS_URL}</url>
+    	<type>ogc-raster</type>
+  	</template>
+  	<template>
+    	<id>Hintergrundkarten_disy_vector</id>
+    	<name>Hintergrundkarten Disy Vector</name>
+    	<url>$SYSTEM{MAP_VECTOR_TILES_URL}</url>
+    	<type>vector-tiles</type>
+  	</template>
+	<!-- Template for Geobasis Repository -->
+  	<template>
+		<id>wfs_poi_osm</id>
+		<name>OSM POIs via WFS</name>
+		<url>https://geodata.gdi.disy.net/geoserver/osmpois_2024_02/ows</url>
+    	<type>WFS</type>
+  	</template>
+  	<template>
+		<id>wfs_vg250</id> <!-- legacy-id -->
+		<name>VG250 mit Einwohnerzahl (2021) via WFS</name>
+		<url>https://geodata.gdi.disy.net/geoserver/bkg_2024_02/ows</url>
+		<type>WFS</type>
+  	</template>
+	<template>
+		<id>wfs_vg250_mit_ewz_2021</id>
+		<name>VG250 mit Einwohnerzahl (2021) via WFS</name>
+		<url>https://geodata.gdi.disy.net/geoserver/bkg_2024_02/ows</url>
+		<type>WFS</type>
+  	</template>
+	<template>
+		<id>wfs_vg250_2024</id>
+		<name>VG250 (2024) via WFS</name>
+		<url>https://geodata.gdi.disy.net/geoserver/bkg_2025_01/ows</url>
+		<type>WFS</type>
+  	</template>
+  	<template>
+		<id>osmlayer</id>
+		<name>OSM Layer via WFS</name>
+		<url>https://geodata.gdi.disy.net/geoserver/disy/ows</url>
+		<type>WFS</type>
+  	</template>
+</templates>

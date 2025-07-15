@@ -10,4 +10,9 @@ persistData = False
 app = create_app(persistent_data=persistData)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Use environment variables for Docker compatibility
+    host = os.environ.get('FLASK_HOST')
+    port = int(os.environ.get('FLASK_PORT'))
+    debug = os.environ.get('FLASK_DEBUG').lower() == 'true'
+    
+    app.run(host=host, port=port, debug=debug)

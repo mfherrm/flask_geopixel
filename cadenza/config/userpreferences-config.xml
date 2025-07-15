@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<userPreferencesConfiguration>
+  <database>
+    <driverName>$SYSTEM{USERPREF_DB_DRIVER}</driverName>
+    <jdbcURL>$SYSTEM{USERPREF_DB_URL}</jdbcURL>
+    <user>$SYSTEM{USERPREF_DB_USER}</user>
+    <password>$SYSTEM{USERPREF_DB_PW}</password>
+    <connectionPoolSize>3</connectionPoolSize>
+  </database>
+</userPreferencesConfiguration>

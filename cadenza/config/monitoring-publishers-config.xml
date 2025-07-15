@@ -1,0 +1,11 @@
+<monitoringPublishersConfiguration>
+
+  <authentication>
+
+    <username>prometheus</username>
+
+    <password>daa8c7aacfbbd3b6c3b0</password>
+
+  </authentication>
+
+</monitoringPublishersConfiguration>

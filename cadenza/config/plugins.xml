@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<pluginConfig xmlns="http://www.disy.net/cadenza/plugin/schema/plugins/1" versionDate="2014-02-28" version="1">
+  <plugins>
+    <plugin name="AccessManager"></plugin>
+    <plugin name="AccessManager_Embedded"/>
+    <plugin name="Monitoring_Prometheus"/>
+    <!--     
+      <plugin name="AuditLogging"></plugin>
+    -->
+    <plugin name="Cadenza"></plugin>
+    <plugin name="Chart"></plugin>
+    <plugin name="DataSource_ArcGis_Raster"></plugin>
+    <plugin name="Gis"></plugin>
+    <plugin name="Gis_DataSource_ArcGisRest"></plugin>
+    <plugin name="Gis_DataSource_Oracle"></plugin>
+    <plugin name="Gis_DataSource_OsmRaster"></plugin>
+    <plugin name="Gis_DataSource_PostGis"></plugin>
+    <plugin name="Gis_DataSource_Shapefile"></plugin>
+    <plugin name="Gis_DataSource_Shapefile_Export"></plugin>
+    <plugin name="Gis_DataSource_Wfs"></plugin>
+    <plugin name="Gis_DataSource_Wms"></plugin>
+    <plugin name="Gis_DataSource_Wmts"></plugin>
+    <plugin name="Gis_Raster_Cache"></plugin>
+   	<plugin name="Gis_Offline"></plugin>
+    <plugin name="Import_Office"></plugin>
+    <plugin name="Gis_Layer_Template"/>
+    <plugin name="Gis_Temporal_Data_Animation"></plugin>
+    <plugin name="Gis_Temporal_Data_Analysis_3D"/>
+    <plugin name="Import_Temporal_Data"></plugin>
+    <plugin name="Kml"></plugin>
+    <plugin name="GeoPackage"></plugin>
+    <plugin name="Selector"></plugin>
+    <plugin name="Scripting"></plugin>
+    <plugin name="TableAnalyzer"></plugin>
+    <plugin name="Workbook"></plugin>
+	  <plugin name="WorkbookReport"></plugin>
+    <plugin name="Routing_Openrouteservice"/>
+    <plugin name="Geocoder"></plugin>
+    <plugin name="Location_Finder"></plugin>
+    <plugin name="PerformanceLogging"></plugin>
+    <plugin name="EditAttributeFunction"/>
+    <plugin name="JobScheduling"/>
+    <plugin name="DataSource_Elastic"/>
+    <plugin name="External_Links"/>
+    <plugin name="DataSource_OpenSearch"/>
+    <plugin name="Import_GeoJson"/>
+  </plugins>
+</pluginConfig>

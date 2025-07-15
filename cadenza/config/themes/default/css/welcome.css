@@ -1,0 +1,102 @@
+.welcome-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100%; /* ensure that the next sections are out of the visible area. */
+  text-align: left;
+}
+
+.welcome-section h1,
+.welcome-section h2 {
+  color: var(--primary-color);
+}
+
+.welcome-section--wrapper {
+  height: 100%;
+  text-align: left;
+}
+
+.welcome-section--wrapper object {
+  width: 100%;
+}
+
+.welcome-section--wrapper h1 {
+  line-height: 1.5;
+  margin: 30px 0 15px;
+}
+
+.welcome-section--wrapper p {
+  margin-bottom: 15px;
+}
+
+.welcome-section--wrapper p:last-child {
+  margin-bottom: 30px;
+}
+
+.welcome-section--wrapper .d-alert {
+  display: none;
+}
+
+.welcome-section--wrapper .d-alert p {
+  margin: 0;
+}
+
+@media (--sm-up) {
+  .welcome-section--wrapper .d-alert.d-alert-info {
+    display: block;
+  }
+}
+
+.welcome-text--wrapper {
+  font-size: var(--font-size-3);
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 704px;
+  padding-left: 52px; /* image bar + 2x 10px */
+  padding-right: 52px; /* image bar + 2x 10px */
+  position: relative;
+}
+
+.welcome-title {
+  color: var(--primary-color);
+}
+
+.welcome-text--wrapper h2 {
+  margin-top: 28px;
+}
+
+.scroll-down {
+  align-self: flex-end;
+  cursor: pointer;
+  margin-bottom: 60px;
+  margin-top: 32px;
+  width: 100%;
+}
+
+.welcome-section .cadenza__hero {
+  height: 300px;
+}
+
+.welcome-logo--wrapper {
+  height: 360px;
+  margin: 0;
+  position: relative;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .welcome-logo--wrapper {
+    margin: 0 auto;
+  }
+
+  .welcome-section .cadenza__hero .logo-container {
+    max-width: 69.2667%; /* taken from hero.css (external agency code) */
+    position: absolute;
+  }
+}
+
+@media only screen and (max-width: 768px) {
+  .cadenza__hero .network {
+    display: none;
+  }
+}

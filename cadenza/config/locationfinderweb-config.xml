@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<locationFinderConfiguration
+    xmlns="http://www.disy.net/cadenza/location_finder_web/">
+  <coordinateProviderConfigurations>
+    <coordinateProviderConfiguration id="Koordinaten">
+      <coordinateResolver>
+        <srs>
+          <authority>EPSG</authority>
+          <code>3857</code>
+        </srs>
+        <areaOfUse>
+          <minX>-180.0</minX>
+          <minY>-85.06</minY>
+          <maxX>180.0</maxX>
+          <maxY>85.06</maxY>
+        </areaOfUse>
+        <inputFormat formatType="decimal">
+          <!-- Pseudo Mercator X Y with German separators -->
+          <pattern><![CDATA[\s*(?<x>-?[12]?\d?\.?\d?\d?\d?\.?\d?\d?\d?(,\d+)?)\s*[\s/;]\s*(?<y>-?[12]?\d?\.?\d?\d?\d?\.?\d?\d?\d?(,\d+)?).*]]></pattern>
+          <!-- Pseudo Mercator X Y with US separators -->
+          <pattern><![CDATA[\s*(?<x>-?[12]?\d?,?\d?\d?\d?,?\d?\d?\d?(\.\d+)?)\s*[\s/;]\s*(?<y>-?[12]?\d?,?\d?\d?\d?,?\d?\d?\d?(\.\d+)?).*]]></pattern>
+        </inputFormat>
+        <result>
+          <listItemFormat>{x,number,#.#######} {y,number,#.#######}</listItemFormat>
+          <listItemDescription>Pseudo-Mercator</listItemDescription>
+        </result>
+      </coordinateResolver>
+      <coordinateResolver>
+        <srs>
+          <authority>EPSG</authority>
+          <code>31467</code>
+        </srs>
+        <areaOfUse>
+          <minX>7.5000</minX>
+          <minY>47.2700</minY>
+          <maxX>10.5000</maxX>
+          <maxY>55.0600</maxY>
+        </areaOfUse>
+        <inputFormat formatType="decimal">
+          <!-- Gauß Krüger 3 X Y with German separators -->
+          <pattern><![CDATA[\s*(?<x>3\.?\d{3}\.?\d{3}(,\d+)?)\s*[\s/;]\s*(?<y>\d?\.?\d?\d?\d?\.?\d?\d?\d?(,\d+)?).*]]></pattern>
+          <!-- Gauß Krüger 3 X Y with US separators -->
+          <pattern><![CDATA[\s*(?<x>3,?\d{3},?\d{3}(\.\d+)?)\s*[\s/;]\s*(?<y>\d?,?\d?\d?\d?,?\d?\d?\d?(\.\d+)?).*]]></pattern>
+        </inputFormat>
+        <result>
+          <listItemFormat>{x,number,#.#######} {y,number,#.#######}</listItemFormat>
+          <listItemDescription>Gauß-Krüger 3</listItemDescription>
+        </result>
+      </coordinateResolver>
+      <coordinateResolver>
+        <srs>
+          <authority>EPSG</authority>
+          <code>31468</code>
+        </srs>
+        <areaOfUse>
+          <minX>10.5000</minX>
+          <minY>47.2700</minY>
+          <maxX>13.5000</maxX>
+          <maxY>55.0600</maxY>
+        </areaOfUse>
+        <inputFormat formatType="decimal">
+          <!-- Gauß Krüger 4 X Y with German separators -->
+          <pattern><![CDATA[\s*(?<x>4\.?\d{3}\.?\d{3}(,\d+)?)\s*[\s/;]\s*(?<y>\d?\.?\d?\d?\d?\.?\d?\d?\d?(,\d+)?).*]]></pattern>
+          <!-- Gauß Krüger 4 X Y with US separators -->
+          <pattern><![CDATA[\s*(?<x>4,?\d{3},?\d{3}(\.\d+)?)\s*[\s/;]\s*(?<y>\d?,?\d?\d?\d?,?\d?\d?\d?(\.\d+)?).*]]></pattern>
+        </inputFormat>
+        <result>
+          <listItemFormat>{x,number,#.#######} {y,number,#.#######}</listItemFormat>
+          <listItemDescription>Gauß-Krüger 4</listItemDescription>
+        </result>
+      </coordinateResolver>
+      <coordinateResolver>
+        <srs>
+          <authority>EPSG</authority>
+          <code>4326</code>
+        </srs>
+        <areaOfUse>
+          <minX>-180.0</minX>
+          <minY>-90.0</minY>
+          <maxX>180.0</maxX>
+          <maxY>90.0</maxY>
+        </areaOfUse>
+        <inputFormat formatType="sexagesimal">
+          <!--- format in degrees, minutes and seconds, e.g. 51°52'58.1"N 8°28'36.4"W -->
+          <pattern><![CDATA[\s*(?<yd>\d{1,2})°\s*((?<ym>[0-5]?\d)[′'])?\s*((?<ys>[0-5]?\d([,.]\d+)?)([″"]|''))?\s*(?<n>[nNsS])?\s*[\s/;]\s*(?<xd>\d{1,3})°\s*((?<xm>[0-5]?\d)[′'])?\s*((?<xs>[0-5]?\d([.,]\d+)?)([″"]|''))?\s*(?<e>[eEoOwW])?.*]]></pattern>
+          <!--- format in degrees and minutes -->
+          <pattern><![CDATA[\s*(?<yd>\d{1,2}([.,]\d+)?)°\s*[nNsS]?\s*[\s/;,]\s*(?<xd>\d{1,3}([.,]\d+)?)°\s*[eEoOwW]?.*]]></pattern>
+          <!--- decimal format, e.g. 51.882817, -8.476775 -->
+          <pattern><![CDATA[\s*(?<yd>-?\d{0,2}([.,]\d+)?)\s*[nN]?\s*[\s/;,]\s*(?<xd>-?\d{0,3}([.,]\d+)?)\s*[eEoO]?.*]]></pattern>
+        </inputFormat>
+        <result>
+          <listItemFormat>{yd,number,00}°{ym,number,00}′{ys,number,00.###}″{ns} {xd,number,00}°{xm,number,00}′{xs,number,00.###}″{ew}</listItemFormat>
+          <listItemDescription>WGS84</listItemDescription>
+        </result>
+      </coordinateResolver>
+      <coordinateResolver>
+        <srs>
+          <authority>EPSG</authority>
+          <code>25832</code>
+        </srs>
+        <areaOfUse>
+          <minX>6</minX>
+          <minY>0</minY>
+          <maxX>12</maxX>
+          <maxY>84</maxY>
+        </areaOfUse>
+        <inputFormat formatType="decimal">
+          <!-- UTM with German separators -->
+          <pattern><![CDATA[\s*(UTM)?\s*(32[nN])?\s*(?<x>\d{3}\.?\d{3}(,\d+)?)\s*[\s/;]\s*(?<y>\d?\d?\.?\d{3}\.?\d{3}(,\d+)?).*]]></pattern> 
+          <!-- UTM with US separators -->
+          <pattern><![CDATA[\s*(UTM)?\s*(32[nN])?\s*(?<x>\d{3},?\d{3}(\.\d+)?)\s*[\s/;]\s*(?<y>\d?\d?,?\d{3},?\d{3}(\.\d+)?).*]]></pattern>
+        </inputFormat>          
+        <result>
+          <listItemFormat>{x,number,#.#######} {y,number,#.#######}</listItemFormat>
+          <listItemDescription>UTM 32N</listItemDescription>
+        </result>
+      </coordinateResolver>
+      <coordinateResolver>
+        <srs>
+          <authority>EPSG</authority>
+          <code>25833</code>
+        </srs>
+        <areaOfUse>
+          <minX>12</minX>
+          <minY>0</minY>
+          <maxX>18</maxX>
+          <maxY>84</maxY>
+        </areaOfUse>
+        <inputFormat formatType="decimal">
+          <!-- UTM with German separators -->
+          <pattern><![CDATA[\s*(UTM)?\s*(33[nN])?\s*(?<x>\d{3}\.?\d{3}(,\d+))\s*[\s/;]\s*(?<y>\d?\d?\.?\d{3}\.?\d{3}(,\d+)?).*]]></pattern>
+          <!-- UTM with US separators -->
+          <pattern><![CDATA[\s*(UTM)?\s*(33[nN])?\s*(?<x>\d{3},?\d{3}(\.\d+)?)\s*[\s/;]\s*(?<y>\d?\d?,?\d{3},?\d{3}(\.\d+)?).*]]></pattern>
+        </inputFormat>
+        <result>
+          <listItemFormat>{x,number,#.#######} {y,number,#.#######}</listItemFormat>
+          <listItemDescription>UTM 33N</listItemDescription>
+        </result>
+      </coordinateResolver>
+    </coordinateProviderConfiguration>
+  </coordinateProviderConfigurations>
+</locationFinderConfiguration>

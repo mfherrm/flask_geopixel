@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<userRegistry>
+
+	<authenticators guestsAllowed="true">
+		<authenticator refid="Embedded">
+			<groupMapping refid="Embedded"/>
+		</authenticator>
+	</authenticators>
+
+	<securityPolicies>
+		<!-- <allowedLoginAttempts>3</allowedLoginAttempts> -->
+		<!-- <allowedUserInactiveTimeInDays>90</allowedUserInactiveTimeInDays> -->
+		<!-- <forbidUsageOfPasswordsSetByAdmin>true</forbidUsageOfPasswordsSetByAdmin> -->
+		<!-- <passwordExpirationTimeInDays>90</passwordExpirationTimeInDays> -->
+		<!-- <warnBeforePasswordExpirationInDays>10</warnBeforePasswordExpirationInDays> -->
+		<!-- <allowedChangesIn24Hours>5</allowedChangesIn24Hours> -->
+		<!-- <minimumNumberOfPreviousDifferentPasswords>0</minimumNumberOfPreviousDifferentPasswords> -->
+		<newPassword>
+			<!-- <minimumLength>3</minimumLength> -->
+			<!-- <minimumLetters>1</minimumLetters> -->
+			<!-- <minimumDigits>4</minimumDigits> -->
+		</newPassword>
+		<comparedToPreviousPassword>
+			<!-- <minimumChangedCharacters>3</minimumChangedCharacters> -->
+			<!-- <minimumChangedLetters>1</minimumChangedLetters> -->
+			<!-- <minimumChangedDigits>1</minimumChangedDigits> -->
+		</comparedToPreviousPassword>
+	</securityPolicies>
+
+</userRegistry>

@@ -1,0 +1,91 @@
+/*
+    All styles for the hero image and SVG for the welcome and logout screens.
+ */
+.cadenza__hero {
+  display: flex;
+}
+
+.d-access .cadenza__hero {
+  height: 100%;
+  overflow: hidden;
+  width: 100%;
+}
+
+.cadenza__hero .logo-container {
+  max-width: 308px; /* defined by UX */
+}
+
+.welcome-logo--wrapper {
+  margin-bottom: 36px;
+}
+
+.cadenza__hero .logo-container svg,
+.cadenza__hero .logo-container object {
+  background: #fff0;
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  width: 100%;
+}
+
+.cadenza__hero .logo-container {
+  width: 455px;
+  height: 240px;
+  left: 45%;
+  max-width: 69.26667%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+
+.cadenza__hero .d-flex {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.cadenza__hero .align-items-center {
+  align-items: center;
+  width: 100%;
+}
+
+.cadenza__hero .welcome-section--wrapper {
+  width: 100%;
+}
+
+.cadenza__hero .welcome-section--wrapper h1 {
+  font-size: var(--font-size-8);
+  font-weight: 300;
+  margin-bottom: 8px;
+  margin-top: 0;
+}
+
+.cadenza__hero .welcome-section--wrapper [class*=col-] {
+  width: 100%;
+}
+
+@media only screen and (min-width: 1500px) {
+  .cadenza__hero .welcome-section--wrapper .welcome-text--wrapper {
+    max-width: min(624px, 50%);
+  }
+}
+
+.cadenza__hero .welcome-logo--wrapper {
+  height: 100%;
+  position: relative;
+  width: 100%;
+}
+
+.cadenza__hero .network {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.cadenza__hero .network img,
+.cadenza__hero .network .img {
+  display: block;
+  height: auto;
+  width: 100%;
+}

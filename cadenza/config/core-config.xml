@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <databaseNetworkTimeout>300</databaseNetworkTimeout>
+  <httpNetworkTimeout>30</httpNetworkTimeout>
+
+<!-- Proxy Server für Zugriff auf das Internet
+  <httpProxy>
+    <host>MEIN_PROXY</host>
+	<port>MEIN_PROXY_PORT</port>
+    <userName>BENUTZERNAME</userName>
+	<password>PASSWORT</password>
+    <excludedHosts>
+	  <host>localhost</host>
+	  <host>ogc.env.disy.net</host>
+	</excludedHosts>
+  </httpProxy>
+-->
+  <view>
+    <nullValueDisplayText></nullValueDisplayText>
+  </view>
+</configuration>

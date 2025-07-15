@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<shapefileExportConfig>
+	<exportDenyList>
+		<tag>no_shape_export</tag> 
+	</exportDenyList>
+</shapefileExportConfig>

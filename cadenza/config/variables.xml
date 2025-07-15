@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<var:variables xmlns:var="http://www.disy.net/cadenza/variable/schema">
+  <var:variable name="REPOSITORY_BASE_PATH">$SYSTEM{REPOSITORY_BASE_PATH}{./repository}</var:variable>
+  <var:variable name="REPOSITORY_BASE_SYSTEM_URL">$SYSTEM{REPOSITORY_BASE_PATH}{./repository}</var:variable>
+  <var:variable name="REPOSITORY_BASE_PUBLIC_URL">http://$SYSTEM{HOSTNAME}/$SYSTEM{webaliasws}/$SYSTEM{MAIN_REPOSITORY}{repository}</var:variable>
+  <var:variable name="REPOSITORY_GEODATA_BASE_PATH">$SYSTEM{REPOSITORY_BASE_PATH}{./repository}$SYSTEM{REPOSITORY_GEODATA_RELATIVE_PATH}{/repository_geodata}</var:variable>
+  <var:variable name="REPOSITORY_ABFALLSTATISTIK_BASE_PATH">$SYSTEM{REPOSITORY_BASE_PATH}{./repository}/repository_abfallstatistik</var:variable>
+  <var:variable name="REPOSITORY_AUTOMOBILE_BASE_PATH">$SYSTEM{REPOSITORY_BASE_PATH}{./repository}/repository_automobile</var:variable>
+  <var:variable name="REPOSITORY_GEWAESSER_BASE_PATH">$SYSTEM{REPOSITORY_BASE_PATH}{./repository}/repository_gewaesser</var:variable>
+  <var:variable name="HOSTNAME">$SYSTEM{HOSTNAME}</var:variable>
+  <var:variable name="DIRECTORY_TILECACHE" description="Verzeichnis für Tile Cache-Karten">$SYSTEM{DIRECTORY_TILECACHE}</var:variable>
+  <var:variable name="DIRECTORY_OFFLINE" description="Verzeichnis für Offline-Karten">$SYSTEM{DIRECTORY_OFFLINE}</var:variable>
+  <var:variable name="DIRECTORY_DATABASE" description="Verzeichnis für Datenbankdateien">$SYSTEM{DIRECTORY_DATABASE}</var:variable>
+  <var:variable name="GEOCODER_URL">$SYSTEM{GEOCODER_URL}</var:variable>
+  <var:variable name="ROUTING_URL">$SYSTEM{ROUTING_URL}</var:variable>
+</var:variables>

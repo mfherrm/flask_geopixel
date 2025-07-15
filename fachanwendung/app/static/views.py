@@ -301,7 +301,7 @@ if not os.path.exists(IMAGE_FOLDER):
 def add_cors_headers(response):
     cadenza_uri = current_app.config.get('CADENZA_URI', '')
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.google.com https://*.arcgis.com https://*.arcgisonline.com https://wayback.maptiles.arcgis.com https://*.maptiles.arcgis.com https://api.maptiler.com https://gis.sinica.edu.tw; frame-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080 http://127.0.0.1:5000 https://api.runpod.ai https://api.runpod.io https://*.proxy.runpod.net https://*.arcgis.com https://*.arcgisonline.com https://wayback.maptiles.arcgis.com https://*.maptiles.arcgis.com https://api.maptiler.com https://gis.sinica.edu.tw; frame-ancestors 'self' http://localhost:8080 http://localhost:8080/cadenza/;"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.google.com https://*.arcgis.com https://*.arcgisonline.com https://wayback.maptiles.arcgis.com https://*.maptiles.arcgis.com https://api.maptiler.com https://gis.sinica.edu.tw; frame-src 'self' http://localhost:8080; connect-src 'self' http: https: ws: wss: data: blob:; frame-ancestors 'self' http://localhost:8080 http://localhost:5000 http://127.0.0.1:5000;"
     return response
 
 @bp.route('/')
@@ -318,6 +318,10 @@ def serve_overlay_image(filename):
 
 @bp.route('/receive', methods=['POST', 'OPTIONS'])
 def receive_image():
+    print(f"🔍 /receive endpoint called with method: {request.method}")
+    print(f"🔍 Request form keys: {list(request.form.keys())}")
+    print(f"🔍 Request files keys: {list(request.files.keys())}")
+    
     # Handle preflight OPTIONS request for CORS
     if request.method == 'OPTIONS':
         response = jsonify({})
@@ -326,6 +330,7 @@ def receive_image():
         response.headers.add('Access-Control-Allow-Methods', 'POST')
         return response
     if 'mapExtent' not in request.form:
+        print(f"❌ No mapExtent in request form")
         return jsonify({'error': 'No map bounds'}), 400
     
     mapBounds = json.loads(request.form['mapExtent'])
@@ -412,7 +417,15 @@ def receive_image():
         else:
             print(f"Using dynamic RunPod API URL: {api_url}")
         
+        print(f"🔍 About to call get_object_outlines with:")
+        print(f"  - API URL: {api_url}")
+        print(f"  - Image path: {image_filepath}")
+        print(f"  - Query: {query}")
+        print(f"  - Upscaling config: {upscaling_config}")
+        
         response = get_object_outlines(api_url, image_filepath, query, upscaling_config)
+        
+        print(f"🔍 get_object_outlines returned: {type(response)}")
         
         # Handle the case when get_object_outlines returns None
         if response is None:
@@ -611,6 +624,9 @@ def receive_image():
         
         return jsonify(response_data), 200
     except Exception as e:
+        print(f"❌ Exception in /receive endpoint: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Error processing file: {str(e)}'}), 500
 
 @bp.route('/health', methods=['GET'])

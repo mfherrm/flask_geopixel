@@ -1,0 +1,81 @@
+<importOffice xmlns="http://www.disy.net/cadenza/importoffice/schema/1">
+<excel>
+	<numberOfRowsToSuggestColumnTypes>300</numberOfRowsToSuggestColumnTypes>
+	<batchSizeInRows>100</batchSizeInRows>
+</excel>
+<csv>
+	<numberOfRowsToSuggestColumnTypes>300</numberOfRowsToSuggestColumnTypes>
+	<batchSizeInRows>100</batchSizeInRows>
+</csv>
+<geocoding>
+	<structuredGeocodingServiceId>structured</structuredGeocodingServiceId>
+	<unstructuredGeocodingServiceId>unstructured</unstructuredGeocodingServiceId>
+	<enableUnstructuredAddressContext>true</enableUnstructuredAddressContext>
+	<enableLimitToCurrentExtent>true</enableLimitToCurrentExtent>
+	<geocodingLimit>500</geocodingLimit>
+</geocoding>
+<columnToFieldMappings>
+	<commonMappings>
+		<label>
+			<column>Messstelle</column>
+			<column>bar</column>
+			<column>I</column>
+			<column>Name</column>
+		</label>
+	</commonMappings>
+	<geocoderMappings>
+		<country>
+			<column>Ländercode</column>
+			<column>Country code</column>
+		</country>
+		<federalState>
+			<column>Bundesland</column>
+			<column>BL</column>
+		</federalState>
+		<zipCode>
+			<column>Postleitzahl</column>
+			<column>PLZ</column>
+		</zipCode>
+		<city>
+			<column>Ort</column>
+			<column>Stadt</column>
+			<column>City</column>
+		</city>
+		<cityDistrict>
+			<column>District</column>
+			<column>Region</column>
+		</cityDistrict>
+		<street>
+			<column>Street</column>
+			<column>Straße</column>
+			<column>Strasse</column>
+			<column>Adresse</column>
+			<column>Str</column>
+		</street>
+		<streetNumber>
+			<column>Hausnummer</column>
+			<column>Nummer</column>
+			<column>Nr</column>
+		</streetNumber>
+		<streetNumberAddition>
+			<column>Hausnummerzusatz</column>
+		</streetNumberAddition>
+	</geocoderMappings>
+	<coordinateMappings>
+		<xValue>
+			<column>Rechtswert</column>
+			<column>Longitude</column>
+			<column>Lon</column>
+			<column>LON_DEZ</column>
+			<column>I</column>
+		</xValue>
+		<yValue>
+			<column>Hochwert</column>
+			<column>Latitude</column>
+			<column>Lat</column>
+			<column>LAT_DEZ</column>
+			<column>J</column>
+		</yValue>
+	</coordinateMappings>
+</columnToFieldMappings>
+</importOffice>

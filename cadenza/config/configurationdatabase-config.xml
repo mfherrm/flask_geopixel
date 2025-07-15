@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configurationDatabaseConfiguration xmlns="http://www.disy.net/cadenza/configuration_database/">
+  <database>
+    <driverName>$SYSTEM{CONFIG_DB_DRIVER}</driverName>
+    <jdbcURL>$SYSTEM{CONFIG_DB_URL}</jdbcURL>
+    <user>$SYSTEM{CONFIG_DB_USER}</user>
+    <password>$SYSTEM{CONFIG_DB_PW}</password>
+    <connectionPoolSize>3</connectionPoolSize>
+  </database>
+</configurationDatabaseConfiguration>

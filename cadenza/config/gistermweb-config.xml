@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GIStermWebConfiguration>
+  <defaultSRS>EPSG:31467</defaultSRS>
+  <mapConfig>
+    <print>
+      <resolutions>
+        <resolution default="true">
+          <name>disy.monitor</name>
+          <value>96</value>
+        </resolution>
+        <resolution>
+          <name>disy.plotter</name>
+          <value>200</value>
+        </resolution>
+      </resolutions>
+    </print>
+	<forceMinMaxScales>true</forceMinMaxScales>
+  </mapConfig>
+</GIStermWebConfiguration>
