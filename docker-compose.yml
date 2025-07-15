@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  flask-app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
+      - DATABASE_URI=${DATABASE_URI:-postgresql://user:password@postgres:5432/geopixel_db}
+      - CADENZA_URI=${CADENZA_URI:-}
+      - CADENZA_REPOSITORY_NAME=${CADENZA_REPOSITORY_NAME:-}
+      - CADENZA_EXTERNAL_LINK_ID=${CADENZA_EXTERNAL_LINK_ID:-}
+      - GEOPIXEL_API_URL=${GEOPIXEL_API_URL:-}
+      - RUNPOD_API_KEY=${RUNPOD_API_KEY:-}
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=geopixel_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
