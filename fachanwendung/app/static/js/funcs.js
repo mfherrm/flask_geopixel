@@ -13,17 +13,25 @@ window.updateTileConfig = updateTileConfigWrapper;
 // Upscaling configuration
 let upscalingConfig = {
     scale: 1, // Default to x1 (no upscaling)
-    label: 'x1 (Original)'
+    label: 'x1 (Original)',
+    msff: false // Default to no multi-scale feature fusion
 };
 
 /**
  * Update upscaling configuration
  * @param {number} scale - The upscaling factor (1, 2, 4, 8)
+ * @param {boolean} msff - Whether to use multi-scale feature fusion (optional)
  */
-function updateUpscalingConfigWrapper(scale) {
+function updateUpscalingConfigWrapper(scale, msff = null) {
     upscalingConfig.scale = scale;
     upscalingConfig.label = `x${scale}`;
-    console.log(`Upscaling configuration updated: ${upscalingConfig.label}`);
+    
+    // Only update MSFF if explicitly provided
+    if (msff !== null) {
+        upscalingConfig.msff = msff;
+    }
+    
+    console.log(`Upscaling configuration updated: ${upscalingConfig.label}, MSFF: ${upscalingConfig.msff}`);
 }
 
 // Add upscaling configuration update to window so it can be called from HTML

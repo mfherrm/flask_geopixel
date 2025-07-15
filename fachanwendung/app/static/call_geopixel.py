@@ -359,12 +359,15 @@ def get_object_outlines(api_base_url, image_path, query, upscaling_config=None):
         width, height = img.size
         print(f"Original image size: {width}x{height}")
     
-    # NEW LOGIC: Multi-scale processing with mask concatenation
-    if requested_scale >= 2:
-        print(f"\n🔄 NEW MULTI-SCALE MASK PROCESSING (scale >= 2)")
+    # Get MSFF flag from upscaling config
+    use_msff = upscaling_config.get('msff', False)
+    
+    # NEW LOGIC: Multi-scale processing based on MSFF flag, not scale
+    if use_msff:
+        print(f"\n🔄 MULTI-SCALE FEATURE FUSION PROCESSING (MSFF enabled)")
         return process_tile_with_multiscale_masks(image_path, query, api_process_url, requested_scale, width, height)
     else:
-        print(f"\n🔄 SINGLE SCALE PROCESSING (scale < 2)")
+        print(f"\n🔄 SINGLE SCALE PROCESSING (MSFF disabled)")
         return process_tile_single_scale(image_path, query, api_process_url, requested_scale, width, height)
 
 def process_tile_with_multiscale_masks(image_path, query, api_process_url, scale, width, height):

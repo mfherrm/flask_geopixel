@@ -4,6 +4,36 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Function to handle MSFF checkbox initialization and events
+    function setupMSFFCheckbox() {
+        const checkbox = document.getElementById('msff-checkbox');
+        if (!checkbox) return;
+        
+        // Initialize checkbox state from upscalingConfig if available
+        try {
+            if (window.upscalingConfig) {
+                checkbox.checked = window.upscalingConfig.msff || false;
+            }
+            console.log(`Initialized MSFF checkbox: ${checkbox.checked}`);
+        } catch (e) {
+            console.error('Error initializing MSFF checkbox:', e);
+        }
+        
+        // Add change event listener
+        checkbox.addEventListener('change', function(e) {
+            if (window.updateUpscalingConfig) {
+                // Get current scale from button text
+                const currentScaleText = document.getElementById('upscalingbttn').textContent;
+                const scaleMatch = currentScaleText.match(/x(\d+)/);
+                const currentScale = scaleMatch ? parseInt(scaleMatch[1]) : 1;
+                
+                // Update with current scale and new MSFF state
+                window.updateUpscalingConfig(currentScale, this.checked);
+                console.log(`MSFF checkbox changed: ${this.checked}`);
+            }
+        });
+    }
+    
     // Handle dropdown button clicks to show/hide content
     document.querySelectorAll('.menu-button').forEach(button => {
         button.addEventListener('click', function(e) {
@@ -95,9 +125,13 @@ document.addEventListener('DOMContentLoaded', function() {
             dropupContent.classList.remove('show');
             dropupContent.style.display = 'none';
             
+            // Get current MSFF state
+            const checkbox = document.getElementById('msff-checkbox');
+            const msffEnabled = checkbox ? checkbox.checked : false;
+            
             // Update upscaling configuration if function is available
             if (window.updateUpscalingConfig) {
-                window.updateUpscalingConfig(scaleValue);
+                window.updateUpscalingConfig(scaleValue, msffEnabled);
             }
         });
     });
@@ -151,7 +185,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Reset mobile-specific states when switching back to desktop
             document.querySelectorAll('.category-group').forEach(group => {
                 group.classList.remove('active');
-                group.querySelector('.subcategory-menu').style.display = '';
+                const submenu = group.querySelector('.subcategory-menu');
+                if (submenu) {
+                    submenu.style.display = '';
+                }
             });
         }
     });
@@ -162,4 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
         });
     });
+    
+    // Initialize MSFF checkbox
+    setupMSFFCheckbox();
 });

@@ -184,6 +184,26 @@ html {
     overflow-x: auto;
 }
 
+/* MSFF Checkbox container styling */
+.msff-checkbox-container {
+    display: flex;
+    align-items: center;
+    margin: 0 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.msff-checkbox-container input[type="checkbox"] {
+    margin-right: 4px;
+    cursor: pointer;
+}
+
+.msff-checkbox-container label {
+    font-size: clamp(11px, 1vw, 14px);
+    color: var(--text-color);
+    cursor: pointer;
+}
+
 /* Dropup container */
 .dropup {
     position: relative;

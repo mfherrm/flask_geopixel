@@ -601,7 +601,7 @@ export function updateTileConfig(tileCount) {
  * @param {Function} setButtonLoadingState - Function to manage button loading state
  * @param {Object} upscalingConfig - The upscaling configuration object
  */
-export async function processTiledImage(imageBlob, selection, mapBounds, object, tileConfig, setButtonLoadingState, upscalingConfig = {scale: 1, label: 'x1'}) {
+export async function processTiledImage(imageBlob, selection, mapBounds, object, tileConfig, setButtonLoadingState, upscalingConfig = {scale: 1, label: 'x1', msff: false}) {
     console.log(`Starting tiled image processing with ${tileConfig.label}...`);
     
     // Create image element to get dimensions
@@ -736,15 +736,18 @@ export function calculateTileBounds(globalMapBounds, startX, startY, endX, endY,
  * @param {Object} upscalingConfig - The upscaling configuration object
  * @returns {Promise} Promise resolving to tile processing result
  */
-export async function processSingleTile(tileBlob, selection, tileBounds, tileDims, tileIndex, upscalingConfig = {scale: 1, label: 'x1'}) {
+export async function processSingleTile(tileBlob, selection, tileBounds, tileDims, tileIndex, upscalingConfig = {scale: 1, label: 'x1', msff: false}) {
     const scale = upscalingConfig.scale;
+    const useMSFF = upscalingConfig.msff || false;
     
-    console.log(`🚀 Processing tile ${tileIndex} with NEW MASK LOGIC (scale: ${scale})`);
+    console.log(`🚀 Processing tile ${tileIndex} with NEW MASK LOGIC (scale: ${scale}, MSFF: ${useMSFF})`);
     
-    if (scale >= 2) {
-        console.log(`🔄 Tile ${tileIndex}: Backend will handle multi-scale processing for scale ${scale}`);
+    // Determine if multi-scale feature fusion should be used
+    // New logic: MSFF is controlled by the checkbox, not the scale
+    if (useMSFF) {
+        console.log(`🔄 Tile ${tileIndex}: Backend will handle multi-scale processing (MSFF enabled)`);
     } else {
-        console.log(`🔄 Tile ${tileIndex}: Backend will handle single-scale processing for scale ${scale}`);
+        console.log(`🔄 Tile ${tileIndex}: Backend will handle single-scale processing (MSFF disabled)`);
     }
     
     // Send tile to backend - backend now handles all multi-scale processing
@@ -784,14 +787,21 @@ async function processTileAtScale(tileBlob, selection, tileBounds, tileDims, til
     formData.append('selection', selection);
     formData.append('mapExtent', JSON.stringify(tileBounds));
     formData.append('imageData', tileBlob, `tile-${tileIndex}-scale-${scaleConfig.scale}.png`);
+    
+    // Include MSFF flag in the tile info
     formData.append('tileInfo', JSON.stringify({
         index: tileIndex,
         tileDims: tileDims,
-        scaleInfo: scaleConfig
+        scaleInfo: scaleConfig,
+        useMSFF: scaleConfig.msff || false
     }));
     
-    // Add upscaling configuration
-    formData.append('upscalingConfig', JSON.stringify(scaleConfig));
+    // Add upscaling configuration with MSFF flag
+    formData.append('upscalingConfig', JSON.stringify({
+        scale: scaleConfig.scale,
+        label: scaleConfig.label,
+        msff: scaleConfig.msff || false
+    }));
     
     // Get RunPod API key from the interface and include it in the request
     const runpodApiKey = document.getElementById('runpod-api-key')?.value?.trim();
