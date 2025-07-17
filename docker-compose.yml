@@ -1,5 +1,6 @@
 services:
   postgres:
+  # image: postgis/postgis:17-3.5-alpine
     image: registry.disy.net/sandbox/postgis_geopixel:0.0.1
     environment:
       POSTGRES_DB: postgres
@@ -16,6 +17,7 @@ services:
       retries: 5
 
   flask-app:
+    # To run without VPN remove image tag
     image: registry.disy.net/sandbox/flask_geopixel:0.0.1
     build: .
     ports:
