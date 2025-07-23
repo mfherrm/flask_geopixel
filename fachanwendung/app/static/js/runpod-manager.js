@@ -285,22 +285,38 @@ class RunPodManager {
 
             if (data.success && data.pod_running) {
                 // Pod is running - need to verify endpoint availability
-                console.log(`Found running pod: ${data.pod_id} - need to verify endpoint availability`);
+                console.log(`✅ BACKEND CONFIRMED: Found running pod: ${data.pod_id} - need to verify endpoint availability`);
                 this.currentPodId = data.pod_id;
                 this.endpointAvailable = false; // Don't assume - verify first
                 this.shouldCheckEndpointHealth = true; // Enable health checks for existing pod
 
+                // CRITICAL: Set internal status immediately to prevent "Not Running" button states
+                this.status = 'RUNNING';
+                
                 // Update status to running but endpoint needs verification
                 this.updateStatus('RUNNING', `Pod: ${data.pod_name || data.pod_id}\nEndpoint: Verifying...`);
                 this.startStatusChecking();
                 this.startHealthCheckPolling(); // Start health checks to verify endpoint
 
                 console.log('Page load: Starting health checks to verify endpoint availability for existing pod');
-
-                console.log(`Found running pod with template ${templateId}: ${data.pod_id}`);
+                console.log(`✅ Pod found with template ${templateId}: ${data.pod_id} - buttons should reflect RUNNING state`);
             } else if (data.success && !data.pod_running) {
                 // No pod running with this template - this is the expected state for fresh loads
-                console.log(`No running pod found with template ${templateId} - this is correct for fresh loads`);
+                console.log(`❌ BACKEND CONFIRMED: No running pod found with template ${templateId}`);
+                
+                // VERIFY: Check if UI shows different status (potential cache/sync issue)
+                const uiStatus = document.getElementById('runpod-status-text')?.textContent;
+                if (uiStatus && uiStatus === 'RUNNING') {
+                    console.warn(`⚠️  SYNC ISSUE DETECTED: Backend says no pod, but UI shows RUNNING!`);
+                    console.warn(`Attempting to verify actual pod state...`);
+                    
+                    // Force a secondary verification after a delay
+                    setTimeout(() => {
+                        console.log('🔄 Secondary verification of pod status...');
+                        this.checkPodStatusWithTemplate(templateId, apiKey);
+                    }, 2000);
+                }
+                
                 this.updateStatus('Not Running', 'No pod found with this template');
 
                 // Ensure buttons are in correct state for no running pod
@@ -373,6 +389,17 @@ class RunPodManager {
                         if (this.callGeoPixelBtn) {
                             this.callGeoPixelBtn.setAttribute('data-initialization-complete', 'true');
                             console.log('✅ INITIALIZATION COMPLETE: Set to true after successful health check');
+                        }
+
+                        // FORCE IMMEDIATE BUTTON STATE CORRECTION: Ensure all buttons reflect endpoint ready state
+                        console.log('🔧 FORCING immediate button state correction for endpoint ready...');
+                        if (this.startBtn) {
+                            this.set_btn_disabled(this.startBtn);
+                            console.log('✅ START button DISABLED (pod running)');
+                        }
+                        if (this.stopBtn) {
+                            this.set_btn_enabled(this.stopBtn, "stop");
+                            console.log('✅ STOP button ENABLED (pod can be stopped)');
                         }
 
                         // IMMEDIATE button state update

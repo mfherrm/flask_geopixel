@@ -3,14 +3,21 @@ from os import environ as env
 
 class Config:
     # Database configuration
-    SECRET_KEY = env.get('SECRET_KEY')
-    SQLALCHEMY_DATABASE_URI = env.get('DATABASE_URI')
+    SQLALCHEMY_DATABASE_URI = env.get('DATABASE_URL')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-    CADENZA_URI = env.get('CADENZA_URI')
-    CADENZA_REPOSITORY_NAME = env.get('CADENZA_REPOSITORY_NAME')
-    CADENZA_EXTERNAL_LINK_ID = env.get('CADENZA_EXTERNAL_LINK_ID')
     
-    # GeoPixel API configuration
-    GEOPIXEL_API_URL = env.get('GEOPIXEL_API_URL')
-    RUNPOD_API_KEY = env.get('RUNPOD_API_KEY')
+    # Database connection details (individual components)
+    DB_HOST = env.get('DB_HOST')
+    DB_PORT = env.get('DB_PORT')
+    DB_NAME = env.get('DB_NAME')
+    DB_USER = env.get('DB_USER')
+    DB_PASSWORD = env.get('DB_PASSWORD')
+    
+    # Flask configuration
+    FLASK_ENV = env.get('FLASK_ENV')
+    FLASK_HOST = env.get('FLASK_HOST')
+    FLASK_PORT = env.get('FLASK_PORT')
+    FLASK_DEBUG = env.get('FLASK_DEBUG')
+    
+    # Cadenza API configuration
+    CADENZA_API_URL = env.get('CADENZA_API_URL')

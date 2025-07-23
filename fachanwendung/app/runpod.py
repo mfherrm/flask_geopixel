@@ -225,17 +225,44 @@ def check_pod_running_with_template(template_id):
                         print(f"Found {len(pods)} total pods")
                         
                         # Look for running pods with the specified template
+                        running_pods_with_port_5000 = []  # Fallback list
+                        
                         for pod in pods:
                             pod_id = pod.get('id', 'unknown')
                             pod_name = pod.get('name', 'unknown')
                             pod_status = pod.get('desiredStatus', 'unknown')
                             pod_template_id = pod.get('templateId', '')
                             
-                            print(f"Pod: {pod_name} ({pod_id}) - Status: {pod_status}, Template: {pod_template_id}")
+                            print(f"Pod: {pod_name} ({pod_id}) - Status: {pod_status}, Template: '{pod_template_id}' (looking for: '{template_id}')")
+                            
+                            # Enhanced template matching with fallback logic
+                            template_match = False
+                            
+                            # Primary check: exact match (case-insensitive and trimmed)
+                            if pod_template_id and template_id:
+                                template_match = pod_template_id.strip().lower() == template_id.strip().lower()
+                                if template_match:
+                                    print(f"✅ Template match found (case-insensitive): {pod_id}")
+                            
+                            # If running, check for port 5000 regardless of template (fallback)
+                            if pod_status == 'RUNNING':
+                                has_port_5000 = False
+                                if pod.get('runtime') and 'ports' in pod['runtime'] and pod['runtime']['ports']:
+                                    for port in pod['runtime']['ports']:
+                                        if port.get('privatePort') == 5000 or port.get('publicPort') == 5000:
+                                            has_port_5000 = True
+                                            break
+                                
+                                if has_port_5000:
+                                    running_pods_with_port_5000.append({
+                                        'pod': pod,
+                                        'template_match': template_match
+                                    })
+                                    print(f"Found running pod with port 5000: {pod_id} (template_match: {template_match})")
                             
                             # Check if this pod matches our template and is running
-                            if pod_status == 'RUNNING' and pod_template_id == template_id:
-                                print(f"Found running pod with matching template: {pod_id}")
+                            if pod_status == 'RUNNING' and template_match:
+                                print(f"Found running pod with exact template match: {pod_id}")
                                 
                                 # Get endpoint URL if available
                                 endpoint_url = None
@@ -260,6 +287,38 @@ def check_pod_running_with_template(template_id):
                                     'endpoint_url': endpoint_url,
                                     'error': None
                                 }
+                        
+                        # FALLBACK: If no exact template match, but we have running pods with port 5000
+                        if running_pods_with_port_5000:
+                            print(f"No exact template match, but found {len(running_pods_with_port_5000)} running pods with port 5000")
+                            
+                            # Prefer any pod that partially matches template (even if not exact)
+                            for pod_info in running_pods_with_port_5000:
+                                pod = pod_info['pod']
+                                pod_id = pod.get('id')
+                                pod_name = pod.get('name', 'unknown')
+                                pod_template_id = pod.get('templateId', '')
+                                
+                                # Check for partial template match or use the first available
+                                is_likely_match = (
+                                    not pod_template_id or  # No template ID stored
+                                    template_id in pod_template_id or  # Partial match
+                                    pod_template_id in template_id or  # Reverse partial match
+                                    len(running_pods_with_port_5000) == 1  # Only one option
+                                )
+                                
+                                if is_likely_match:
+                                    # Get endpoint URL
+                                    endpoint_url = f"https://{pod_id}-5000.proxy.runpod.net/"
+                                    
+                                    print(f"🎯 FALLBACK SUCCESS: Using running pod {pod_id} (template: '{pod_template_id}')")
+                                    return {
+                                        'running': True,
+                                        'pod_id': pod_id,
+                                        'pod_name': pod_name,
+                                        'endpoint_url': endpoint_url,
+                                        'error': None
+                                    }
                         
                         print(f"No running pods found with template: {template_id}")
                         return {

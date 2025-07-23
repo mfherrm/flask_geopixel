@@ -3,6 +3,7 @@ import {
     combineAndDisplayTileResults
 } from './vector-functions.js';
 
+
 /**
  * Calculates the approximate area of a polygon using the shoelace formula.
  * @param {Array} coords - Array of [x, y] coordinates
@@ -727,7 +728,6 @@ export function calculateTileBounds(globalMapBounds, startX, startY, endX, endY,
 
 /**
  * Processes a single tile by sending it to the backend API
- * NEW LOGIC: Backend handles all multi-scale processing and mask combination
  * @param {Blob} tileBlob - The tile image blob
  * @param {string} selection - The object selection string
  * @param {Array} tileBounds - The geographic bounds of the tile
@@ -783,6 +783,39 @@ export async function processSingleTile(tileBlob, selection, tileBounds, tileDim
  * @returns {Promise} Promise resolving to single-scale processing result
  */
 async function processTileAtScale(tileBlob, selection, tileBounds, tileDims, tileIndex, scaleConfig) {
+    // STABILITY MODE: Use individual processing for better reliability
+    console.log(`🔄 Processing tile ${tileIndex} individually for stability`);
+    
+    try {
+        // Fall back to individual processing for better performance and stability
+        const result = await processTileAtScaleIndividual(tileBlob, selection, tileBounds, tileDims, tileIndex, scaleConfig);
+        
+        if (result && result.data) {
+            return {
+                tileIndex: tileIndex,
+                data: result.data
+            };
+        } else {
+            console.error(`Tile ${tileIndex} scale ${scaleConfig.scale} processing failed`);
+            return null;
+        }
+    } catch (error) {
+        console.error(`Individual processing error for tile ${tileIndex} scale ${scaleConfig.scale}:`, error);
+        return null;
+    }
+}
+
+/**
+ * Fallback function for individual tile processing (when batch processing is not available)
+ * @param {Blob} tileBlob - The tile image blob
+ * @param {string} selection - The object selection string
+ * @param {Array} tileBounds - The geographic bounds of the tile
+ * @param {Array} tileDims - The tile dimensions [height, width]
+ * @param {number} tileIndex - The index of the tile
+ * @param {Object} scaleConfig - The scale configuration object
+ * @returns {Promise} Promise resolving to single-scale processing result
+ */
+async function processTileAtScaleIndividual(tileBlob, selection, tileBounds, tileDims, tileIndex, scaleConfig) {
     const formData = new FormData();
     formData.append('selection', selection);
     formData.append('mapExtent', JSON.stringify(tileBounds));
@@ -810,7 +843,7 @@ async function processTileAtScale(tileBlob, selection, tileBounds, tileDims, til
     }
     
     try {
-        const response = await fetch('http://127.0.0.1:5000/receive', {
+        const response = await fetch('/receive', {
             method: 'POST',
             body: formData
         });

@@ -44,5 +44,5 @@ ENV FLASK_HOST=0.0.0.0
 ENV FLASK_PORT=5000
 ENV FLASK_DEBUG=False
 
-# Run the application
-CMD ["python3", "fachanwendung/run.py"]
+# Run the application with Gunicorn (production WSGI server)
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "fachanwendung.wsgi:application"]

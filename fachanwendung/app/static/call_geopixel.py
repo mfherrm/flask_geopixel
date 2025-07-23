@@ -8,19 +8,111 @@ from PIL import Image
 from io import BytesIO
 import time
 import threading
+import concurrent.futures
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 from .cuda_config import (
     CUDA_MEMORY_LIMITS, RATE_LIMITING, MEMORY_THRESHOLDS, ERROR_HANDLING,
     get_max_pixels_for_attempt, is_oom_error, log_debug
 )
 
-# Global rate limiting for GPU requests
+# Global rate limiting for GPU requests (ultra-fast mode enabled by default)
 _api_lock = threading.Lock()
 _last_request_time = 0
-_min_request_interval = 1.0  # Minimum 1 second between requests
+_min_request_interval = 0.5  # Balanced: 500ms minimum interval for stability
+
+# Global optimized session for connection pooling
+_optimized_session = None
+_session_lock = threading.Lock()
+
+class OptimizedAPISession:
+    """Ultra-fast session management for maximum throughput"""
+    
+    def __init__(self, max_retries=2, pool_connections=30, pool_maxsize=100):
+        self.session = requests.Session()
+        
+        # Configure aggressive retry strategy
+        retry_strategy = Retry(
+            total=max_retries,
+            status_forcelist=[429, 500, 502, 503, 504],
+            method_whitelist=["HEAD", "GET", "POST"],
+            backoff_factor=0.5  # Faster backoff
+        )
+        
+        # Configure high-performance adapter with large connection pool
+        adapter = HTTPAdapter(
+            pool_connections=pool_connections,
+            pool_maxsize=pool_maxsize,
+            max_retries=retry_strategy
+        )
+        
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+        
+        # Aggressive timeout settings for maximum speed
+        self.session_timeout = 180  # 3 minutes - reduced from 5
+        
+        log_debug(f"Initialized OptimizedAPISession with connection pooling")
+    
+    def close(self):
+        """Close the session"""
+        if self.session:
+            self.session.close()
+            self.session = None
+
+# Balanced batch processing configuration for Docker environments
+BATCH_PROCESSING_CONFIG = {
+    'enabled': True,                    # Enable batch processing
+    'max_batch_size': 6,               # Optimized for typical 6-tile scenarios
+    'min_batch_size': 2,               # Keep minimum at 2
+    'max_parallel_workers': 4,         # Balanced for Docker containers
+    'batch_timeout_multiplier': 2.0,   # More reasonable timeouts
+    'prefer_batch_over_parallel': True,# Prefer batch processing over parallel individual requests
+    'auto_fallback': True,             # Automatically fallback to individual processing if batch fails
+}
+
+
+def get_optimized_session():
+    """Get or create the global optimized session"""
+    global _optimized_session
+    with _session_lock:
+        if _optimized_session is None:
+            _optimized_session = OptimizedAPISession()
+        return _optimized_session
+
+def choose_processing_strategy(num_images):
+    """
+    Choose the optimal processing strategy based on configuration and image count
+    
+    Args:
+        num_images (int): Number of images to process
+        
+    Returns:
+        str: Processing strategy ('batch', 'parallel', 'individual')
+    """
+    if not BATCH_PROCESSING_CONFIG['enabled']:
+        log_debug("Batch processing disabled, using individual processing")
+        return 'individual'
+    
+    if num_images < BATCH_PROCESSING_CONFIG['min_batch_size']:
+        log_debug(f"Image count ({num_images}) below minimum batch size, using individual processing")
+        return 'individual'
+    
+    if num_images <= BATCH_PROCESSING_CONFIG['max_batch_size']:
+        if BATCH_PROCESSING_CONFIG['prefer_batch_over_parallel']:
+            log_debug(f"Using batch processing for {num_images} images")
+            return 'batch'
+        else:
+            log_debug(f"Using parallel processing for {num_images} images")
+            return 'parallel'
+    
+    # For very large numbers, we might want to split into smaller batches or use parallel
+    log_debug(f"Large image count ({num_images}), using parallel processing with workers")
+    return 'parallel'
 
 def rate_limit_api_request():
     """
-    Rate limit API requests to prevent GPU overload
+    Rate limiting for stable API performance
     """
     global _last_request_time
     
@@ -93,38 +185,21 @@ def resize_image_if_needed(image_path, max_pixels=None):
 
 def check_health(api_url):
     """
-    Check if the API server is healthy
-    
-    Args:
-        api_url (str): Base URL of the API
-        
-    Returns:
-        bool: True if healthy, False otherwise
+    API health check for reliability
     """
     health_url = api_url.rstrip('/process') + '/health'
     try:
         print(f"🔍 Checking API health at {health_url}")
-        response = requests.get(health_url, timeout=10)
+        response = requests.get(health_url, timeout=5)
         if response.status_code == 200:
             result = response.json()
             print(f"✅ Health check successful: {result}")
             return True
         else:
             print(f"❌ Health check failed with status code {response.status_code}")
-            print(f"Response: {response.text}")
             return False
-    except requests.exceptions.ConnectTimeout:
-        print(f"❌ Connection timeout - RunPod instance may be starting or not accessible")
-        return False
-    except requests.exceptions.ConnectionError as e:
-        print(f"❌ Connection error - RunPod instance may be stopped or URL incorrect")
-        print(f"Connection error details: {str(e)}")
-        return False
-    except requests.exceptions.Timeout:
-        print(f"❌ Request timeout - RunPod instance may be overloaded or slow")
-        return False
-    except Exception as e:
-        print(f"❌ Error checking API health: {str(e)}")
+    except:
+        print(f"❌ Health check failed")
         return False
 
 def process_image_with_retry(image_path, query, api_url):
@@ -185,6 +260,288 @@ def process_image_with_retry(image_path, query, api_url):
     
     return None
 
+def process_images_smart(image_paths, query, api_url):
+    """
+    🎯 SMART PROCESSING: Automatically choose the best processing strategy based on configuration
+    
+    Args:
+        image_paths (list): List of paths to image files
+        query (str): Query to send with the images
+        api_url (str): URL of the API endpoint
+        
+    Returns:
+        list: List of tuples (API response dict, prediction masks if available) for each image
+    """
+    if not image_paths:
+        return []
+    
+    num_images = len(image_paths)
+    strategy = choose_processing_strategy(num_images)
+    
+    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+        print(f"🎯 SMART PROCESSING: Processing {num_images} images using '{strategy}' strategy")
+    
+    if strategy == 'batch':
+        return process_images_batch(image_paths, query, api_url)
+    elif strategy == 'parallel':
+        max_workers = min(num_images, BATCH_PROCESSING_CONFIG['max_parallel_workers'])
+        return process_images_parallel(image_paths, query, api_url, max_workers)
+    else:  # individual
+        return process_images_individual(image_paths, query, api_url)
+
+def process_images_batch(image_paths, query, api_url):
+    """
+    🚀 BATCH PROCESSING: Send multiple images to the GeoPixel API in a single batch request
+    This dramatically improves performance for tiling scenarios.
+    
+    Args:
+        image_paths (list): List of paths to image files
+        query (str): Query to send with the images
+        api_url (str): URL of the API endpoint
+        
+    Returns:
+        list: List of tuples (API response dict, prediction masks if available) for each image
+    """
+    if not image_paths:
+        return []
+    
+    num_images = len(image_paths)
+    max_batch_size = BATCH_PROCESSING_CONFIG['max_batch_size']
+    
+    # If we have more images than max batch size, split into smaller batches
+    if num_images > max_batch_size:
+        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+            print(f"🔀 SPLITTING BATCH: {num_images} images exceeds max batch size ({max_batch_size}), splitting")
+        
+        all_results = []
+        for i in range(0, num_images, max_batch_size):
+            batch_paths = image_paths[i:i + max_batch_size]
+            batch_num = (i // max_batch_size) + 1
+            total_batches = (num_images + max_batch_size - 1) // max_batch_size
+            
+            if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                print(f"🚀 BATCH PROCESSING {batch_num}/{total_batches}: Sending {len(batch_paths)} images")
+            batch_results = process_images_batch_internal(batch_paths, query, api_url)
+            all_results.extend(batch_results)
+        
+        return all_results
+    
+    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+        print(f"🚀 BATCH PROCESSING: Sending {len(image_paths)} images in single request")
+    return process_images_batch_internal(image_paths, query, api_url)
+
+def process_images_batch_internal(image_paths, query, api_url):
+    """
+    Internal batch processing function that handles a single batch within size limits
+    """
+    
+    # Get optimized session
+    session = get_optimized_session()
+    
+    # Validate all image files exist and prepare batch data
+    tiles_data = []
+    for i, image_path in enumerate(image_paths):
+        if not os.path.exists(image_path):
+            print(f"Error: Image file not found: {image_path}")
+            continue
+        
+        # Check image file size
+        file_size = os.path.getsize(image_path)
+        if file_size == 0:
+            print(f"Error: Image file is empty: {image_path}")
+            continue
+        
+        # Encode image as base64
+        try:
+            with open(image_path, 'rb') as img_file:
+                image_data = base64.b64encode(img_file.read()).decode('utf-8')
+            
+            tiles_data.append({
+                'query': query,
+                'image_base64': image_data,
+                'tile_id': f'tile_{i}'
+            })
+            
+        except Exception as e:
+            print(f"⚠️  Error encoding image {i}: {str(e)}")
+            continue
+    
+    if not tiles_data:
+        print("Error: No valid images to process")
+        return []
+    
+    # Send batch request to API
+    try:
+        # Use unified endpoint that can handle both single and batch requests
+        batch_url = api_url
+        
+        payload = {'tiles': tiles_data}
+        
+        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+            print(f"Sending batch request to {batch_url}")
+        start_time = time.time()
+        
+        timeout_multiplier = BATCH_PROCESSING_CONFIG['batch_timeout_multiplier']
+        batch_timeout = int(session.session_timeout * timeout_multiplier)
+        
+        # High-performance headers
+        headers = {
+            'Content-Type': 'application/json',
+            'Connection': 'keep-alive',
+            'Accept-Encoding': 'gzip, deflate'
+        }
+        
+        response = session.session.post(
+            batch_url,
+            json=payload,
+            headers=headers,
+            timeout=batch_timeout
+        )
+        
+        end_time = time.time()
+        processing_time = end_time - start_time
+        
+        if response.status_code == 200:
+            result = response.json()
+            if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                print(f"✅ Batch processing completed in {processing_time:.2f} seconds")
+            
+            # Convert batch result to individual results format
+            individual_results = []
+            if 'tile_results' in result:
+                for tile_result in result['tile_results']:
+                    if 'error' not in tile_result:
+                        # Process prediction masks if available
+                        pred_masks = None
+                        if "pred_masks_base64" in tile_result:
+                            try:
+                                masks_encoded = tile_result["pred_masks_base64"]
+                                masks = []
+                                for mask_b64 in masks_encoded:
+                                    mask_data = base64.b64decode(mask_b64)
+                                    mask_img = Image.open(BytesIO(mask_data))
+                                    mask_np = np.array(mask_img) > 0
+                                    masks.append(mask_np)
+                                
+                                if masks:
+                                    pred_masks = np.stack(masks)
+                                    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                                        print(f"✅ Successfully decoded {len(masks)} prediction masks")
+                            except Exception as e:
+                                if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                                    print(f"⚠️  Error decoding prediction masks: {str(e)}")
+                        
+                        individual_results.append((tile_result, pred_masks))
+                    else:
+                        individual_results.append((tile_result, None))
+            
+            return individual_results
+        else:
+            if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                print(f"❌ Batch request failed with status code {response.status_code}")
+                print(f"Response: {response.text[:500]}...")
+            
+            # Fallback to individual processing
+            if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                print("🔄 Falling back to individual processing...")
+            if BATCH_PROCESSING_CONFIG['auto_fallback']:
+                return process_images_individual(image_paths, query, api_url)
+            else:
+                if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                    print("⚠️ Auto-fallback disabled, returning failed batch results")
+                return [({"error": f"Batch processing failed with status {response.status_code}"}, None) for _ in image_paths]
+            
+    except Exception as e:
+        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+            print(f"❌ Error in batch processing: {str(e)}")
+            
+            # Enhanced error handling with categorization
+            error_type = type(e).__name__
+            if "timeout" in str(e).lower():
+                print("⏱️ Batch processing timeout detected")
+            elif "connection" in str(e).lower():
+                print("🌐 Network connection error in batch processing")
+            elif "memory" in str(e).lower() or "oom" in str(e).lower():
+                print("💾 Memory error in batch processing")
+        
+        if BATCH_PROCESSING_CONFIG['auto_fallback']:
+            if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                print("🔄 Auto-fallback enabled, switching to individual processing...")
+            return process_images_individual(image_paths, query, api_url)
+        else:
+            if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                print("⚠️ Auto-fallback disabled, returning error results")
+            return [({"error": f"Batch processing error: {str(e)}"}, None) for _ in image_paths]
+
+def process_images_individual(image_paths, query, api_url):
+    """
+    Fallback function to process images individually when batch processing fails
+    """
+    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+        print(f"🔄 Processing {len(image_paths)} images individually")
+    results = []
+    
+    for i, image_path in enumerate(image_paths):
+        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+            print(f"Processing image {i+1}/{len(image_paths)}: {os.path.basename(image_path)}")
+        try:
+            result = process_image_with_retry(image_path, query, api_url)
+            results.append(result if result else ({"error": f"Failed to process {image_path}"}, None))
+        except Exception as e:
+            print(f"Error processing {image_path}: {str(e)}")
+            results.append(({"error": f"Error processing {image_path}: {str(e)}"}, None))
+    
+    return results
+
+def process_images_parallel(image_paths, query, api_url, max_workers=4):
+    """
+    Process images using thread pool for parallel execution when batch processing is not available
+    Enhanced with robust error handling and resource management
+    """
+    if len(image_paths) <= 1:
+        return process_images_individual(image_paths, query, api_url)
+    
+    # Apply configuration limits
+    max_workers = min(max_workers, BATCH_PROCESSING_CONFIG['max_parallel_workers'])
+    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+        print(f"⚡ Processing {len(image_paths)} images in parallel with {max_workers} workers")
+    
+    def process_single_image_worker(image_path):
+        try:
+            return process_image_with_retry(image_path, query, api_url)
+        except Exception as e:
+            print(f"Error in worker processing {image_path}: {str(e)}")
+            return ({"error": f"Worker error: {str(e)}"}, None)
+    
+    results = []
+    start_time = time.time()
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        future_to_path = {
+            executor.submit(process_single_image_worker, image_path): image_path
+            for image_path in image_paths
+        }
+        
+        # Collect results as they complete
+        for future in concurrent.futures.as_completed(future_to_path):
+            image_path = future_to_path[future]
+            try:
+                result = future.result()
+                results.append(result if result else ({"error": f"Failed to process {image_path}"}, None))
+                if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                    print(f"✅ Completed: {os.path.basename(image_path)}")
+            except Exception as exc:
+                if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                    print(f"❌ {image_path} generated an exception: {exc}")
+                results.append(({"error": f"Exception: {str(exc)}"}, None))
+    
+    processing_time = time.time() - start_time
+    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+        print(f"✅ Parallel processing completed in {processing_time:.2f} seconds")
+    
+    return results
+
 def process_image(image_path, query, api_url):
     """
     Send an image to the GeoPixel API and get the description
@@ -209,27 +566,30 @@ def process_image(image_path, query, api_url):
         print("Error: Image file is empty")
         return None
     
-    # Try to open the image to verify it's valid
-    try:
-        with Image.open(image_path) as img:
-            width, height = img.size
-            print(f"Image dimensions: {width}x{height}")
-            print(f"Image format: {img.format}")
-    except Exception as e:
-        print(f"Warning: Could not verify image with PIL: {str(e)}")
+    # Try to open the image to verify it's valid (only when verbose logging is enabled)
+    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+        try:
+            with Image.open(image_path) as img:
+                width, height = img.size
+                print(f"Image dimensions: {width}x{height}")
+                print(f"Image format: {img.format}")
+        except Exception as e:
+            print(f"Warning: Could not verify image with PIL: {str(e)}")
     
     try:
-        print(f"Sending request to {api_url}")
-        print(f"Image: {image_path}")
-        print(f"Query: {query}")
+        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+            print(f"Sending request to {api_url}")
+            print(f"Image: {image_path}")
+            print(f"Query: {query}")
         
-        # Test basic internet connectivity
-        try:
-            print("🔍 Testing internet connectivity...")
-            test_response = requests.get("https://httpbin.org/get", timeout=10)
-            print(f"🔍 Internet test result: {test_response.status_code}")
-        except Exception as e:
-            print(f"❌ Internet connectivity test failed: {str(e)}")
+        # Skip internet connectivity test for performance unless verbose logging is enabled
+        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False) and not BATCH_PROCESSING_CONFIG.get('skip_health_checks', False):
+            try:
+                print("🔍 Testing internet connectivity...")
+                test_response = requests.get("https://httpbin.org/get", timeout=5)  # Reduced timeout
+                print(f"🔍 Internet test result: {test_response.status_code}")
+            except Exception as e:
+                print(f"❌ Internet connectivity test failed: {str(e)}")
         
         # Apply rate limiting to prevent GPU overload
         rate_limit_api_request()
@@ -240,11 +600,15 @@ def process_image(image_path, query, api_url):
             data = {'query': query}
             
             # Send the POST request with configured timeout
-            print(f"🔍 Making request to: {api_url}")
-            print(f"🔍 Request data: {data}")
-            print(f"🔍 Files: {list(files.keys())}")
+            if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                print(f"🔍 Making request to: {api_url}")
+                print(f"🔍 Request data: {data}")
+                print(f"🔍 Files: {list(files.keys())}")
+            
             response = requests.post(api_url, files=files, data=data, timeout=ERROR_HANDLING['api_timeout'])
-            print(f"🔍 Response status: {response.status_code}")
+            
+            if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                print(f"🔍 Response status: {response.status_code}")
         
         # Check if the request was successful
         if response.status_code == 200:
@@ -273,9 +637,11 @@ def process_image(image_path, query, api_url):
                         
                         if masks:
                             pred_masks = np.stack(masks)
-                            print(f"Successfully decoded {len(masks)} prediction masks")
+                            if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                                print(f"Successfully decoded {len(masks)} prediction masks")
                     except Exception as e:
-                        print(f"Error decoding prediction masks: {str(e)}")
+                        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                            print(f"Error decoding prediction masks: {str(e)}")
                 
                 # Return both the result and the prediction masks
                 return result, pred_masks
@@ -354,12 +720,13 @@ def get_object_outlines(api_base_url, image_path, query, upscaling_config=None):
     
     api_process_url = f"{api_base_url.rstrip('/')}/process"
     
-    print(f"GeoPixel API Client - NEW MASK LOGIC")
-    print(f"====================================")
-    print(f"API URL: {api_base_url}")
-    print(f"Image: {image_path}")
-    print(f"Query: {query}")
-    print(f"Requested Upscaling: {upscaling_config.get('label', 'x1')}")
+    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+        print(f"GeoPixel API Client - NEW MASK LOGIC")
+        print(f"====================================")
+        print(f"API URL: {api_base_url}")
+        print(f"Image: {image_path}")
+        print(f"Query: {query}")
+        print(f"Requested Upscaling: {upscaling_config.get('label', 'x1')}")
     
     # Check API health first
     if not check_health(api_base_url):
@@ -369,17 +736,20 @@ def get_object_outlines(api_base_url, image_path, query, upscaling_config=None):
     # Get original image dimensions
     with Image.open(image_path) as img:
         width, height = img.size
-        print(f"Original image size: {width}x{height}")
+        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+            print(f"Original image size: {width}x{height}")
     
     # Get MSFF flag from upscaling config
     use_msff = upscaling_config.get('msff', False)
     
     # NEW LOGIC: Multi-scale processing based on MSFF flag, not scale
     if use_msff:
-        print(f"\n🔄 MULTI-SCALE FEATURE FUSION PROCESSING (MSFF enabled)")
+        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+            print(f"\n🔄 MULTI-SCALE FEATURE FUSION PROCESSING (MSFF enabled)")
         return process_tile_with_multiscale_masks(image_path, query, api_process_url, requested_scale, width, height)
     else:
-        print(f"\n🔄 SINGLE SCALE PROCESSING (MSFF disabled)")
+        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+            print(f"\n🔄 SINGLE SCALE PROCESSING (MSFF disabled)")
         return process_tile_single_scale(image_path, query, api_process_url, requested_scale, width, height)
 
 def process_tile_with_multiscale_masks(image_path, query, api_process_url, scale, width, height):
@@ -392,7 +762,8 @@ def process_tile_with_multiscale_masks(image_path, query, api_process_url, scale
     - s/2^(i+1) (half size) 
     - s/2^(i+2) (quarter size)
     """
-    print(f"Processing tile with multi-scale mask logic for scale {scale}")
+    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+        print(f"Processing tile with multi-scale mask logic for scale {scale}")
     
     # Calculate the 4 scales according to the formula
     i = int(np.log2(scale))
@@ -403,54 +774,108 @@ def process_tile_with_multiscale_masks(image_path, query, api_process_url, scale
         scale / (2 ** (i + 2))         # s/2^(i+2) (quarter)
     ]
     
-    print(f"Processing at scales: {scales}")
+    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+        print(f"Processing at scales: {scales}")
     
     # Step 1: Build array of scaled images
     tile_array = []
     for scale_factor in scales:
         upscaled_image_path = upscale_image(image_path, scale_factor)
         tile_array.append(upscaled_image_path)
-        print(f"✓ Created scaled image for factor {scale_factor}")
+        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+            print(f"✓ Created scaled image for factor {scale_factor}")
     
-    # Step 2: Process each scaled image through GeoPixel and collect masks
-    mask_array = []
-    for i, scaled_image_path in enumerate(tile_array):
-        scale_factor = scales[i]
-        print(f"🔍 Processing scale {scale_factor} ({i+1}/{len(tile_array)})")
+    # Step 2: 🚀 BATCH PROCESS all scaled images through GeoPixel for maximum efficiency
+    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+        print(f"🚀 BATCH PROCESSING: Processing {len(tile_array)} scales simultaneously")
+    
+    try:
+        # Use smart processing for all scales at once - this is the key optimization!
+        batch_results = process_images_smart(tile_array, query, api_process_url)
         
-        # Call GeoPixel API
-        try:
-            response = process_image_with_retry(scaled_image_path, query, api_process_url)
-            if response:
-                result, pred_masks = response
+        if batch_results and len(batch_results) == len(tile_array):
+            if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                print(f"✅ Batch processing successful for all {len(batch_results)} scales")
+            mask_array = []
+            
+            for i, (result, pred_masks) in enumerate(batch_results):
+                scale_factor = scales[i]
                 
-                # Post-process the mask
-                if pred_masks is not None:
+                if 'error' not in result and pred_masks is not None:
+                    # Post-process the mask
                     processed_mask = post_process_mask(pred_masks)
                     if processed_mask is not None:
                         # Resize mask back to original dimensions for concatenation
                         resized_mask = cv2.resize(processed_mask, (width, height), interpolation=cv2.INTER_AREA)
                         mask_array.append(resized_mask)
-                        print(f"✓ Processed mask for scale {scale_factor}, resized to {width}x{height}")
+                        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                            print(f"✓ Processed mask for scale {scale_factor}, resized to {width}x{height}")
                     else:
-                        print(f"⚠️ No valid mask from scale {scale_factor}")
-                        # Add empty mask to maintain array structure
+                        if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                            print(f"⚠️ No valid mask from scale {scale_factor}")
                         mask_array.append(np.zeros((height, width), dtype=np.uint8))
                 else:
-                    print(f"⚠️ No prediction masks from scale {scale_factor}")
-                    # Add empty mask to maintain array structure
+                    if not BATCH_PROCESSING_CONFIG.get('disable_verbose_logging', False):
+                        print(f"⚠️ No prediction masks from scale {scale_factor}")
                     mask_array.append(np.zeros((height, width), dtype=np.uint8))
-            else:
-                print(f"❌ Failed to process scale {scale_factor}")
-                # Add empty mask to maintain array structure
-                mask_array.append(np.zeros((height, width), dtype=np.uint8))
+            
+        else:
+            print(f"⚠️ Batch processing failed or incomplete, falling back to individual processing")
+            # Fallback to individual processing
+            mask_array = []
+            for i, scaled_image_path in enumerate(tile_array):
+                scale_factor = scales[i]
+                print(f"🔍 Processing scale {scale_factor} individually ({i+1}/{len(tile_array)})")
                 
-        except Exception as e:
-            print(f"❌ Error processing scale {scale_factor}: {str(e)}")
-            # Add empty mask to maintain array structure
-            mask_array.append(np.zeros((height, width), dtype=np.uint8))
+                try:
+                    response = process_image_with_retry(scaled_image_path, query, api_process_url)
+                    if response:
+                        result, pred_masks = response
+                        
+                        if pred_masks is not None:
+                            processed_mask = post_process_mask(pred_masks)
+                            if processed_mask is not None:
+                                resized_mask = cv2.resize(processed_mask, (width, height), interpolation=cv2.INTER_AREA)
+                                mask_array.append(resized_mask)
+                                print(f"✓ Processed mask for scale {scale_factor}")
+                            else:
+                                mask_array.append(np.zeros((height, width), dtype=np.uint8))
+                        else:
+                            mask_array.append(np.zeros((height, width), dtype=np.uint8))
+                    else:
+                        mask_array.append(np.zeros((height, width), dtype=np.uint8))
+                        
+                except Exception as e:
+                    print(f"❌ Error processing scale {scale_factor}: {str(e)}")
+                    mask_array.append(np.zeros((height, width), dtype=np.uint8))
         
-        # Clean up scaled image
+    except Exception as e:
+        print(f"❌ Error in batch processing multi-scale: {str(e)}")
+        # Final fallback to individual processing
+        mask_array = []
+        for i, scaled_image_path in enumerate(tile_array):
+            scale_factor = scales[i]
+            try:
+                response = process_image_with_retry(scaled_image_path, query, api_process_url)
+                if response:
+                    result, pred_masks = response
+                    if pred_masks is not None:
+                        processed_mask = post_process_mask(pred_masks)
+                        if processed_mask is not None:
+                            resized_mask = cv2.resize(processed_mask, (width, height), interpolation=cv2.INTER_AREA)
+                            mask_array.append(resized_mask)
+                        else:
+                            mask_array.append(np.zeros((height, width), dtype=np.uint8))
+                    else:
+                        mask_array.append(np.zeros((height, width), dtype=np.uint8))
+                else:
+                    mask_array.append(np.zeros((height, width), dtype=np.uint8))
+            except Exception as e2:
+                print(f"❌ Error processing scale {scale_factor}: {str(e2)}")
+                mask_array.append(np.zeros((height, width), dtype=np.uint8))
+    
+    # Clean up scaled images after processing
+    for scaled_image_path in tile_array:
         if scaled_image_path != image_path:
             try:
                 os.remove(scaled_image_path)
@@ -575,6 +1000,7 @@ def process_tile_with_multiscale_masks(image_path, query, api_process_url, scale
 def process_tile_single_scale(image_path, query, api_process_url, scale, width, height):
     """
     Process tile at single scale (traditional approach for scale < 2)
+    Enhanced with smart processing capability for future batch optimization
     """
     print(f"Processing tile with single scale {scale}")
     
@@ -585,6 +1011,10 @@ def process_tile_single_scale(image_path, query, api_process_url, scale, width, 
         upscaled_image_path = image_path
     
     try:
+        # 🎯 FUTURE ENHANCEMENT: If processing multiple tiles at same scale,
+        # we could batch them here using process_images_smart([upscaled_image_path], query, api_process_url)
+        # For now, single image processing is maintained for compatibility
+        
         # Process image
         response = process_image_with_retry(upscaled_image_path, query, api_process_url)
         
@@ -794,6 +1224,3 @@ def upscale_image(image_path, scale_factor):
     except Exception as e:
         print(f"❌ Error upscaling image: {str(e)}")
         return image_path
-
-if __name__ == "__main__":
-    get_object_outlines("https://bpds0xic8d0b7g-5000.proxy.runpod.net/", "GeoPixel/images/example1.png","Please give me a segmentation mask for grey car with different colors for each.", {'scale': 2, 'label': 'x2'})

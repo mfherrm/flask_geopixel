@@ -29,6 +29,7 @@ import './dropup-controls.js';           // Dropdown menus
 import './runpod-manager.js';            // RunPod management
 import './runpod-toggle.js';             // RunPod toggle
 import './modal-controls.js';            // Modal dialogs
+import './tile-processing.js';           // Tile processing
 
 // Import required functions from vector-functions module
 import {
