@@ -1,7 +1,7 @@
 services:
   postgres:
-    image: postgis/postgis:17-3.5-alpine
-    # image: registry.disy.net/sandbox/postgis_geopixel:0.0.1
+    # image: postgis/postgis:17-3.5-alpine
+    image: registry.disy.net/sandbox/postgis_geopixel:0.0.1
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -18,7 +18,7 @@ services:
 
   flask-app:
     # To run without VPN remove image tag
-    # image: registry.disy.net/sandbox/flask_geopixel:0.0.1
+    image: registry.disy.net/sandbox/flask_geopixel:0.0.1
     build: .
     ports:
       - "5000:5000"
@@ -38,7 +38,10 @@ services:
       DB_NAME: postgres
       DB_USER: postgres
       DB_PASSWORD: postgres
-      CADENZA_API_URL: http://host.docker.internal:8080
+      CADENZA_URL: https://cadenza.mhe.cloud.disy.io/cadenza
+      # CADENZA_URL: http://localhost:8080/cadenza/
+      CADENZA_REPO: "_DS4kjgAp5On-lHnEgIi"
+      CADENZA_LINK: "mgsctVdrerBV8101oFtX"
     extra_hosts:
       - "host.docker.internal:host-gateway"
   adminer:

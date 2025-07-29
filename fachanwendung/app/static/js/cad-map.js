@@ -9,15 +9,38 @@ import {
   zoomToScale
 } from './scale-sync.js';
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   if (document.getElementById('cadenza-iframe')) {
-    window.cadenzaClient = cadenza({
+    // Default configuration values
+    let config = {
       baseUrl: 'http://localhost:8080/cadenza/',
+      repositoryName: "_DS4kjgAp5On-lHnEgIi",
+      externalLinkId: "mgsctVdrerBV8101oFtX"
+    };
+    
+    // Fetch configuration from Flask backend when running in Docker
+    try {
+      const response = await fetch('/cadenza-config');
+      if (response.ok) {
+        const serverConfig = await response.json();
+        config = {
+          baseUrl: serverConfig.cadenza_url || config.baseUrl,
+          repositoryName: serverConfig.cadenza_repo || config.repositoryName,
+          externalLinkId: serverConfig.cadenza_link || config.externalLinkId
+        };
+        console.log('Loaded Cadenza configuration from environment:', config);
+      }
+    } catch (error) {
+      console.warn('Failed to fetch Cadenza configuration from server, using defaults:', error);
+    }
+
+    window.cadenzaClient = cadenza({
+      baseUrl: config.baseUrl,
       iframe: 'cadenza-iframe',
       debug: true,
       webApplication: {
-        repositoryName: "_DS4kjgAp5On-lHnEgIi",
-        externalLinkId: "mgsctVdrerBV8101oFtX"
+        repositoryName: config.repositoryName,
+        externalLinkId: config.externalLinkId
       },
     });
 

@@ -8,6 +8,16 @@ gpx_cad_repo.zip
 .git
 .gitignore
 .gitattributes
+.gitmodules
 
 # Documentation
 README.md
+
+# Config
+fachanwendung/.env
+fachanwendung/.vscode
+
+# Docker
+Dockerfile
+docker-compose.yml
+Dockerfile

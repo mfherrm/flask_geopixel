@@ -743,3 +743,18 @@ def get_layer_stats():
         
     except Exception as e:
         return jsonify({'error': f'Failed to get layer stats: {str(e)}'}), 500
+
+@bp.route('/cadenza-config', methods=['GET'])
+def get_cadenza_config():
+    """Get Cadenza configuration from environment variables"""
+    try:
+        config = {
+            'cadenza_url': os.environ.get('CADENZA_URL', 'http://localhost:8080/cadenza/'),
+            'cadenza_repo': os.environ.get('CADENZA_REPO', '_DS4kjgAp5On-lHnEgIi'),
+            'cadenza_link': os.environ.get('CADENZA_LINK', 'mgsctVdrerBV8101oFtX')
+        }
+        
+        return jsonify(config), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to get Cadenza configuration: {str(e)}'}), 500
