@@ -116,7 +116,7 @@ class PostGISDatabase:
                     table_names = self.get_all_object_tables()
                     
                     for table_name in table_names:
-                        cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+                        cursor.execute(f"DROP TABLE IF EXISTS layerdb.{table_name}")
                         logger.info(f"Dropped table: {table_name}")
                     
                     conn.commit()
@@ -135,7 +135,7 @@ class PostGISDatabase:
                     for table_name in table_names:
                         # Create table with geometry column
                         create_table_sql = f"""
-                            CREATE TABLE IF NOT EXISTS {table_name} (
+                            CREATE TABLE IF NOT EXISTS layerdb.{table_name} (
                                 id SERIAL PRIMARY KEY,
                                 geom GEOMETRY(MULTIPOLYGON, 3857),
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -145,7 +145,7 @@ class PostGISDatabase:
                         cursor.execute(create_table_sql)
                         
                         # Create spatial index
-                        cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_{table_name}_geom ON {table_name} USING GIST (geom)")
+                        cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_{table_name}_geom ON layerdb.{table_name} USING GIST (geom)")
                         
                         logger.info(f"Created table: {table_name}")
                     
@@ -167,8 +167,15 @@ class PostGISDatabase:
             if not self.test_connection():
                 raise Exception("Database connection failed")
             
-            # Ensure PostGIS extension
+            # Ensure PostGIS extension and layerdb schema
             self.ensure_postgis_extension()
+            
+            # Create layerdb schema if it doesn't exist
+            with self.get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("CREATE SCHEMA IF NOT EXISTS layerdb")
+                    conn.commit()
+                    logger.info("Ensured layerdb schema exists")
             
             # Conditionally drop all existing tables based on clear_data parameter
             if clear_data:
@@ -210,7 +217,7 @@ class PostGISDatabase:
                     table_names = self.get_all_object_tables()
                     total_rows = 0
                     for table_name in table_names:
-                        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+                        cursor.execute(f"SELECT COUNT(*) FROM layerdb.{table_name}")
                         count = cursor.fetchone()[0]
                         total_rows += count
                         if count > 0:
@@ -240,7 +247,7 @@ class PostGISDatabase:
                     
                     # Insert geometry
                     insert_sql = f"""
-                        INSERT INTO {table_name} (geom, attributes) 
+                        INSERT INTO layerdb.{table_name} (geom, attributes)
                         VALUES (ST_GeomFromText(%s, 3857), %s)
                         RETURNING id
                     """
@@ -262,7 +269,7 @@ class PostGISDatabase:
             
             with self.get_connection() as conn:
                 with conn.cursor() as cursor:
-                    cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+                    cursor.execute(f"SELECT COUNT(*) FROM layerdb.{table_name}")
                     count = cursor.fetchone()[0]
                     return count
                     
@@ -281,22 +288,22 @@ class PostGISDatabase:
                     # Calculate intersection
                     intersection_sql = f"""
                         WITH layer1_union AS (
-                            SELECT ST_Union(geom) as geom FROM {table_name1}
+                            SELECT ST_Union(geom) as geom FROM layerdb.{table_name1}
                         ),
                         layer2_union AS (
-                            SELECT ST_Union(geom) as geom FROM {table_name2}
+                            SELECT ST_Union(geom) as geom FROM layerdb.{table_name2}
                         ),
                         intersection AS (
                             SELECT ST_Intersection(l1.geom, l2.geom) as geom
                             FROM layer1_union l1, layer2_union l2
                             WHERE ST_Intersects(l1.geom, l2.geom)
                         )
-                        SELECT 
+                        SELECT
                             ST_Area(l1.geom) as area1,
                             ST_Area(l2.geom) as area2,
                             COALESCE(ST_Area(i.geom), 0) as intersection_area,
-                            (SELECT COUNT(*) FROM {table_name1}) as count1,
-                            (SELECT COUNT(*) FROM {table_name2}) as count2
+                            (SELECT COUNT(*) FROM layerdb.{table_name1}) as count1,
+                            (SELECT COUNT(*) FROM layerdb.{table_name2}) as count2
                         FROM layer1_union l1, layer2_union l2
                         LEFT JOIN intersection i ON true
                     """
