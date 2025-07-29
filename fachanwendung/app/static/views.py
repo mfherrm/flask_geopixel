@@ -301,7 +301,7 @@ if not os.path.exists(IMAGE_FOLDER):
 def add_cors_headers(response):
     cadenza_uri = current_app.config.get('CADENZA_URI', '')
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.google.com https://*.arcgis.com https://*.arcgisonline.com https://wayback.maptiles.arcgis.com https://*.maptiles.arcgis.com https://api.maptiler.com https://gis.sinica.edu.tw; frame-src 'self' https://cadenza.mhe.cloud.disy.io/cadenza http://localhost:8080; connect-src 'self' http: https: ws: wss: data: blob:; frame-ancestors 'self' http://localhost:8080 http://localhost:5000 http://127.0.0.1:5000 https://cadenza.mhe.cloud.disy.io/cadenza https://fachanwendung.mhe.cloud.disy.io/;"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdn.jsdelivr.net https://html2canvas.hertzen.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.google.com https://*.arcgis.com https://*.arcgisonline.com https://wayback.maptiles.arcgis.com https://*.maptiles.arcgis.com https://api.maptiler.com https://gis.sinica.edu.tw; frame-src 'self' https://cadenza.mhe.cloud.disy.io http://localhost:8080 http://noop.style/tag; connect-src 'self' http: https: ws: wss: data: blob:; frame-ancestors 'self' http://localhost:8080 http://localhost:5000 http://127.0.0.1:5000 https://cadenza.mhe.cloud.disy.io https://fachanwendung.mhe.cloud.disy.io;"
     return response
 
 @bp.route('/')
